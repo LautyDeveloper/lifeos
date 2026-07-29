@@ -9,4 +9,12 @@ export const db = databaseUrl
   ? drizzle(neon(databaseUrl), { schema })
   : null
 
+export function getDbOrThrow() {
+  if (!db) {
+    throw new Error("DATABASE_URL is not configured.")
+  }
+
+  return db
+}
+
 export { schema }
