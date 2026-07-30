@@ -3,7 +3,7 @@ import "dotenv/config"
 import { and, eq, inArray } from "drizzle-orm"
 
 import { getDbOrThrow } from "@/db"
-import { areas, containers, inboxItems, projects } from "@/db/schema"
+import { areas, containers, inboxItems, projects, tasks } from "@/db/schema"
 
 const areaSeeds = [
   { name: "Trabajo", icon: "BriefcaseBusiness", color: "#7dd3fc" },
@@ -35,6 +35,16 @@ const projectSeeds = [
   { containerName: "AutoPanel", title: "Roadmap", description: "Próximos hitos del producto técnico." },
   { containerName: "Física", title: "Parcial 1", description: "Plan base para preparar el parcial." },
   { containerName: "Gimnasio", title: "Rutina base", description: "Estructura mínima para sostener constancia." },
+] as const
+
+const taskSeeds = [
+  { projectTitle: "Operación semanal", title: "Preparar prioridades del cliente." },
+  { projectTitle: "Operación semanal", title: "Revisar entregables pendientes." },
+  { projectTitle: "MVP", title: "Definir el siguiente PR del producto." },
+  { projectTitle: "MVP", title: "Validar el flujo completo de inbox." },
+  { projectTitle: "Roadmap", title: "Agrupar próximas iniciativas técnicas." },
+  { projectTitle: "Parcial 1", title: "Resolver ejercicios clave de dinámica." },
+  { projectTitle: "Rutina base", title: "Planificar la próxima sesión de entrenamiento." },
 ] as const
 
 async function seedAreas() {
@@ -137,10 +147,44 @@ async function seedProjects() {
   }
 }
 
+async function seedTasks() {
+  const db = getDbOrThrow()
+  const availableProjects = await db
+    .select({ id: projects.id, title: projects.title })
+    .from(projects)
+    .where(inArray(projects.title, taskSeeds.map((task) => task.projectTitle)))
+
+  const projectIdByTitle = new Map(
+    availableProjects.map((project) => [project.title, project.id])
+  )
+
+  for (const task of taskSeeds) {
+    const projectId = projectIdByTitle.get(task.projectTitle)
+
+    if (!projectId) {
+      continue
+    }
+
+    const existing = await db
+      .select({ id: tasks.id })
+      .from(tasks)
+      .where(and(eq(tasks.projectId, projectId), eq(tasks.title, task.title)))
+      .limit(1)
+
+    if (existing.length === 0) {
+      await db.insert(tasks).values({
+        projectId,
+        title: task.title,
+      })
+    }
+  }
+}
+
 async function main() {
   await seedAreas()
   await seedContainers()
   await seedProjects()
+  await seedTasks()
   await seedInboxItems()
 
   console.log("Life OS seeds completed.")

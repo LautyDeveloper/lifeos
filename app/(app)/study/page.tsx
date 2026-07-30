@@ -1,17 +1,14 @@
 import type { Metadata } from "next"
 
-import { PlaceholderPage } from "@/features/sections/components/placeholder-page"
+import { AreaWorkspaceView } from "@/features/areas/components/area-workspace-view"
+import { getAreaWorkspace } from "@/features/areas/repository"
 
 export const metadata: Metadata = {
   title: "Estudio",
 }
 
-export default function StudyPage() {
-  return (
-    <PlaceholderPage
-      eyebrow="Estudio"
-      title="Espacio reservado para aprendizaje estructurado."
-      description="Esta página ya soporta la futura capa de notas, materiales, planificación y seguimiento sin cambiar el shell."
-    />
-  )
+export default async function StudyPage() {
+  const workspace = await getAreaWorkspace("Estudio")
+
+  return <AreaWorkspaceView slug="study" workspace={workspace} />
 }

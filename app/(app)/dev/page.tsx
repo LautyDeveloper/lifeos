@@ -1,17 +1,14 @@
 import type { Metadata } from "next"
 
-import { PlaceholderPage } from "@/features/sections/components/placeholder-page"
+import { AreaWorkspaceView } from "@/features/areas/components/area-workspace-view"
+import { getAreaWorkspace } from "@/features/areas/repository"
 
 export const metadata: Metadata = {
   title: "Dev",
 }
 
-export default function DevPage() {
-  return (
-    <PlaceholderPage
-      eyebrow="Dev"
-      title="Base lista para proyectos técnicos."
-      description="La sección de desarrollo queda conectada al mismo sistema visual y preparada para sumar workflows específicos más adelante."
-    />
-  )
+export default async function DevPage() {
+  const workspace = await getAreaWorkspace("Dev")
+
+  return <AreaWorkspaceView slug="dev" workspace={workspace} />
 }
