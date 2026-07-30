@@ -1,8 +1,23 @@
+import { InboxProcessDialog } from "@/features/inbox/components/inbox-process-dialog"
+
 type InboxItem = {
   id: string
   content: string
   capturedAt: Date
   processedAt: Date | null
+}
+
+type AreaWithContainers = {
+  id: string
+  name: string
+  containers: { id: string; name: string }[]
+}
+
+type ProjectOption = {
+  id: string
+  title: string
+  containerName: string
+  areaName: string
 }
 
 function formatCapturedAt(date: Date) {
@@ -16,8 +31,14 @@ function formatCapturedAt(date: Date) {
 
 export function InboxList({
   items,
+  areasWithContainers,
+  projectOptions,
+  databaseReady,
 }: {
   items: InboxItem[]
+  areasWithContainers: AreaWithContainers[]
+  projectOptions: ProjectOption[]
+  databaseReady: boolean
 }) {
   if (items.length === 0) {
     return (
@@ -52,7 +73,18 @@ export function InboxList({
             key={item.id}
             className="rounded-[24px] border border-white/8 bg-white/[0.03] px-4 py-4"
           >
-            <p className="text-sm leading-7 text-white">{item.content}</p>
+            <div className="flex items-start justify-between gap-4">
+              <p className="text-sm leading-7 text-white">{item.content}</p>
+              <InboxProcessDialog
+                item={{
+                  id: item.id,
+                  content: item.content,
+                }}
+                areasWithContainers={areasWithContainers}
+                projectOptions={projectOptions}
+                databaseReady={databaseReady}
+              />
+            </div>
             <p className="mt-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
               Capturado {formatCapturedAt(item.capturedAt)}
             </p>

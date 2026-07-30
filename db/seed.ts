@@ -3,7 +3,7 @@ import "dotenv/config"
 import { and, eq, inArray } from "drizzle-orm"
 
 import { getDbOrThrow } from "@/db"
-import { areas, containers, inboxItems } from "@/db/schema"
+import { areas, containers, inboxItems, projects } from "@/db/schema"
 
 const areaSeeds = [
   { name: "Trabajo", icon: "BriefcaseBusiness", color: "#7dd3fc" },
@@ -27,6 +27,14 @@ const inboxSeeds = [
   "Revisar la arquitectura de proyectos antes del Sprint 3.",
   "Pensar una rutina simple para cerrar el día.",
   "Anotar ideas para la biblioteca de conocimiento.",
+] as const
+
+const projectSeeds = [
+  { containerName: "Gasti", title: "Operación semanal", description: "Prioridades activas del trabajo." },
+  { containerName: "Life OS", title: "MVP", description: "Entrega incremental del sistema operativo personal." },
+  { containerName: "AutoPanel", title: "Roadmap", description: "Próximos hitos del producto técnico." },
+  { containerName: "Física", title: "Parcial 1", description: "Plan base para preparar el parcial." },
+  { containerName: "Gimnasio", title: "Rutina base", description: "Estructura mínima para sostener constancia." },
 ] as const
 
 async function seedAreas() {
@@ -95,9 +103,44 @@ async function seedInboxItems() {
   }
 }
 
+async function seedProjects() {
+  const db = getDbOrThrow()
+  const availableContainers = await db
+    .select({ id: containers.id, name: containers.name })
+    .from(containers)
+    .where(inArray(containers.name, projectSeeds.map((project) => project.containerName)))
+
+  const containerIdByName = new Map(
+    availableContainers.map((container) => [container.name, container.id])
+  )
+
+  for (const project of projectSeeds) {
+    const containerId = containerIdByName.get(project.containerName)
+
+    if (!containerId) {
+      continue
+    }
+
+    const existing = await db
+      .select({ id: projects.id })
+      .from(projects)
+      .where(and(eq(projects.containerId, containerId), eq(projects.title, project.title)))
+      .limit(1)
+
+    if (existing.length === 0) {
+      await db.insert(projects).values({
+        containerId,
+        title: project.title,
+        description: project.description,
+      })
+    }
+  }
+}
+
 async function main() {
   await seedAreas()
   await seedContainers()
+  await seedProjects()
   await seedInboxItems()
 
   console.log("Life OS seeds completed.")

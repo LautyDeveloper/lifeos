@@ -2,10 +2,18 @@ import { db } from "@/db"
 import { PageShell } from "@/components/shared/page-shell"
 import { InboxForm } from "@/features/inbox/components/inbox-form"
 import { InboxList } from "@/features/inbox/components/inbox-list"
-import { listInboxItems } from "@/features/inbox/repository"
+import {
+  listActiveInboxItems,
+  listAreasWithContainers,
+  listProjectOptions,
+} from "@/features/inbox/repository"
 
 export async function InboxView() {
-  const items = await listInboxItems()
+  const [items, areasWithContainers, projectOptions] = await Promise.all([
+    listActiveInboxItems(),
+    listAreasWithContainers(),
+    listProjectOptions(),
+  ])
 
   return (
     <PageShell
@@ -26,7 +34,12 @@ export async function InboxView() {
           </section>
         </div>
 
-        <InboxList items={items} />
+        <InboxList
+          items={items}
+          areasWithContainers={areasWithContainers}
+          projectOptions={projectOptions}
+          databaseReady={Boolean(db)}
+        />
       </div>
     </PageShell>
   )
