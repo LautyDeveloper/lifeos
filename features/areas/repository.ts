@@ -4,6 +4,7 @@ import { db, getDbOrThrow } from "@/db"
 import { areas, containers, projects, tasks } from "@/db/schema"
 import type {
   CreateTaskInput,
+  PlanTaskForTodayInput,
   ToggleTaskCompletionInput,
 } from "@/features/areas/schemas"
 
@@ -186,6 +187,33 @@ export async function toggleTaskCompletion(input: ToggleTaskCompletionInput) {
     .returning({
       id: tasks.id,
       completed: tasks.completed,
+    })
+
+  return updatedTask
+}
+
+export async function planTaskForToday(input: PlanTaskForTodayInput) {
+  const database = getDbOrThrow()
+
+  const [task] = await database
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(eq(tasks.id, input.taskId))
+    .limit(1)
+
+  if (!task) {
+    throw new Error("Task not found.")
+  }
+
+  const [updatedTask] = await database
+    .update(tasks)
+    .set({
+      plannedDate: new Date(),
+    })
+    .where(eq(tasks.id, input.taskId))
+    .returning({
+      id: tasks.id,
+      plannedDate: tasks.plannedDate,
     })
 
   return updatedTask

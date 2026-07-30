@@ -2,9 +2,11 @@ import { BriefcaseBusiness, FolderOpenDot, ListTodo, Sparkles } from "lucide-rea
 
 import { PageShell } from "@/components/shared/page-shell"
 import { CreateTaskForm } from "@/features/areas/components/create-task-form"
+import { PlanTaskForTodayForm } from "@/features/areas/components/plan-task-for-today-form"
 import { TaskToggleForm } from "@/features/areas/components/task-toggle-form"
 import type { AreaWorkspace } from "@/features/areas/repository"
 import { areaPageConfig, type AreaPageSlug } from "@/features/areas/config"
+import { isDateToday } from "@/lib/dates"
 import { cn } from "@/lib/utils"
 
 function TaskList({
@@ -39,9 +41,16 @@ function TaskList({
             >
               {task.title}
             </p>
-            <div className="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
               <span>{task.completed ? "Completada" : "Activa"}</span>
               <span>{task.priority}</span>
+              {!task.completed ? (
+                <PlanTaskForTodayForm
+                  taskId={task.id}
+                  path={path}
+                  plannedForToday={isDateToday(task.plannedDate)}
+                />
+              ) : null}
             </div>
           </div>
         </div>
