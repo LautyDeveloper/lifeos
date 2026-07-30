@@ -3,7 +3,7 @@ import "dotenv/config"
 import { and, eq, inArray } from "drizzle-orm"
 
 import { getDbOrThrow } from "@/db"
-import { areas, containers, inboxItems, projects, tasks } from "@/db/schema"
+import { areas, containers, inboxItems, notes, projects, tasks } from "@/db/schema"
 
 const areaSeeds = [
   { name: "Trabajo", icon: "BriefcaseBusiness", color: "#7dd3fc" },
@@ -45,6 +45,24 @@ const taskSeeds = [
   { projectTitle: "Roadmap", title: "Agrupar próximas iniciativas técnicas." },
   { projectTitle: "Parcial 1", title: "Resolver ejercicios clave de dinámica." },
   { projectTitle: "Rutina base", title: "Planificar la próxima sesión de entrenamiento." },
+] as const
+
+const libraryNoteSeeds = [
+  {
+    title: "Principio de Inbox",
+    content:
+      "Inbox existe para capturar sin pensar dos veces. La organización viene después, cuando ya no interrumpe el movimiento.",
+  },
+  {
+    title: "Qué hace valiosa a Biblioteca",
+    content:
+      "Biblioteca guarda conocimiento estable: ideas, referencias, definiciones y notas que querés volver a consultar fuera del flujo operativo.",
+  },
+  {
+    title: "Criterio de Today",
+    content:
+      "Today no es para organizar. Solo reúne lo que ya fue planificado para ejecutar con foco durante el día.",
+  },
 ] as const
 
 async function seedAreas() {
@@ -180,12 +198,34 @@ async function seedTasks() {
   }
 }
 
+async function seedLibraryNotes() {
+  const db = getDbOrThrow()
+  const existingNotes = await db
+    .select({ title: notes.title })
+    .from(notes)
+    .where(inArray(notes.title, libraryNoteSeeds.map((note) => note.title)))
+
+  const existingTitles = new Set(existingNotes.map((note) => note.title))
+  const missingNotes = libraryNoteSeeds
+    .filter((note) => !existingTitles.has(note.title))
+    .map((note) => ({
+      title: note.title,
+      content: note.content,
+      containerId: null,
+    }))
+
+  if (missingNotes.length > 0) {
+    await db.insert(notes).values(missingNotes)
+  }
+}
+
 async function main() {
   await seedAreas()
   await seedContainers()
   await seedProjects()
   await seedTasks()
   await seedInboxItems()
+  await seedLibraryNotes()
 
   console.log("Life OS seeds completed.")
 }

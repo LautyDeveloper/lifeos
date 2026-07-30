@@ -1,17 +1,37 @@
 import type { Metadata } from "next"
 
-import { PlaceholderPage } from "@/features/sections/components/placeholder-page"
+import { LibraryView } from "@/features/library/components/library-view"
+import {
+  getLibraryNoteById,
+  listLibraryNotes,
+} from "@/features/library/repository"
 
 export const metadata: Metadata = {
   title: "Biblioteca",
 }
 
-export default function LibraryPage() {
-  return (
-    <PlaceholderPage
-      eyebrow="Biblioteca"
-      title="Colección lista para recursos y referencias."
-      description="Esta vista nace preparada para albergar conocimiento, notas y materiales sin romper la simplicidad del sistema."
-    />
-  )
+type LibraryPageProps = {
+  searchParams?: Promise<{
+    note?: string | string[]
+  }>
+}
+
+export default async function LibraryPage({ searchParams }: LibraryPageProps) {
+  const resolvedSearchParams = (await searchParams) ?? {}
+  const requestedNoteId = Array.isArray(resolvedSearchParams.note)
+    ? resolvedSearchParams.note[0]
+    : resolvedSearchParams.note
+
+  const notes = await listLibraryNotes()
+  const fallbackNoteId = notes[0]?.id
+  const requestedNote = requestedNoteId
+    ? await getLibraryNoteById(requestedNoteId)
+    : null
+  const selectedNote = requestedNote
+    ? requestedNote
+    : fallbackNoteId
+      ? await getLibraryNoteById(fallbackNoteId)
+      : null
+
+  return <LibraryView notes={notes} selectedNote={selectedNote} />
 }
