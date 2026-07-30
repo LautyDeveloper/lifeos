@@ -110,6 +110,27 @@ export const tasks = pgTable(
   })
 )
 
+export const inboxItems = pgTable(
+  "inbox_items",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    content: text("content").notNull(),
+    capturedAt: timestamp("captured_at", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .defaultNow()
+      .notNull(),
+    processedAt: timestamp("processed_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+  },
+  (table) => ({
+    capturedAtIdx: index("inbox_items_captured_at_idx").on(table.capturedAt),
+  })
+)
+
 export const notes = pgTable(
   "notes",
   {
