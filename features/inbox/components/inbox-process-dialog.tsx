@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useMemo, useState } from "react"
+import { useActionState, useEffect, useMemo, useRef, useState } from "react"
 import { ChevronDown, X } from "lucide-react"
 
 import { initialProcessInboxActionState } from "@/features/inbox/action-state"
@@ -80,6 +80,21 @@ function DialogSession({
   const [formState, setFormState] = useState(() =>
     buildInitialFormState(item.content, areasWithContainers, projectOptions)
   )
+  const dialogRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    dialogRef.current?.focus()
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCancel()
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [onCancel])
 
   const selectedArea = useMemo(
     () =>
@@ -102,17 +117,17 @@ function DialogSession({
         onClick={onCancel}
       />
 
-      <div className="surface-1 relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[32px] border p-5 md:p-6">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={`process-title-${item.id}`} tabIndex={-1} className="surface-1 relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-5 outline-none md:p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-[0.26em] text-primary/90">
               Procesar inbox
             </p>
-            <h3 className="text-2xl font-semibold tracking-tight text-white">
-              Convertí esta captura en una entidad real
+            <h3 id={`process-title-${item.id}`} className="text-2xl font-semibold tracking-tight text-white">
+              Elegí dónde guardar esta captura
             </h3>
             <p className="max-w-xl text-sm leading-7 text-muted-foreground">
-              Elegí el destino correcto y movela al sistema. Inbox vuelve a quedar limpio.
+              Completá solo la información necesaria. La captura saldrá de esta lista.
             </p>
           </div>
 
@@ -381,7 +396,7 @@ function DialogSession({
           <div className="flex flex-col gap-3 border-t border-white/8 pt-5 md:flex-row md:items-center md:justify-between">
             <div className="space-y-1">
               {actionState.message ? (
-                <p className="text-sm text-muted-foreground">{actionState.message}</p>
+                <p role="status" aria-live="polite" className="text-sm text-muted-foreground">{actionState.message}</p>
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Procesar mueve esta captura fuera del inbox activo.
@@ -417,14 +432,20 @@ export function InboxProcessDialog({
   databaseReady,
 }: InboxProcessDialogProps) {
   const [sessionId, setSessionId] = useState<number | null>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const closeDialog = () => {
+    setSessionId(null)
+    window.requestAnimationFrame(() => triggerRef.current?.focus())
+  }
 
   return (
     <>
       <button
+        ref={triggerRef}
         type="button"
         disabled={!databaseReady}
         onClick={() => setSessionId(Date.now())}
-        className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-white transition hover:border-white/14 hover:bg-white/[0.07] disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-3 text-xs font-medium text-primary transition hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
       >
         Procesar
         <ChevronDown className="size-3.5" />
@@ -436,7 +457,7 @@ export function InboxProcessDialog({
           item={item}
           areasWithContainers={areasWithContainers}
           projectOptions={projectOptions}
-          onCancel={() => setSessionId(null)}
+          onCancel={closeDialog}
         />
       ) : null}
     </>

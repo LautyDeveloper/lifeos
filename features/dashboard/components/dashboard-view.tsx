@@ -1,138 +1,106 @@
-import { ArrowUpRight, LayoutGrid, TimerReset, Zap } from "lucide-react"
+import Link from "next/link"
+import { ArrowRight, BookOpenText, CircleDot, Inbox, Layers3 } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
 import { PageShell } from "@/components/shared/page-shell"
+import type { DashboardSummary } from "@/features/dashboard/repository"
 
-const summaryCards = [
-  {
-    label: "Inbox listo",
-    value: "0 items",
-    detail: "Espacio reservado para capturas pendientes.",
-  },
-  {
-    label: "Plan del día",
-    value: "Vacío",
-    detail: "Zona preparada para decidir qué ejecutar hoy.",
-  },
-  {
-    label: "Proyectos activos",
-    value: "0 activos",
-    detail: "El resumen estratégico vivirá acá.",
-  },
-]
+const priorityLabels: Record<string, string> = {
+  urgent: "Urgente",
+  high: "Alta",
+  medium: "Media",
+  low: "Baja",
+}
 
-const quickActions = [
-  { title: "Capturar idea", description: "Entrada rápida para vaciar la mente." },
-  { title: "Revisar hoy", description: "Lo importante del día, sin ruido." },
-  { title: "Abrir biblioteca", description: "Recursos y referencias a un clic." },
-]
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return "Buen día."
+  if (hour < 20) return "Buenas tardes."
+  return "Buenas noches."
+}
 
-export function DashboardView() {
+export function DashboardView({ summary }: { summary: DashboardSummary }) {
+  const empty =
+    summary.todayTasks.length === 0 &&
+    summary.pendingCaptures === 0 &&
+    summary.activeProjects === 0
+
   return (
-    <PageShell
-      eyebrow="Dashboard"
-      title="Buenas noches."
-      description="Tu sistema está listo para capturar, organizar, planificar y ejecutar sin fricción. Todo acá es intencional: menos opciones, más claridad."
-    >
-      <div className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
-        <section className="surface-1 overflow-hidden rounded-[32px] border p-6 md:p-8">
-          <div className="flex flex-col gap-8">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-              <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs text-primary">
-                  <Zap className="size-3.5" />
-                  Base del producto lista para evolucionar
-                </div>
-                <div className="space-y-3">
-                  <h3 className="max-w-xl text-2xl font-semibold tracking-tight text-balance text-white md:text-3xl">
-                    Un sistema operativo personal, no otro gestor de tareas.
-                  </h3>
-                  <p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
-                    El dashboard ya tiene un lenguaje visual, un shell consistente y bloques
-                    preparados para futuras métricas, workflows y decisiones del día.
-                  </p>
-                </div>
+    <PageShell eyebrow="Inicio" title={getGreeting()} description="Un vistazo tranquilo para elegir qué merece tu atención.">
+      {!summary.databaseReady ? (
+        <section className="surface-1 rounded-2xl border p-6 md:p-8">
+          <p className="text-lg font-medium text-white">Conectá tu base para ver el pulso del sistema.</p>
+          <p className="mt-2 text-sm text-muted-foreground">La interfaz está disponible, pero todavía no hay una fuente de datos configurada.</p>
+        </section>
+      ) : empty ? (
+        <section className="surface-1 rounded-2xl border p-8 text-center">
+          <p className="text-lg font-medium text-white">Todo está en calma.</p>
+          <p className="mt-2 text-sm text-muted-foreground">Empezá con una captura o planificá una tarea para hoy.</p>
+        </section>
+      ) : (
+        <div className="grid gap-5 xl:grid-cols-[1.45fr_0.75fr]">
+          <section className="surface-1 rounded-2xl border p-5 md:p-7">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Tu día</p>
+                <h3 className="mt-2 text-xl font-semibold text-white">Lo que ya decidiste</h3>
               </div>
-
-              <div className="flex flex-wrap gap-3">
-                <Button variant="outline">
-                  Explorar shell
-                  <ArrowUpRight className="size-4" />
-                </Button>
-                <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                  Ver navegación
-                </Button>
-              </div>
+              <Link href="/today" className="flex min-h-11 items-center gap-2 text-sm font-medium text-primary hover:text-white">
+                Ver Hoy <ArrowRight className="size-4" />
+              </Link>
             </div>
+            <div className="mt-6 divide-y divide-white/8">
+              {summary.todayTasks.length ? summary.todayTasks.slice(0, 3).map((task) => (
+                <div key={task.id} className="flex items-start gap-3 py-4 first:pt-0 last:pb-0">
+                  <CircleDot className="mt-1 size-4 shrink-0 text-primary" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-white">{task.title}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{task.area.name} · {task.project.title}</p>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{priorityLabels[task.priority]}</span>
+                </div>
+              )) : (
+                <div className="py-8 text-center">
+                  <p className="text-sm text-muted-foreground">No hay tareas planificadas para hoy.</p>
+                  <Link href="/work" className="mt-3 inline-flex text-sm font-medium text-primary">Elegir una tarea</Link>
+                </div>
+              )}
+            </div>
+          </section>
 
-            <div className="grid gap-4 md:grid-cols-3">
-              {summaryCards.map((card) => (
-                <article key={card.label} className="surface-2 rounded-[24px] border p-5">
-                  <p className="text-sm text-muted-foreground">{card.label}</p>
-                  <p className="mt-6 text-2xl font-semibold tracking-tight text-white">
-                    {card.value}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    {card.detail}
-                  </p>
-                </article>
-              ))}
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-1">
+            <Link href="/inbox" className="surface-1 group rounded-2xl border p-5 transition hover:border-primary/25">
+              <Inbox className="size-5 text-primary" />
+              <p className="mt-5 text-3xl font-semibold text-white">{summary.pendingCaptures}</p>
+              <p className="mt-1 text-sm text-muted-foreground">capturas por procesar</p>
+            </Link>
+            <div className="surface-1 rounded-2xl border p-5">
+              <Layers3 className="size-5 text-primary" />
+              <p className="mt-5 text-3xl font-semibold text-white">{summary.activeProjects}</p>
+              <p className="mt-1 text-sm text-muted-foreground">proyectos activos</p>
             </div>
           </div>
-        </section>
 
-        <section className="grid gap-4">
-          <article className="surface-1 rounded-[32px] border p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-2xl bg-white/[0.06] text-white">
-                <LayoutGrid className="size-4" />
-              </div>
+          <section className="surface-1 rounded-2xl border p-5 md:p-6 xl:col-span-2">
+            <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-white">Accesos rápidos</p>
-                <p className="text-sm text-muted-foreground">Acciones frecuentes, sin ruido.</p>
+                <p className="text-sm font-medium text-white">Áreas</p>
+                <p className="mt-1 text-sm text-muted-foreground">Dónde está viviendo tu energía.</p>
               </div>
+              <Link href="/library" className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-white">
+                <BookOpenText className="size-4" /> Biblioteca
+              </Link>
             </div>
-
-            <div className="mt-6 space-y-3">
-              {quickActions.map((action) => (
-                <div
-                  key={action.title}
-                  className="rounded-[22px] border border-white/6 bg-white/[0.03] p-4"
-                >
-                  <p className="text-sm font-medium text-white">{action.title}</p>
-                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                    {action.description}
-                  </p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {summary.areas.map((area) => (
+                <div key={area.id} className="rounded-xl bg-white/[0.025] p-4">
+                  <p className="text-sm font-medium text-white">{area.name}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{area.projects} proyectos</p>
                 </div>
               ))}
             </div>
-          </article>
-
-          <article className="surface-1 rounded-[32px] border p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-2xl bg-white/[0.06] text-white">
-                <TimerReset className="size-4" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-white">Métricas futuras</p>
-                <p className="text-sm text-muted-foreground">Reservado para visibilidad real.</p>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-3">
-              <div className="rounded-[22px] border border-dashed border-white/10 px-4 py-8 text-sm text-muted-foreground">
-                Tendencias semanales
-              </div>
-              <div className="rounded-[22px] border border-dashed border-white/10 px-4 py-8 text-sm text-muted-foreground">
-                Distribución por áreas
-              </div>
-              <div className="rounded-[22px] border border-dashed border-white/10 px-4 py-8 text-sm text-muted-foreground">
-                Ritmo de ejecución
-              </div>
-            </div>
-          </article>
-        </section>
-      </div>
+          </section>
+        </div>
+      )}
     </PageShell>
   )
 }

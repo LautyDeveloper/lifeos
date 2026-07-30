@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from "drizzle-orm"
+import { and, asc, desc, eq, ilike, isNull } from "drizzle-orm"
 
 import { db, getDbOrThrow } from "@/db"
 import { notes } from "@/db/schema"
@@ -15,11 +15,24 @@ export type LibraryNoteListItem = {
 }
 
 export type LibraryNote = LibraryNoteListItem
+export type LibraryFilters = {
+  query?: string
+  sort?: "recent" | "oldest" | "title"
+  note?: string
+}
 
-export async function listLibraryNotes(): Promise<LibraryNoteListItem[]> {
+export async function listLibraryNotes(filters: LibraryFilters = {}): Promise<LibraryNoteListItem[]> {
   if (!db) {
     return []
   }
+
+  const query = filters.query?.trim()
+  const orderBy =
+    filters.sort === "oldest"
+      ? asc(notes.createdAt)
+      : filters.sort === "title"
+        ? asc(notes.title)
+        : desc(notes.createdAt)
 
   return db
     .select({
@@ -29,8 +42,8 @@ export async function listLibraryNotes(): Promise<LibraryNoteListItem[]> {
       createdAt: notes.createdAt,
     })
     .from(notes)
-    .where(isNull(notes.containerId))
-    .orderBy(desc(notes.createdAt))
+    .where(and(isNull(notes.containerId), query ? ilike(notes.title, `%${query}%`) : undefined))
+    .orderBy(orderBy)
 }
 
 export async function getLibraryNoteById(id: string): Promise<LibraryNote | null> {

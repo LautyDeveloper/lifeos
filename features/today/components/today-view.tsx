@@ -1,128 +1,65 @@
-import { CalendarRange, CheckCircle2, Layers3, Sparkles } from "lucide-react"
+import { CalendarCheck2 } from "lucide-react"
 
 import { PageShell } from "@/components/shared/page-shell"
 import { TaskToggleForm } from "@/features/areas/components/task-toggle-form"
 import type { TodayTask } from "@/features/today/repository"
 
-function TodayTaskCard({ task }: { task: TodayTask }) {
-  return (
-    <article className="rounded-[26px] border border-white/8 bg-white/[0.03] p-5 md:p-6">
-      <div className="flex items-start gap-3">
-        <TaskToggleForm taskId={task.id} completed={task.completed} path="/today" />
-        <div className="min-w-0 flex-1 space-y-3">
-          <div className="space-y-2">
-            <p className="text-lg font-semibold tracking-tight text-white">{task.title}</p>
-            <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-primary">
-                Hoy
-              </span>
-              <span className="rounded-full border border-white/8 px-3 py-1">
-                {task.area.name}
-              </span>
-            </div>
-          </div>
-
-          <div className="rounded-[22px] border border-white/8 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
-            {task.container.name} / {task.project.title}
-          </div>
-        </div>
-      </div>
-    </article>
-  )
+const priorityLabels = {
+  urgent: "Urgente",
+  high: "Alta",
+  medium: "Media",
+  low: "Baja",
 }
 
-export function TodayView({ tasks }: { tasks: TodayTask[] }) {
+const priorityStyles = {
+  urgent: "bg-destructive/12 text-red-300",
+  high: "bg-amber-400/10 text-amber-200",
+  medium: "bg-primary/10 text-primary",
+  low: "bg-white/[0.04] text-muted-foreground",
+}
+
+export function TodayView({ tasks, progress }: { tasks: TodayTask[]; progress: { completed: number; total: number } }) {
+  const percent = progress.total ? Math.round((progress.completed / progress.total) * 100) : 0
+
   return (
-    <PageShell
-      eyebrow="Hoy"
-      title="Ejecutá lo que ya decidiste."
-      description="Acá vive solamente lo planificado para hoy. Sin reordenar, sin repensar, sin ruido."
-    >
-      <div className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
-        <div className="space-y-4">
-          {tasks.length > 0 ? (
-            tasks.map((task) => <TodayTaskCard key={task.id} task={task} />)
+    <PageShell eyebrow="Hoy" title="Hacé espacio para lo importante." description="Solo aparece lo que ya elegiste para esta jornada.">
+      <div className="grid gap-5 xl:grid-cols-[1.45fr_0.55fr]">
+        <section className="surface-1 rounded-2xl border p-4 sm:p-6">
+          <div className="mb-5 flex items-center justify-between">
+            <p className="text-sm font-medium text-white">{tasks.length} pendientes</p>
+            <span className="text-xs text-muted-foreground">Ordenadas por prioridad</span>
+          </div>
+          {tasks.length ? (
+            <div className="divide-y divide-white/8">
+              {tasks.map((task) => (
+                <article key={task.id} className="flex items-start gap-3 py-4 first:pt-0 last:pb-0">
+                  <TaskToggleForm taskId={task.id} completed={task.completed} path="/today" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium leading-6 text-white">{task.title}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{task.area.name} · {task.container.name} · {task.project.title}</p>
+                  </div>
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${priorityStyles[task.priority]}`}>
+                    {priorityLabels[task.priority]}
+                  </span>
+                </article>
+              ))}
+            </div>
           ) : (
-            <section className="surface-1 rounded-[32px] border p-6 md:p-8">
-              <div className="rounded-[24px] border border-dashed border-white/10 px-5 py-10 text-center">
-                <p className="text-base font-medium text-white">
-                  Hoy no tiene tareas planificadas.
-                </p>
-                <p className="mx-auto mt-2 max-w-lg text-sm leading-7 text-muted-foreground">
-                  Eso no es un problema. Cuando planifiques desde tus proyectos, lo importante va a aparecer acá.
-                </p>
-              </div>
-            </section>
+            <div className="py-14 text-center">
+              <CalendarCheck2 className="mx-auto size-7 text-primary" />
+              <p className="mt-4 font-medium text-white">La jornada está despejada.</p>
+              <p className="mt-2 text-sm text-muted-foreground">Planificá desde un área cuando quieras sumar foco.</p>
+            </div>
           )}
-        </div>
+        </section>
 
-        <aside className="space-y-4">
-          <section className="surface-1 rounded-[32px] border p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/12 text-primary">
-                <CalendarRange className="size-4" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-white">Carga del día</p>
-                <p className="text-sm text-muted-foreground">Solo lo que toca ejecutar hoy.</p>
-              </div>
-            </div>
-
-            <div className="mt-6 rounded-[22px] border border-white/8 bg-white/[0.03] p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                Tareas activas
-              </p>
-              <p className="mt-2 text-2xl font-semibold text-white">{tasks.length}</p>
-            </div>
-          </section>
-
-          <section className="surface-1 rounded-[32px] border p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-2xl bg-white/[0.06] text-white">
-                <Layers3 className="size-4" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-white">Cómo funciona</p>
-                <p className="text-sm text-muted-foreground">Planificás en contexto y ejecutás acá.</p>
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-3">
-              <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-4 text-sm text-muted-foreground">
-                Marcá tareas como “Hoy” desde Trabajo, Dev, Estudio o Salud.
-              </div>
-              <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-4 text-sm text-muted-foreground">
-                Esta vista solo reúne lo planificado para la jornada actual.
-              </div>
-              <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-4 text-sm text-muted-foreground">
-                Al completar una tarea, desaparece de acá para dejar foco limpio.
-              </div>
-            </div>
-          </section>
-
-          <section className="surface-1 rounded-[32px] border p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-2xl bg-white/[0.06] text-white">
-                <Sparkles className="size-4" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-white">Loop mínimo</p>
-                <p className="text-sm text-muted-foreground">Planificar y ejecutar ya viven en el sistema.</p>
-              </div>
-            </div>
-          </section>
-
-          <section className="surface-1 rounded-[32px] border p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-2xl bg-white/[0.06] text-white">
-                <CheckCircle2 className="size-4" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-white">Criterio</p>
-                <p className="text-sm text-muted-foreground">Hoy es ejecución, no organización.</p>
-              </div>
-            </div>
-          </section>
+        <aside className="surface-1 h-fit rounded-2xl border p-5">
+          <p className="text-sm font-medium text-white">Progreso del día</p>
+          <p className="mt-5 text-4xl font-semibold tracking-tight text-white">{percent}%</p>
+          <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${percent}%` }} />
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">{progress.completed} de {progress.total} completadas</p>
         </aside>
       </div>
     </PageShell>

@@ -52,6 +52,7 @@ export async function createInboxItemAction(
   }
 
   revalidatePath("/inbox")
+  revalidatePath("/")
 
   return {
     status: "success",
@@ -160,6 +161,9 @@ export async function processInboxItemAction(
   }
 
   revalidatePath("/inbox")
+  revalidatePath("/")
+  revalidatePath("/today")
+  revalidatePath("/library")
 
   return {
     status: "success",

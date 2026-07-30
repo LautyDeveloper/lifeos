@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     template: "%s | Life OS",
   },
   description:
-    "A minimal operating system for your personal life: capture, organize, plan, and execute without friction.",
+    "Tu sistema personal para capturar, decidir y avanzar con claridad.",
 }
 
 export default function RootLayout({

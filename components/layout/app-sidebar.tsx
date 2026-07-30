@@ -22,19 +22,19 @@ export function AppSidebar({
   return (
     <aside
       className={cn(
-        "surface-1 flex h-full flex-col rounded-[28px] border",
+        "surface-1 flex h-full flex-col rounded-2xl border",
         mobile ? "w-full max-w-[320px] p-3" : collapsed ? "w-20 p-3" : "w-72 p-4"
       )}
     >
       <div className="flex items-center justify-between gap-3">
         <div className={cn("flex items-center gap-3", collapsed && !mobile && "justify-center")}>
-          <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/16 text-primary ring-1 ring-inset ring-primary/25">
+          <div className="flex size-11 items-center justify-center rounded-xl bg-primary/14 text-primary ring-1 ring-inset ring-primary/20">
             <Sparkles className="size-5" />
           </div>
           {!collapsed || mobile ? (
             <div>
               <p className="text-sm font-semibold tracking-tight text-white">Life OS</p>
-              <p className="text-xs text-muted-foreground">Capture. Organize. Execute.</p>
+              <p className="text-xs text-muted-foreground">Capturá. Decidí. Avanzá.</p>
             </div>
           ) : null}
         </div>
@@ -60,12 +60,12 @@ export function AppSidebar({
         <SidebarNav collapsed={collapsed && !mobile} onNavigate={onCloseMobile} />
       </div>
 
-      <div className="mt-4 rounded-3xl border border-white/6 bg-white/[0.03] p-4">
+      <div className="mt-4 rounded-xl border border-white/6 bg-white/[0.025] p-4">
         {!collapsed || mobile ? (
           <>
-            <p className="text-sm font-medium text-white">Sistema listo para crecer</p>
+            <p className="text-sm font-medium text-white">Un lugar para cada cosa</p>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              Base visual, rutas y esquema preparados para empezar a construir producto.
+              Capturá lo que aparece y volvé a lo que importa.
             </p>
           </>
         ) : (

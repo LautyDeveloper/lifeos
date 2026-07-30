@@ -17,21 +17,17 @@ export async function InboxView() {
 
   return (
     <PageShell
-      eyebrow="Inbox"
-      title="Capturar ahora. Organizar después."
-      description="Esta pantalla es solo para vaciar la mente con velocidad. Nada de clasificar, nada de decidir dos veces."
+      eyebrow="Capturas"
+      title="Capturá ahora. Decidí después."
+      description="Un espacio liviano para sacar ideas de la cabeza sin cortar el ritmo."
     >
-      <div className="grid gap-4 xl:grid-cols-[1fr_1.15fr]">
+      <div className="grid gap-5 xl:grid-cols-[0.75fr_1.25fr]">
         <div className="space-y-4">
           <InboxForm databaseReady={Boolean(db)} />
 
-          <section className="surface-1 rounded-[32px] border p-5 md:p-6">
-            <p className="text-sm font-medium text-white">Regla del sistema</p>
-            <p className="mt-2 text-sm leading-7 text-muted-foreground">
-              Si aparece una idea, la capturás. Si necesita estructura, la procesás después.
-              Inbox no es un lugar para ordenar; es un buffer para seguir avanzando.
-            </p>
-          </section>
+          <p className="px-2 text-sm leading-6 text-muted-foreground">
+            Lo nuevo queda acá hasta que decidas si es una tarea, un proyecto o una nota.
+          </p>
         </div>
 
         <InboxList

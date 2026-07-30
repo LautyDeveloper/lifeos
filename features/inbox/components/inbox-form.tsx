@@ -11,8 +11,10 @@ import { cn } from "@/lib/utils"
 
 export function InboxForm({
   databaseReady,
+  compact = false,
 }: {
   databaseReady: boolean
+  compact?: boolean
 }) {
   const [state, formAction] = useActionState(
     createInboxItemAction,
@@ -34,11 +36,11 @@ export function InboxForm({
     <form
       ref={formRef}
       action={formAction}
-      className="surface-1 rounded-[32px] border p-5 md:p-6"
+      className="surface-1 rounded-2xl border p-5 md:p-6"
     >
       <div className="flex flex-col gap-5">
         <div className="space-y-2">
-          <p className="text-sm font-medium text-white">Captura rápida</p>
+          <p className="text-sm font-medium text-white">{compact ? "Nueva captura" : "Captura rápida"}</p>
           <p className="text-sm leading-6 text-muted-foreground">
             Soltalo acá. No hace falta decidir todavía si es proyecto, tarea o nota.
           </p>
@@ -48,7 +50,7 @@ export function InboxForm({
           <textarea
             ref={textareaRef}
             name="content"
-            rows={4}
+            rows={compact ? 3 : 4}
             disabled={!databaseReady}
             placeholder="Ej: pensar el flujo para procesar ideas del inbox..."
             className={cn(
@@ -68,6 +70,8 @@ export function InboxForm({
               ) : null}
               {state.message ? (
                 <p
+                  role="status"
+                  aria-live="polite"
                   className={cn(
                     "text-sm",
                     state.status === "success" ? "text-primary" : "text-muted-foreground"

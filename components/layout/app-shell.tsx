@@ -2,18 +2,19 @@
 
 import { AppSidebar } from "@/components/layout/app-sidebar"
 import { AppTopbar } from "@/components/layout/app-topbar"
+import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav"
+import { GlobalCapture } from "@/features/inbox/components/global-capture"
 import {
   SidebarStateProvider,
   useSidebarState,
 } from "@/components/layout/sidebar-state-provider"
 
-function AppShellFrame({ children }: { children: React.ReactNode }) {
+function AppShellFrame({ children, databaseReady }: { children: React.ReactNode; databaseReady: boolean }) {
   const {
     collapsed,
     mobileOpen,
     setMobileOpen,
     toggleCollapsed,
-    toggleMobile,
   } = useSidebarState()
 
   return (
@@ -27,8 +28,8 @@ function AppShellFrame({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="relative flex min-w-0 flex-1 flex-col">
-          <AppTopbar onOpenMobile={toggleMobile} />
-          <main className="flex-1 px-4 py-6 xl:px-6 xl:py-8">{children}</main>
+          <AppTopbar />
+          <main className="flex-1 px-3 py-5 pb-28 sm:px-4 md:pb-8 xl:px-6 xl:py-8">{children}</main>
         </div>
       </div>
 
@@ -50,14 +51,16 @@ function AppShellFrame({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       ) : null}
+      <GlobalCapture databaseReady={databaseReady} />
+      <MobileBottomNav />
     </div>
   )
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children, databaseReady }: { children: React.ReactNode; databaseReady: boolean }) {
   return (
     <SidebarStateProvider>
-      <AppShellFrame>{children}</AppShellFrame>
+      <AppShellFrame databaseReady={databaseReady}>{children}</AppShellFrame>
     </SidebarStateProvider>
   )
 }

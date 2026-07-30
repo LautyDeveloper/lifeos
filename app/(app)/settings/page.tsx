@@ -10,8 +10,9 @@ export default function SettingsPage() {
   return (
     <PlaceholderPage
       eyebrow="Configuración"
-      title="Configuración mínima, producto opinado."
-      description="La sección existe, pero la filosofía se mantiene: menos perillas, más decisiones bien tomadas desde el diseño."
+      title="Preferencias simples para un sistema personal."
+      description="Solo los ajustes que realmente cambien cómo trabajás van a vivir acá."
+      note="Por ahora Life OS usa una experiencia oscura y una estructura común para todos los espacios."
     />
   )
 }

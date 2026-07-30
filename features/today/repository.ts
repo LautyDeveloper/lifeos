@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, lt } from "drizzle-orm"
+import { and, asc, count, eq, gte, lt, sql } from "drizzle-orm"
 
 import { db } from "@/db"
 import { areas, containers, projects, tasks } from "@/db/schema"
@@ -9,6 +9,7 @@ export type TodayTask = {
   title: string
   completed: boolean
   plannedDate: Date | null
+  priority: "low" | "medium" | "high" | "urgent"
   project: {
     id: string
     title: string
@@ -36,6 +37,7 @@ export async function getTodayTasks(now: Date = new Date()): Promise<TodayTask[]
       title: tasks.title,
       completed: tasks.completed,
       plannedDate: tasks.plannedDate,
+      priority: tasks.priority,
       projectId: projects.id,
       projectTitle: projects.title,
       containerId: containers.id,
@@ -54,13 +56,17 @@ export async function getTodayTasks(now: Date = new Date()): Promise<TodayTask[]
         eq(tasks.completed, false)
       )
     )
-    .orderBy(asc(tasks.createdAt), asc(areas.name), asc(containers.name), asc(projects.title))
+    .orderBy(
+      sql`case ${tasks.priority} when 'urgent' then 1 when 'high' then 2 when 'medium' then 3 else 4 end`,
+      asc(tasks.createdAt)
+    )
 
   return rows.map((row) => ({
     id: row.id,
     title: row.title,
     completed: row.completed,
     plannedDate: row.plannedDate,
+    priority: row.priority,
     project: {
       id: row.projectId,
       title: row.projectTitle,
@@ -74,4 +80,19 @@ export async function getTodayTasks(now: Date = new Date()): Promise<TodayTask[]
       name: row.areaName,
     },
   }))
+}
+
+export async function getTodayProgress(now: Date = new Date()) {
+  if (!db) return { completed: 0, total: 0 }
+  const { start, end } = getTodayRange(now)
+  const rows = await db
+    .select({ completed: tasks.completed, value: count() })
+    .from(tasks)
+    .where(and(gte(tasks.plannedDate, start), lt(tasks.plannedDate, end)))
+    .groupBy(tasks.completed)
+
+  return {
+    completed: rows.find((row) => row.completed)?.value ?? 0,
+    total: rows.reduce((sum, row) => sum + row.value, 0),
+  }
 }

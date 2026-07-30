@@ -2,6 +2,7 @@ import {
   BookOpen,
   BriefcaseBusiness,
   CalendarDays,
+  Ellipsis,
   FolderKanban,
   HeartPulse,
   Home,
@@ -17,9 +18,9 @@ export const navigationGroups: NavigationGroup[] = [
   {
     id: "core",
     items: [
-      { href: "/", label: "Dashboard", icon: Home },
+      { href: "/", label: "Inicio", icon: Home },
       { href: "/today", label: "Hoy", icon: CalendarDays },
-      { href: "/inbox", label: "Inbox", icon: Inbox },
+      { href: "/inbox", label: "Capturas", icon: Inbox },
     ],
   },
   {
@@ -35,11 +36,18 @@ export const navigationGroups: NavigationGroup[] = [
     id: "system",
     items: [
       { href: "/library", label: "Biblioteca", icon: FolderKanban },
-      { href: "/parking", label: "Parking", icon: ParkingSquare },
+      { href: "/parking", label: "Estacionados", icon: ParkingSquare },
       { href: "/settings", label: "Configuración", icon: Settings },
     ],
   },
 ]
+
+export const mobileNavigationItems = [
+  { href: "/", label: "Inicio", icon: Home },
+  { href: "/today", label: "Hoy", icon: CalendarDays },
+  { href: "/inbox", label: "Capturas", icon: Inbox },
+  { href: "#more", label: "Más", icon: Ellipsis },
+] as const
 
 export function findNavigationItem(pathname: string) {
   return navigationGroups

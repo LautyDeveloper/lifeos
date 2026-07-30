@@ -57,6 +57,8 @@ export function LibraryNoteEditor({ note }: { note: LibraryNote }) {
           ) : null}
           {state.message ? (
             <p
+              role="status"
+              aria-live="polite"
               className={cn(
                 "text-sm",
                 state.status === "success" ? "text-primary" : "text-muted-foreground"

@@ -4,14 +4,14 @@ export const areaPageConfig = {
     eyebrow: "Trabajo",
     title: "Trabajo con foco, estructura y seguimiento.",
     description:
-      "Tus containers, proyectos y tareas activas viven acá. Todo lo importante del trabajo, sin ruido.",
+      "Tus espacios, proyectos y tareas activas en una sola vista, sin ruido.",
   },
   dev: {
     areaName: "Dev",
     eyebrow: "Dev",
     title: "Proyectos técnicos con contexto operativo real.",
     description:
-      "Desde roadmap hasta ejecución puntual, esta vista muestra el estado vivo de tus productos y tareas.",
+      "Desde la hoja de ruta hasta la ejecución puntual, mirá el estado vivo de tus productos y tareas.",
   },
   study: {
     areaName: "Estudio",

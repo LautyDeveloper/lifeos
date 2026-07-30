@@ -51,7 +51,7 @@
 :root {
   --background: oklch(0.15 0.01 260);
   --foreground: oklch(0.97 0.005 260);
-  --card: oklch(0.21 0.012 260);
+  --card: oklch(0.195 0.012 260);
   --card-foreground: oklch(0.97 0.005 260);
   --popover: oklch(0.18 0.012 260);
   --popover-foreground: oklch(0.97 0.005 260);
@@ -60,7 +60,7 @@
   --secondary: oklch(0.26 0.012 255);
   --secondary-foreground: oklch(0.93 0.005 260);
   --muted: oklch(0.23 0.01 255);
-  --muted-foreground: oklch(0.7 0.01 255);
+  --muted-foreground: oklch(0.74 0.012 255);
   --accent: oklch(0.3 0.014 230);
   --accent-foreground: oklch(0.95 0.005 260);
   --destructive: oklch(0.67 0.18 25);
@@ -72,7 +72,7 @@
   --chart-3: oklch(0.76 0.08 90);
   --chart-4: oklch(0.63 0.1 250);
   --chart-5: oklch(0.68 0.15 35);
-  --radius: 1rem;
+  --radius: 0.75rem;
   --sidebar: oklch(0.17 0.012 260);
   --sidebar-foreground: oklch(0.95 0.005 260);
   --sidebar-primary: oklch(0.72 0.11 210);
@@ -129,9 +129,8 @@
   body {
     @apply bg-background text-foreground antialiased;
     background-image:
-      radial-gradient(circle at top left, rgba(90, 165, 255, 0.16), transparent 28%),
-      radial-gradient(circle at top right, rgba(77, 197, 181, 0.1), transparent 24%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 18%);
+      radial-gradient(circle at 12% 0%, rgba(90, 165, 255, 0.09), transparent 30%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.012), transparent 22%);
   }
 
   ::selection {
@@ -141,14 +140,23 @@
 
 @layer utilities {
   .surface-1 {
-    @apply border-border/80 bg-card/75 shadow-[0_24px_80px_-32px_rgba(0,0,0,0.8)] backdrop-blur-xl;
+    @apply border-border/80 bg-card/80 shadow-[0_18px_50px_-34px_rgba(0,0,0,0.85)] backdrop-blur-xl;
   }
 
   .surface-2 {
-    @apply border-border/70 bg-white/[0.03] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)];
+    @apply border-border/70 bg-white/[0.025];
   }
 
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

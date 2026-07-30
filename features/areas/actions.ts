@@ -53,6 +53,8 @@ export async function createTaskAction(
   if (path) {
     revalidatePath(path)
   }
+  revalidatePath("/")
+  revalidatePath("/today")
 
   return {
     status: "success",
@@ -84,6 +86,8 @@ export async function toggleTaskCompletionAction(formData: FormData) {
   if (path) {
     revalidatePath(path)
   }
+  revalidatePath("/")
+  revalidatePath("/today")
 }
 
 export async function planTaskForTodayAction(formData: FormData) {
@@ -108,4 +112,6 @@ export async function planTaskForTodayAction(formData: FormData) {
   if (path) {
     revalidatePath(path)
   }
+  revalidatePath("/")
+  revalidatePath("/today")
 }
