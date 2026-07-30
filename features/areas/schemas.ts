@@ -14,5 +14,10 @@ export const toggleTaskCompletionSchema = z.object({
   completed: z.enum(["true", "false"]).transform((value) => value === "true"),
 })
 
+export const planTaskForTodaySchema = z.object({
+  taskId: z.string().uuid("Tarea inválida."),
+})
+
 export type CreateTaskInput = z.infer<typeof createTaskSchema>
 export type ToggleTaskCompletionInput = z.infer<typeof toggleTaskCompletionSchema>
+export type PlanTaskForTodayInput = z.infer<typeof planTaskForTodaySchema>

@@ -3,8 +3,16 @@
 import { revalidatePath } from "next/cache"
 
 import type { CreateTaskActionState } from "@/features/areas/action-state"
-import { createTask, toggleTaskCompletion } from "@/features/areas/repository"
-import { createTaskSchema, toggleTaskCompletionSchema } from "@/features/areas/schemas"
+import {
+  createTask,
+  planTaskForToday,
+  toggleTaskCompletion,
+} from "@/features/areas/repository"
+import {
+  createTaskSchema,
+  planTaskForTodaySchema,
+  toggleTaskCompletionSchema,
+} from "@/features/areas/schemas"
 
 export async function createTaskAction(
   previousState: CreateTaskActionState,
@@ -70,6 +78,30 @@ export async function toggleTaskCompletionAction(formData: FormData) {
     await toggleTaskCompletion(parsed.data)
   } catch (error) {
     console.error("Failed to toggle task completion", error)
+    return
+  }
+
+  if (path) {
+    revalidatePath(path)
+  }
+}
+
+export async function planTaskForTodayAction(formData: FormData) {
+  const parsed = planTaskForTodaySchema.safeParse({
+    taskId: formData.get("taskId"),
+  })
+
+  if (!parsed.success) {
+    console.error("Invalid plan task payload", parsed.error.flatten().fieldErrors)
+    return
+  }
+
+  const path = String(formData.get("path") ?? "")
+
+  try {
+    await planTaskForToday(parsed.data)
+  } catch (error) {
+    console.error("Failed to plan task for today", error)
     return
   }
 

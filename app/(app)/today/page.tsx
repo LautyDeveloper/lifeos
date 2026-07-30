@@ -1,17 +1,14 @@
 import type { Metadata } from "next"
 
-import { PlaceholderPage } from "@/features/sections/components/placeholder-page"
+import { TodayView } from "@/features/today/components/today-view"
+import { getTodayTasks } from "@/features/today/repository"
 
 export const metadata: Metadata = {
   title: "Hoy",
 }
 
-export default function TodayPage() {
-  return (
-    <PlaceholderPage
-      eyebrow="Hoy"
-      title="Un lugar para ejecutar, no para pensar de nuevo."
-      description="La vista de hoy va a concentrar lo que realmente toca hacer cuando sumemos planificación y datos reales."
-    />
-  )
+export default async function TodayPage() {
+  const tasks = await getTodayTasks()
+
+  return <TodayView tasks={tasks} />
 }
