@@ -3,8 +3,8 @@
 import { useActionState, useMemo, useState } from "react"
 import { ChevronDown, X } from "lucide-react"
 
+import { initialProcessInboxActionState } from "@/features/inbox/action-state"
 import {
-  initialProcessInboxActionState,
   processInboxItemAction,
 } from "@/features/inbox/actions"
 import type { ProcessInboxTarget } from "@/features/inbox/schemas"

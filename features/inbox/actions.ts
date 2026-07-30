@@ -2,6 +2,10 @@
 
 import { revalidatePath } from "next/cache"
 
+import type {
+  InboxActionState,
+  ProcessInboxActionState,
+} from "@/features/inbox/action-state"
 import {
   createInboxItem,
   processInboxItemToNote,
@@ -15,20 +19,6 @@ import {
   processInboxToProjectSchema,
   processInboxToTaskSchema,
 } from "@/features/inbox/schemas"
-
-export type InboxActionState = {
-  status: "idle" | "success" | "error"
-  message?: string
-  fieldErrors?: {
-    content?: string[]
-  }
-  resetKey: number
-}
-
-export const initialInboxActionState: InboxActionState = {
-  status: "idle",
-  resetKey: 0,
-}
 
 export async function createInboxItemAction(
   previousState: InboxActionState,
@@ -68,25 +58,6 @@ export async function createInboxItemAction(
     message: "Capturado. Lo organizás después.",
     resetKey: previousState.resetKey + 1,
   }
-}
-
-export type ProcessInboxActionState = {
-  status: "idle" | "success" | "error"
-  message?: string
-  fieldErrors?: {
-    title?: string[]
-    containerId?: string[]
-    projectId?: string[]
-    content?: string[]
-    inboxItemId?: string[]
-  }
-  processedTarget?: "project" | "task" | "note"
-  resetKey: number
-}
-
-export const initialProcessInboxActionState: ProcessInboxActionState = {
-  status: "idle",
-  resetKey: 0,
 }
 
 function mapProcessFieldErrors(
@@ -178,7 +149,8 @@ export async function processInboxItemAction(
 
       await processInboxItemToNote(parsed.data)
     }
-  } catch {
+  } catch (error) {
+    console.error("Failed to process inbox item", error)
     return {
       status: "error",
       message: "No pudimos procesar esta captura. Probá de nuevo.",

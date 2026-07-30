@@ -2,9 +2,9 @@
 
 import { useActionState, useEffect, useRef } from "react"
 
+import { initialInboxActionState } from "@/features/inbox/action-state"
 import {
   createInboxItemAction,
-  initialInboxActionState,
 } from "@/features/inbox/actions"
 import { InboxSubmitButton } from "@/features/inbox/components/inbox-submit-button"
 import { cn } from "@/lib/utils"

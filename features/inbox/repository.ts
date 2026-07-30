@@ -143,118 +143,112 @@ export async function listProjectOptions() {
 export async function processInboxItemToProject(input: ProcessInboxToProjectInput) {
   const database = getDbOrThrow()
 
-  return database.transaction(async (tx) => {
-    const [item] = await tx
-      .select({
-        id: inboxItems.id,
-      })
-      .from(inboxItems)
-      .where(and(eq(inboxItems.id, input.inboxItemId), isNull(inboxItems.processedAt)))
-      .limit(1)
+  const [item] = await database
+    .select({
+      id: inboxItems.id,
+    })
+    .from(inboxItems)
+    .where(and(eq(inboxItems.id, input.inboxItemId), isNull(inboxItems.processedAt)))
+    .limit(1)
 
-    if (!item) {
-      throw new Error("Inbox item not available.")
-    }
+  if (!item) {
+    throw new Error("Inbox item not available.")
+  }
 
-    const [project] = await tx
-      .insert(projects)
-      .values({
-        containerId: input.containerId,
-        title: input.title,
-        description: input.description,
-        priority: "medium" satisfies (typeof priorityEnum.enumValues)[number],
-        status: "backlog" satisfies (typeof projectStatusEnum.enumValues)[number],
-      })
-      .returning({
-        id: projects.id,
-        title: projects.title,
-      })
+  const [project] = await database
+    .insert(projects)
+    .values({
+      containerId: input.containerId,
+      title: input.title,
+      description: input.description,
+      priority: "medium" satisfies (typeof priorityEnum.enumValues)[number],
+      status: "backlog" satisfies (typeof projectStatusEnum.enumValues)[number],
+    })
+    .returning({
+      id: projects.id,
+      title: projects.title,
+    })
 
-    await tx
-      .update(inboxItems)
-      .set({
-        processedAt: new Date(),
-      })
-      .where(eq(inboxItems.id, input.inboxItemId))
+  await database
+    .update(inboxItems)
+    .set({
+      processedAt: new Date(),
+    })
+    .where(eq(inboxItems.id, input.inboxItemId))
 
-    return project
-  })
+  return project
 }
 
 export async function processInboxItemToTask(input: ProcessInboxToTaskInput) {
   const database = getDbOrThrow()
 
-  return database.transaction(async (tx) => {
-    const [item] = await tx
-      .select({
-        id: inboxItems.id,
-      })
-      .from(inboxItems)
-      .where(and(eq(inboxItems.id, input.inboxItemId), isNull(inboxItems.processedAt)))
-      .limit(1)
+  const [item] = await database
+    .select({
+      id: inboxItems.id,
+    })
+    .from(inboxItems)
+    .where(and(eq(inboxItems.id, input.inboxItemId), isNull(inboxItems.processedAt)))
+    .limit(1)
 
-    if (!item) {
-      throw new Error("Inbox item not available.")
-    }
+  if (!item) {
+    throw new Error("Inbox item not available.")
+  }
 
-    const [task] = await tx
-      .insert(tasks)
-      .values({
-        projectId: input.projectId,
-        title: input.title,
-        priority: "medium" satisfies (typeof priorityEnum.enumValues)[number],
-      })
-      .returning({
-        id: tasks.id,
-        title: tasks.title,
-      })
+  const [task] = await database
+    .insert(tasks)
+    .values({
+      projectId: input.projectId,
+      title: input.title,
+      priority: "medium" satisfies (typeof priorityEnum.enumValues)[number],
+    })
+    .returning({
+      id: tasks.id,
+      title: tasks.title,
+    })
 
-    await tx
-      .update(inboxItems)
-      .set({
-        processedAt: new Date(),
-      })
-      .where(eq(inboxItems.id, input.inboxItemId))
+  await database
+    .update(inboxItems)
+    .set({
+      processedAt: new Date(),
+    })
+    .where(eq(inboxItems.id, input.inboxItemId))
 
-    return task
-  })
+  return task
 }
 
 export async function processInboxItemToNote(input: ProcessInboxToNoteInput) {
   const database = getDbOrThrow()
 
-  return database.transaction(async (tx) => {
-    const [item] = await tx
-      .select({
-        id: inboxItems.id,
-      })
-      .from(inboxItems)
-      .where(and(eq(inboxItems.id, input.inboxItemId), isNull(inboxItems.processedAt)))
-      .limit(1)
+  const [item] = await database
+    .select({
+      id: inboxItems.id,
+    })
+    .from(inboxItems)
+    .where(and(eq(inboxItems.id, input.inboxItemId), isNull(inboxItems.processedAt)))
+    .limit(1)
 
-    if (!item) {
-      throw new Error("Inbox item not available.")
-    }
+  if (!item) {
+    throw new Error("Inbox item not available.")
+  }
 
-    const [note] = await tx
-      .insert(notes)
-      .values({
-        title: input.title,
-        content: input.content,
-        containerId: null,
-      })
-      .returning({
-        id: notes.id,
-        title: notes.title,
-      })
+  const [note] = await database
+    .insert(notes)
+    .values({
+      title: input.title,
+      content: input.content,
+      containerId: null,
+    })
+    .returning({
+      id: notes.id,
+      title: notes.title,
+    })
 
-    await tx
-      .update(inboxItems)
-      .set({
-        processedAt: new Date(),
-      })
-      .where(eq(inboxItems.id, input.inboxItemId))
+  await database
+    .update(inboxItems)
+    .set({
+      processedAt: new Date(),
+    })
+    .where(eq(inboxItems.id, input.inboxItemId))
 
-    return note
-  })
+  return note
 }
