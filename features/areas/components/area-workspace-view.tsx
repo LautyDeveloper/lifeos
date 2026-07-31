@@ -4,10 +4,10 @@ import Link from "next/link"
 import { ChevronDown, FolderOpenDot } from "lucide-react"
 
 import { PageShell } from "@/components/shared/page-shell"
+import { CreateProjectForm } from "@/features/areas/components/create-project-form"
 import { CreateTaskForm } from "@/features/areas/components/create-task-form"
 import { PauseProjectForm } from "@/features/areas/components/pause-project-form"
-import { ProjectPriorityForm } from "@/features/areas/components/project-priority-form"
-import { ProjectStatusForm } from "@/features/areas/components/project-status-form"
+import { ProjectDetailsEditor } from "@/features/areas/components/project-details-editor"
 import { TaskPlanningControls } from "@/features/areas/components/task-planning-controls"
 import { TaskPriorityForm } from "@/features/areas/components/task-priority-form"
 import { TaskToggleForm } from "@/features/areas/components/task-toggle-form"
@@ -82,20 +82,14 @@ function ProjectSection({
       </summary>
 
       <div className="space-y-5 pb-6 pl-0 sm:pl-7">
-        <div className="flex flex-wrap gap-2">
-          <ProjectStatusForm
-            key={`${project.id}-${project.status}`}
-            projectId={project.id}
-            path={path}
-            status={project.status as VisibleAreaProjectStatus}
-          />
-          <ProjectPriorityForm
-            key={`${project.id}-${project.priority}`}
-            projectId={project.id}
-            path={path}
-            priority={project.priority}
-          />
-        </div>
+        <ProjectDetailsEditor
+          projectId={project.id}
+          path={path}
+          title={project.title}
+          description={project.description}
+          status={project.status as VisibleAreaProjectStatus}
+          priority={project.priority}
+        />
 
         {visibleTasks.length ? (
           <div className="surface-2 divide-y divide-white/[0.06] rounded-[22px] border px-4">
@@ -292,29 +286,26 @@ export function AreaWorkspaceView({
                   </div>
                   <div>
                     <h3 className="text-xl font-semibold tracking-[-0.03em] text-white">{container.name}</h3>
-                    {container.description ? (
-                      <p className="context-line mt-2">{container.description}</p>
-                    ) : null}
-                  </div>
+                {container.description ? (
+                  <p className="context-line mt-2">{container.description}</p>
+                ) : null}
+              </div>
+            </div>
+                <div className="border-t border-white/[0.06] pt-6">
+                  <CreateProjectForm containerId={container.id} path={path} />
                 </div>
-                {container.projects.length ? (
-                  <div className="space-y-3">
-                    {projectSections.map((status) => (
-                      <ProjectGroup
-                        key={status}
-                        title={projectStatusSectionLabels[status]}
-                        emptyMessage={`No hay proyectos ${projectStatusSectionLabels[status].toLowerCase()} en este espacio.`}
-                        projects={groupedProjects[status]}
-                        path={path}
-                        filter={filter}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="border-t border-white/[0.06] pt-6 text-sm text-muted-foreground">
-                    No hay proyectos en este espacio.
-                  </p>
-                )}
+                <div className="mt-5 space-y-3">
+                  {projectSections.map((status) => (
+                    <ProjectGroup
+                      key={status}
+                      title={projectStatusSectionLabels[status]}
+                      emptyMessage={`No hay proyectos ${projectStatusSectionLabels[status].toLowerCase()} en este espacio.`}
+                      projects={groupedProjects[status]}
+                      path={path}
+                      filter={filter}
+                    />
+                  ))}
+                </div>
               </section>
             )
           })}

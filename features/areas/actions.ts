@@ -3,25 +3,33 @@
 import { revalidatePath } from "next/cache"
 
 import type { ActionResult } from "@/types/action-result"
-import type { CreateTaskActionState } from "@/features/areas/action-state"
+import type {
+  CreateProjectActionState,
+  CreateTaskActionState,
+  UpdateProjectDetailsActionState,
+} from "@/features/areas/action-state"
 import {
   clearTaskPlannedDate,
+  createProject,
   createTask,
   planTaskForTomorrow,
   planTaskForToday,
   setTaskPlannedDate,
   toggleTaskCompletion,
+  updateProjectDetails,
   updateProjectPriority,
   updateProjectStatus,
   updateTaskPriority,
 } from "@/features/areas/repository"
 import {
   clearTaskPlannedDateSchema,
+  createProjectSchema,
   createTaskSchema,
   planTaskForTomorrowSchema,
   planTaskForTodaySchema,
   setTaskPlannedDateSchema,
   toggleTaskCompletionSchema,
+  updateProjectDetailsSchema,
   updateProjectPrioritySchema,
   updateProjectStatusSchema,
   updateTaskPrioritySchema,
@@ -81,6 +89,101 @@ export async function createTaskAction(
   return {
     status: "success",
     message: "Tarea creada.",
+    resetKey: previousState.resetKey + 1,
+  }
+}
+
+export async function createProjectAction(
+  previousState: CreateProjectActionState,
+  formData: FormData
+): Promise<CreateProjectActionState> {
+  const parsed = createProjectSchema.safeParse({
+    containerId: formData.get("containerId"),
+    title: formData.get("title"),
+  })
+
+  if (!parsed.success) {
+    const fieldErrors = parsed.error.flatten().fieldErrors
+
+    return {
+      status: "error",
+      message: "No pudimos crear ese proyecto.",
+      fieldErrors: {
+        title: fieldErrors.title,
+        containerId: fieldErrors.containerId,
+      },
+      resetKey: previousState.resetKey,
+    }
+  }
+
+  const path = String(formData.get("path") ?? "")
+
+  try {
+    await createProject(parsed.data)
+  } catch (error) {
+    console.error("Failed to create project", error)
+    return {
+      status: "error",
+      message: "No pudimos crear ese proyecto en este espacio.",
+      resetKey: previousState.resetKey,
+    }
+  }
+
+  if (path) {
+    revalidatePath(path)
+  }
+
+  return {
+    status: "success",
+    message: "Proyecto creado en Backlog.",
+    resetKey: previousState.resetKey + 1,
+  }
+}
+
+export async function updateProjectDetailsAction(
+  previousState: UpdateProjectDetailsActionState,
+  formData: FormData
+): Promise<UpdateProjectDetailsActionState> {
+  const parsed = updateProjectDetailsSchema.safeParse({
+    projectId: formData.get("projectId"),
+    title: formData.get("title"),
+    description: formData.get("description"),
+  })
+
+  if (!parsed.success) {
+    const fieldErrors = parsed.error.flatten().fieldErrors
+
+    return {
+      status: "error",
+      message: "No pudimos guardar los cambios del proyecto.",
+      fieldErrors: {
+        title: fieldErrors.title,
+        projectId: fieldErrors.projectId,
+      },
+      resetKey: previousState.resetKey,
+    }
+  }
+
+  const path = String(formData.get("path") ?? "")
+
+  try {
+    await updateProjectDetails(parsed.data)
+  } catch (error) {
+    console.error("Failed to update project details", error)
+    return {
+      status: "error",
+      message: "No pudimos actualizar ese proyecto.",
+      resetKey: previousState.resetKey,
+    }
+  }
+
+  if (path) {
+    revalidatePath(path)
+  }
+
+  return {
+    status: "success",
+    message: "Proyecto actualizado.",
     resetKey: previousState.resetKey + 1,
   }
 }

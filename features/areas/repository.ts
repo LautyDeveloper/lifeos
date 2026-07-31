@@ -4,11 +4,13 @@ import { db, getDbOrThrow } from "@/db"
 import { areas, containers, projects, tasks } from "@/db/schema"
 import type {
   ClearTaskPlannedDateInput,
+  CreateProjectInput,
   CreateTaskInput,
   PlanTaskForTomorrowInput,
   PlanTaskForTodayInput,
   SetTaskPlannedDateInput,
   ToggleTaskCompletionInput,
+  UpdateProjectDetailsInput,
   UpdateProjectPriorityInput,
   UpdateProjectStatusInput,
   UpdateTaskPriorityInput,
@@ -56,10 +58,30 @@ type ProjectRecord = {
   status: ProjectStatus
 }
 
+type ContainerRecord = {
+  id: string
+  archived: boolean
+}
+
 type TaskRecord = {
   id: string
   projectId: string
   projectStatus: ProjectStatus
+}
+
+async function getContainerRecord(containerId: string): Promise<ContainerRecord | null> {
+  const database = getDbOrThrow()
+
+  const [container] = await database
+    .select({
+      id: containers.id,
+      archived: containers.archived,
+    })
+    .from(containers)
+    .where(eq(containers.id, containerId))
+    .limit(1)
+
+  return container ?? null
 }
 
 async function getProjectRecord(projectId: string): Promise<ProjectRecord | null> {
@@ -224,6 +246,58 @@ export async function createTask(input: CreateTaskInput) {
     })
 
   return task
+}
+
+export async function createProject(input: CreateProjectInput) {
+  const database = getDbOrThrow()
+  const container = await getContainerRecord(input.containerId)
+
+  if (!container || container.archived) {
+    throw new Error("Container not found.")
+  }
+
+  const [project] = await database
+    .insert(projects)
+    .values({
+      containerId: input.containerId,
+      title: input.title,
+      description: null,
+      status: "backlog",
+      priority: "medium",
+    })
+    .returning({
+      id: projects.id,
+      title: projects.title,
+      status: projects.status,
+    })
+
+  return project
+}
+
+export async function updateProjectDetails(input: UpdateProjectDetailsInput) {
+  const database = getDbOrThrow()
+  const project = await getProjectRecord(input.projectId)
+
+  if (!project) {
+    throw new Error("Project not found.")
+  }
+
+  const description = input.description?.trim() ? input.description.trim() : null
+
+  const [updatedProject] = await database
+    .update(projects)
+    .set({
+      title: input.title,
+      description,
+    })
+    .where(eq(projects.id, input.projectId))
+    .returning({
+      id: projects.id,
+      title: projects.title,
+      description: projects.description,
+    })
+
+  return updatedProject
 }
 
 export async function toggleTaskCompletion(input: ToggleTaskCompletionInput) {
