@@ -1,4 +1,4 @@
-import { and, asc, count, eq, gte, lt, sql } from "drizzle-orm"
+import { and, asc, count, eq, gte, lt, ne, sql } from "drizzle-orm"
 
 import { db } from "@/db"
 import { areas, containers, projects, tasks } from "@/db/schema"
@@ -54,7 +54,8 @@ export async function getTodayTasks(now: Date = new Date()): Promise<TodayTask[]
       and(
         gte(tasks.plannedDate, start),
         lt(tasks.plannedDate, end),
-        eq(tasks.completed, false)
+        eq(tasks.completed, false),
+        ne(projects.status, "paused")
       )
     )
     .orderBy(
@@ -90,7 +91,8 @@ export async function getTodayProgress(now: Date = new Date()) {
   const rows = await db
     .select({ completed: tasks.completed, value: count() })
     .from(tasks)
-    .where(and(gte(tasks.plannedDate, start), lt(tasks.plannedDate, end)))
+    .innerJoin(projects, eq(projects.id, tasks.projectId))
+    .where(and(gte(tasks.plannedDate, start), lt(tasks.plannedDate, end), ne(projects.status, "paused")))
     .groupBy(tasks.completed)
 
   return {

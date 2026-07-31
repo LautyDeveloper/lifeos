@@ -5,6 +5,7 @@ import { ChevronDown, FolderOpenDot } from "lucide-react"
 
 import { PageShell } from "@/components/shared/page-shell"
 import { CreateTaskForm } from "@/features/areas/components/create-task-form"
+import { PauseProjectForm } from "@/features/areas/components/pause-project-form"
 import { PlanTaskForTodayForm } from "@/features/areas/components/plan-task-for-today-form"
 import { TaskToggleForm } from "@/features/areas/components/task-toggle-form"
 import type { AreaTaskFilter, AreaWorkspace } from "@/features/areas/repository"
@@ -41,6 +42,7 @@ function ProjectSection({ project, path, filter }: {
         <div className="hidden items-center gap-2 sm:flex">
           <StatusBadge status={project.status} />
           <PriorityBadge priority={project.priority as "low" | "medium" | "high" | "urgent"} />
+          <PauseProjectForm projectId={project.id} path={path} />
         </div>
       </summary>
 

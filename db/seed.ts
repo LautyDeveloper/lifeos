@@ -30,11 +30,12 @@ const inboxSeeds = [
 ] as const
 
 const projectSeeds = [
-  { containerName: "Gasti", title: "Operación semanal", description: "Prioridades activas del trabajo." },
-  { containerName: "Life OS", title: "MVP", description: "Entrega incremental del sistema operativo personal." },
-  { containerName: "AutoPanel", title: "Roadmap", description: "Próximos hitos del producto técnico." },
-  { containerName: "Física", title: "Parcial 1", description: "Plan base para preparar el parcial." },
-  { containerName: "Gimnasio", title: "Rutina base", description: "Estructura mínima para sostener constancia." },
+  { containerName: "Gasti", title: "Operación semanal", description: "Prioridades activas del trabajo.", status: "active" },
+  { containerName: "Life OS", title: "MVP", description: "Entrega incremental del sistema operativo personal.", status: "active" },
+  { containerName: "AutoPanel", title: "Roadmap", description: "Próximos hitos del producto técnico.", status: "active" },
+  { containerName: "Física", title: "Parcial 1", description: "Plan base para preparar el parcial.", status: "backlog" },
+  { containerName: "Gimnasio", title: "Rutina base", description: "Estructura mínima para sostener constancia.", status: "active" },
+  { containerName: "Life OS", title: "Exploración futura", description: "Ideas reservadas para más adelante.", status: "paused" },
 ] as const
 
 const taskSeeds = [
@@ -160,6 +161,7 @@ async function seedProjects() {
         containerId,
         title: project.title,
         description: project.description,
+        status: project.status,
       })
     }
   }
