@@ -7,11 +7,17 @@ import type {
   UpdateLibraryNoteActionState,
 } from "@/features/library/action-state"
 import {
+  archiveLibraryNote,
   createLibraryNote,
+  deleteLibraryNote,
+  restoreLibraryNote,
   updateLibraryNote,
 } from "@/features/library/repository"
 import {
+  archiveLibraryNoteSchema,
   createLibraryNoteSchema,
+  deleteLibraryNoteSchema,
+  restoreLibraryNoteSchema,
   updateLibraryNoteSchema,
 } from "@/features/library/schemas"
 import type { ActionResult } from "@/types/action-result"
@@ -74,6 +80,60 @@ export async function saveLibraryNoteAction(formData: FormData): Promise<ActionR
     return { status: "success", message: "Cambios guardados.", entityId: note.id }
   } catch {
     return { status: "error", message: "No pudimos guardar. Tus cambios siguen en el editor." }
+  }
+}
+
+export async function archiveLibraryNoteAction(formData: FormData): Promise<ActionResult> {
+  const parsed = archiveLibraryNoteSchema.safeParse({
+    id: formData.get("id"),
+  })
+
+  if (!parsed.success) {
+    return { status: "error", message: "No pudimos archivar esa nota." }
+  }
+
+  try {
+    const note = await archiveLibraryNote(parsed.data)
+    revalidatePath("/library")
+    return { status: "success", message: "Nota archivada.", entityId: note.id }
+  } catch {
+    return { status: "error", message: "No pudimos archivar la nota. Probá de nuevo." }
+  }
+}
+
+export async function restoreLibraryNoteAction(formData: FormData): Promise<ActionResult> {
+  const parsed = restoreLibraryNoteSchema.safeParse({
+    id: formData.get("id"),
+  })
+
+  if (!parsed.success) {
+    return { status: "error", message: "No pudimos restaurar esa nota." }
+  }
+
+  try {
+    const note = await restoreLibraryNote(parsed.data)
+    revalidatePath("/library")
+    return { status: "success", message: "Nota restaurada.", entityId: note.id }
+  } catch {
+    return { status: "error", message: "No pudimos restaurar la nota. Probá de nuevo." }
+  }
+}
+
+export async function deleteLibraryNoteAction(formData: FormData): Promise<ActionResult> {
+  const parsed = deleteLibraryNoteSchema.safeParse({
+    id: formData.get("id"),
+  })
+
+  if (!parsed.success) {
+    return { status: "error", message: "No pudimos eliminar esa nota." }
+  }
+
+  try {
+    const note = await deleteLibraryNote(parsed.data)
+    revalidatePath("/library")
+    return { status: "success", message: "Nota eliminada.", entityId: note.id }
+  } catch {
+    return { status: "error", message: "No pudimos eliminar la nota. Probá de nuevo." }
   }
 }
 

@@ -1,9 +1,12 @@
-import { and, asc, desc, eq, ilike, isNull, or } from "drizzle-orm"
+import { and, asc, desc, eq, ilike, isNotNull, isNull, or } from "drizzle-orm"
 
 import { db, getDbOrThrow } from "@/db"
 import { notes } from "@/db/schema"
 import type {
+  ArchiveLibraryNoteInput,
   CreateLibraryNoteInput,
+  DeleteLibraryNoteInput,
+  RestoreLibraryNoteInput,
   UpdateLibraryNoteInput,
 } from "@/features/library/schemas"
 
@@ -13,6 +16,7 @@ export type LibraryNoteListItem = {
   content: string
   createdAt: Date
   updatedAt: Date
+  archivedAt: Date | null
 }
 
 export type LibraryNote = LibraryNoteListItem
@@ -22,7 +26,9 @@ export type LibraryFilters = {
   note?: string
 }
 
-export async function listLibraryNotes(filters: LibraryFilters = {}): Promise<LibraryNoteListItem[]> {
+export async function listActiveLibraryNotes(
+  filters: LibraryFilters = {}
+): Promise<LibraryNoteListItem[]> {
   if (!db) {
     return []
   }
@@ -42,10 +48,36 @@ export async function listLibraryNotes(filters: LibraryFilters = {}): Promise<Li
       content: notes.content,
       createdAt: notes.createdAt,
       updatedAt: notes.updatedAt,
+      archivedAt: notes.archivedAt,
     })
     .from(notes)
-    .where(and(isNull(notes.containerId), query ? or(ilike(notes.title, `%${query}%`), ilike(notes.content, `%${query}%`)) : undefined))
+    .where(
+      and(
+        isNull(notes.containerId),
+        isNull(notes.archivedAt),
+        query ? or(ilike(notes.title, `%${query}%`), ilike(notes.content, `%${query}%`)) : undefined
+      )
+    )
     .orderBy(orderBy)
+}
+
+export async function listArchivedLibraryNotes(): Promise<LibraryNoteListItem[]> {
+  if (!db) {
+    return []
+  }
+
+  return db
+    .select({
+      id: notes.id,
+      title: notes.title,
+      content: notes.content,
+      createdAt: notes.createdAt,
+      updatedAt: notes.updatedAt,
+      archivedAt: notes.archivedAt,
+    })
+    .from(notes)
+    .where(and(isNull(notes.containerId), isNotNull(notes.archivedAt)))
+    .orderBy(desc(notes.archivedAt), desc(notes.updatedAt))
 }
 
 export async function getLibraryNoteById(id: string): Promise<LibraryNote | null> {
@@ -60,6 +92,7 @@ export async function getLibraryNoteById(id: string): Promise<LibraryNote | null
       content: notes.content,
       createdAt: notes.createdAt,
       updatedAt: notes.updatedAt,
+      archivedAt: notes.archivedAt,
     })
     .from(notes)
     .where(and(eq(notes.id, id), isNull(notes.containerId)))
@@ -84,6 +117,7 @@ export async function createLibraryNote(input: CreateLibraryNoteInput) {
       content: notes.content,
       createdAt: notes.createdAt,
       updatedAt: notes.updatedAt,
+      archivedAt: notes.archivedAt,
     })
 
   return note
@@ -95,7 +129,7 @@ export async function updateLibraryNote(input: UpdateLibraryNoteInput) {
   const [existingNote] = await database
     .select({ id: notes.id })
     .from(notes)
-    .where(and(eq(notes.id, input.id), isNull(notes.containerId)))
+    .where(and(eq(notes.id, input.id), isNull(notes.containerId), isNull(notes.archivedAt)))
     .limit(1)
 
   if (!existingNote) {
@@ -109,14 +143,94 @@ export async function updateLibraryNote(input: UpdateLibraryNoteInput) {
       content: input.content,
       updatedAt: new Date(),
     })
-    .where(and(eq(notes.id, input.id), isNull(notes.containerId)))
+    .where(and(eq(notes.id, input.id), isNull(notes.containerId), isNull(notes.archivedAt)))
     .returning({
       id: notes.id,
       title: notes.title,
       content: notes.content,
       createdAt: notes.createdAt,
       updatedAt: notes.updatedAt,
+      archivedAt: notes.archivedAt,
     })
 
   return updatedNote
+}
+
+export async function archiveLibraryNote(input: ArchiveLibraryNoteInput) {
+  const database = getDbOrThrow()
+
+  const [existingNote] = await database
+    .select({ id: notes.id })
+    .from(notes)
+    .where(and(eq(notes.id, input.id), isNull(notes.containerId), isNull(notes.archivedAt)))
+    .limit(1)
+
+  if (!existingNote) {
+    throw new Error("Active library note not found.")
+  }
+
+  const [archivedNote] = await database
+    .update(notes)
+    .set({
+      archivedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(and(eq(notes.id, input.id), isNull(notes.containerId), isNull(notes.archivedAt)))
+    .returning({
+      id: notes.id,
+      archivedAt: notes.archivedAt,
+    })
+
+  return archivedNote
+}
+
+export async function restoreLibraryNote(input: RestoreLibraryNoteInput) {
+  const database = getDbOrThrow()
+
+  const [existingNote] = await database
+    .select({ id: notes.id })
+    .from(notes)
+    .where(and(eq(notes.id, input.id), isNull(notes.containerId), isNotNull(notes.archivedAt)))
+    .limit(1)
+
+  if (!existingNote) {
+    throw new Error("Archived library note not found.")
+  }
+
+  const [restoredNote] = await database
+    .update(notes)
+    .set({
+      archivedAt: null,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(notes.id, input.id), isNull(notes.containerId), isNotNull(notes.archivedAt)))
+    .returning({
+      id: notes.id,
+      archivedAt: notes.archivedAt,
+    })
+
+  return restoredNote
+}
+
+export async function deleteLibraryNote(input: DeleteLibraryNoteInput) {
+  const database = getDbOrThrow()
+
+  const [existingNote] = await database
+    .select({ id: notes.id })
+    .from(notes)
+    .where(and(eq(notes.id, input.id), isNull(notes.containerId), isNotNull(notes.archivedAt)))
+    .limit(1)
+
+  if (!existingNote) {
+    throw new Error("Archived library note not found.")
+  }
+
+  const [deletedNote] = await database
+    .delete(notes)
+    .where(and(eq(notes.id, input.id), isNull(notes.containerId), isNotNull(notes.archivedAt)))
+    .returning({
+      id: notes.id,
+    })
+
+  return deletedNote
 }
