@@ -3,7 +3,7 @@
 import { useTransition } from "react"
 import { PauseCircle } from "lucide-react"
 
-import { pauseProjectAction } from "@/features/areas/actions"
+import { updateProjectStatusAction } from "@/features/areas/actions"
 import { Button } from "@/components/ui/button"
 
 export function PauseProjectForm({
@@ -19,11 +19,12 @@ export function PauseProjectForm({
     <form
       action={(formData) =>
         startTransition(async () => {
-          await pauseProjectAction(formData)
+          await updateProjectStatusAction(formData)
         })
       }
     >
       <input type="hidden" name="projectId" value={projectId} />
+      <input type="hidden" name="status" value="paused" />
       <input type="hidden" name="path" value={path} />
       <Button
         type="submit"

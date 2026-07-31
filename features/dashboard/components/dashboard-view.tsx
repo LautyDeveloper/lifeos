@@ -6,13 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state"
 import type { DashboardSummary } from "@/features/dashboard/repository"
 import { InboxForm } from "@/features/inbox/components/inbox-form"
 import { LibraryCreateNoteFormInner } from "@/features/library/components/library-create-note-form"
-
-const priorityLabels: Record<string, string> = {
-  urgent: "Urgente",
-  high: "Alta",
-  medium: "Media",
-  low: "Baja",
-}
+import { priorityLabels } from "@/types/domain"
 
 function getGreeting() {
   const hour = new Date().getHours()

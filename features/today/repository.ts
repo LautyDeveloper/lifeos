@@ -1,15 +1,16 @@
-import { and, asc, count, eq, gte, lt, ne, sql } from "drizzle-orm"
+import { and, asc, count, eq, gte, lt, sql } from "drizzle-orm"
 
 import { db } from "@/db"
 import { areas, containers, projects, tasks } from "@/db/schema"
 import { getTodayRange } from "@/lib/dates"
+import type { Priority } from "@/types/domain"
 
 export type TodayTask = {
   id: string
   title: string
   completed: boolean
   plannedDate: Date | null
-  priority: "low" | "medium" | "high" | "urgent"
+  priority: Priority
   originHref: string
   project: {
     id: string
@@ -55,7 +56,7 @@ export async function getTodayTasks(now: Date = new Date()): Promise<TodayTask[]
         gte(tasks.plannedDate, start),
         lt(tasks.plannedDate, end),
         eq(tasks.completed, false),
-        ne(projects.status, "paused")
+        eq(projects.status, "active")
       )
     )
     .orderBy(
@@ -92,7 +93,7 @@ export async function getTodayProgress(now: Date = new Date()) {
     .select({ completed: tasks.completed, value: count() })
     .from(tasks)
     .innerJoin(projects, eq(projects.id, tasks.projectId))
-    .where(and(gte(tasks.plannedDate, start), lt(tasks.plannedDate, end), ne(projects.status, "paused")))
+    .where(and(gte(tasks.plannedDate, start), lt(tasks.plannedDate, end), eq(projects.status, "active")))
     .groupBy(tasks.completed)
 
   return {

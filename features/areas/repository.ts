@@ -1,4 +1,4 @@
-import { and, asc, eq, ne } from "drizzle-orm"
+import { and, asc, eq } from "drizzle-orm"
 
 import { db, getDbOrThrow } from "@/db"
 import { areas, containers, projects, tasks } from "@/db/schema"
@@ -7,12 +7,19 @@ import type {
   CreateTaskInput,
   PlanTaskForTomorrowInput,
   PlanTaskForTodayInput,
-  PauseProjectInput,
-  ResumeProjectInput,
   SetTaskPlannedDateInput,
   ToggleTaskCompletionInput,
+  UpdateProjectPriorityInput,
+  UpdateProjectStatusInput,
+  UpdateTaskPriorityInput,
 } from "@/features/areas/schemas"
 import { getDateDaysFromNow, parseDateInput } from "@/lib/dates"
+import {
+  canCreateTasksInProject,
+  canPlanTasksInProject,
+  type Priority,
+  type ProjectStatus,
+} from "@/types/domain"
 
 export type AreaWorkspace = {
   area: {
@@ -29,13 +36,13 @@ export type AreaWorkspace = {
       id: string
       title: string
       description: string | null
-      status: string
-      priority: string
+      status: ProjectStatus
+      priority: Priority
       tasks: Array<{
         id: string
         title: string
         completed: boolean
-        priority: string
+        priority: Priority
         plannedDate: Date | null
       }>
     }>
@@ -43,6 +50,49 @@ export type AreaWorkspace = {
 }
 
 export type AreaTaskFilter = "active" | "today" | "completed"
+
+type ProjectRecord = {
+  id: string
+  status: ProjectStatus
+}
+
+type TaskRecord = {
+  id: string
+  projectId: string
+  projectStatus: ProjectStatus
+}
+
+async function getProjectRecord(projectId: string): Promise<ProjectRecord | null> {
+  const database = getDbOrThrow()
+
+  const [project] = await database
+    .select({
+      id: projects.id,
+      status: projects.status,
+    })
+    .from(projects)
+    .where(eq(projects.id, projectId))
+    .limit(1)
+
+  return project ?? null
+}
+
+async function getTaskRecord(taskId: string): Promise<TaskRecord | null> {
+  const database = getDbOrThrow()
+
+  const [task] = await database
+    .select({
+      id: tasks.id,
+      projectId: tasks.projectId,
+      projectStatus: projects.status,
+    })
+    .from(tasks)
+    .innerJoin(projects, eq(projects.id, tasks.projectId))
+    .where(eq(tasks.id, taskId))
+    .limit(1)
+
+  return task ?? null
+}
 
 export async function getAreaWorkspace(areaName: string): Promise<AreaWorkspace | null> {
   if (!db) {
@@ -85,13 +135,7 @@ export async function getAreaWorkspace(areaName: string): Promise<AreaWorkspace 
     })
     .from(projects)
     .innerJoin(containers, eq(containers.id, projects.containerId))
-    .where(
-      and(
-        eq(containers.areaId, area.id),
-        eq(containers.archived, false),
-        ne(projects.status, "paused")
-      )
-    )
+    .where(and(eq(containers.areaId, area.id), eq(containers.archived, false)))
     .orderBy(asc(containers.name), asc(projects.title))
 
   const taskRows = await db
@@ -106,13 +150,7 @@ export async function getAreaWorkspace(areaName: string): Promise<AreaWorkspace 
     .from(tasks)
     .innerJoin(projects, eq(projects.id, tasks.projectId))
     .innerJoin(containers, eq(containers.id, projects.containerId))
-    .where(
-      and(
-        eq(containers.areaId, area.id),
-        eq(containers.archived, false),
-        ne(projects.status, "paused")
-      )
-    )
+    .where(and(eq(containers.areaId, area.id), eq(containers.archived, false)))
     .orderBy(asc(tasks.completed), asc(tasks.createdAt))
 
   const tasksByProjectId = new Map<string, AreaWorkspace["containers"][number]["projects"][number]["tasks"]>()
@@ -133,6 +171,10 @@ export async function getAreaWorkspace(areaName: string): Promise<AreaWorkspace 
     AreaWorkspace["containers"][number]["projects"]
   >()
   for (const project of projectRows) {
+    if (project.status === "paused") {
+      continue
+    }
+
     const current = projectsByContainerId.get(project.containerId) ?? []
     current.push({
       id: project.id,
@@ -158,15 +200,14 @@ export async function getAreaWorkspace(areaName: string): Promise<AreaWorkspace 
 
 export async function createTask(input: CreateTaskInput) {
   const database = getDbOrThrow()
-
-  const [project] = await database
-    .select({ id: projects.id })
-    .from(projects)
-    .where(eq(projects.id, input.projectId))
-    .limit(1)
+  const project = await getProjectRecord(input.projectId)
 
   if (!project) {
     throw new Error("Project not found.")
+  }
+
+  if (!canCreateTasksInProject(project.status)) {
+    throw new Error("Project does not allow new tasks.")
   }
 
   const [task] = await database
@@ -187,15 +228,14 @@ export async function createTask(input: CreateTaskInput) {
 
 export async function toggleTaskCompletion(input: ToggleTaskCompletionInput) {
   const database = getDbOrThrow()
-
-  const [task] = await database
-    .select({ id: tasks.id })
-    .from(tasks)
-    .where(eq(tasks.id, input.taskId))
-    .limit(1)
+  const task = await getTaskRecord(input.taskId)
 
   if (!task) {
     throw new Error("Task not found.")
+  }
+
+  if (task.projectStatus === "paused") {
+    throw new Error("Paused project task cannot be toggled here.")
   }
 
   const [updatedTask] = await database
@@ -214,15 +254,14 @@ export async function toggleTaskCompletion(input: ToggleTaskCompletionInput) {
 
 export async function planTaskForToday(input: PlanTaskForTodayInput) {
   const database = getDbOrThrow()
-
-  const [task] = await database
-    .select({ id: tasks.id })
-    .from(tasks)
-    .where(eq(tasks.id, input.taskId))
-    .limit(1)
+  const task = await getTaskRecord(input.taskId)
 
   if (!task) {
     throw new Error("Task not found.")
+  }
+
+  if (!canPlanTasksInProject(task.projectStatus)) {
+    throw new Error("Project does not allow planning.")
   }
 
   const [updatedTask] = await database
@@ -241,15 +280,14 @@ export async function planTaskForToday(input: PlanTaskForTodayInput) {
 
 export async function planTaskForTomorrow(input: PlanTaskForTomorrowInput) {
   const database = getDbOrThrow()
-
-  const [task] = await database
-    .select({ id: tasks.id })
-    .from(tasks)
-    .where(eq(tasks.id, input.taskId))
-    .limit(1)
+  const task = await getTaskRecord(input.taskId)
 
   if (!task) {
     throw new Error("Task not found.")
+  }
+
+  if (!canPlanTasksInProject(task.projectStatus)) {
+    throw new Error("Project does not allow planning.")
   }
 
   const [updatedTask] = await database
@@ -268,15 +306,14 @@ export async function planTaskForTomorrow(input: PlanTaskForTomorrowInput) {
 
 export async function setTaskPlannedDate(input: SetTaskPlannedDateInput) {
   const database = getDbOrThrow()
-
-  const [task] = await database
-    .select({ id: tasks.id })
-    .from(tasks)
-    .where(eq(tasks.id, input.taskId))
-    .limit(1)
+  const task = await getTaskRecord(input.taskId)
 
   if (!task) {
     throw new Error("Task not found.")
+  }
+
+  if (!canPlanTasksInProject(task.projectStatus)) {
+    throw new Error("Project does not allow planning.")
   }
 
   const plannedDate = parseDateInput(input.plannedDate)
@@ -301,15 +338,14 @@ export async function setTaskPlannedDate(input: SetTaskPlannedDateInput) {
 
 export async function clearTaskPlannedDate(input: ClearTaskPlannedDateInput) {
   const database = getDbOrThrow()
-
-  const [task] = await database
-    .select({ id: tasks.id })
-    .from(tasks)
-    .where(eq(tasks.id, input.taskId))
-    .limit(1)
+  const task = await getTaskRecord(input.taskId)
 
   if (!task) {
     throw new Error("Task not found.")
+  }
+
+  if (!canPlanTasksInProject(task.projectStatus)) {
+    throw new Error("Project does not allow planning.")
   }
 
   const [updatedTask] = await database
@@ -326,14 +362,9 @@ export async function clearTaskPlannedDate(input: ClearTaskPlannedDateInput) {
   return updatedTask
 }
 
-export async function pauseProject(input: PauseProjectInput) {
+export async function updateProjectStatus(input: UpdateProjectStatusInput) {
   const database = getDbOrThrow()
-
-  const [project] = await database
-    .select({ id: projects.id })
-    .from(projects)
-    .where(eq(projects.id, input.projectId))
-    .limit(1)
+  const project = await getProjectRecord(input.projectId)
 
   if (!project) {
     throw new Error("Project not found.")
@@ -342,7 +373,7 @@ export async function pauseProject(input: PauseProjectInput) {
   const [updatedProject] = await database
     .update(projects)
     .set({
-      status: "paused",
+      status: input.status,
     })
     .where(eq(projects.id, input.projectId))
     .returning({
@@ -353,14 +384,9 @@ export async function pauseProject(input: PauseProjectInput) {
   return updatedProject
 }
 
-export async function resumeProject(input: ResumeProjectInput) {
+export async function updateProjectPriority(input: UpdateProjectPriorityInput) {
   const database = getDbOrThrow()
-
-  const [project] = await database
-    .select({ id: projects.id })
-    .from(projects)
-    .where(eq(projects.id, input.projectId))
-    .limit(1)
+  const project = await getProjectRecord(input.projectId)
 
   if (!project) {
     throw new Error("Project not found.")
@@ -369,13 +395,39 @@ export async function resumeProject(input: ResumeProjectInput) {
   const [updatedProject] = await database
     .update(projects)
     .set({
-      status: "active",
+      priority: input.priority,
     })
     .where(eq(projects.id, input.projectId))
     .returning({
       id: projects.id,
-      status: projects.status,
+      priority: projects.priority,
     })
 
   return updatedProject
+}
+
+export async function updateTaskPriority(input: UpdateTaskPriorityInput) {
+  const database = getDbOrThrow()
+  const task = await getTaskRecord(input.taskId)
+
+  if (!task) {
+    throw new Error("Task not found.")
+  }
+
+  if (task.projectStatus === "paused") {
+    throw new Error("Paused project task cannot be updated here.")
+  }
+
+  const [updatedTask] = await database
+    .update(tasks)
+    .set({
+      priority: input.priority,
+    })
+    .where(eq(tasks.id, input.taskId))
+    .returning({
+      id: tasks.id,
+      priority: tasks.priority,
+    })
+
+  return updatedTask
 }

@@ -2,13 +2,14 @@ import { and, count, desc, eq, sql } from "drizzle-orm"
 
 import { db } from "@/db"
 import { areas, containers, projects, tasks } from "@/db/schema"
+import type { Priority, ProjectStatus } from "@/types/domain"
 
 export type ParkingProject = {
   id: string
   title: string
   description: string | null
-  status: string
-  priority: "low" | "medium" | "high" | "urgent"
+  status: ProjectStatus
+  priority: Priority
   area: {
     id: string
     name: string
