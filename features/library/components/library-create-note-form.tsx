@@ -28,6 +28,15 @@ export function LibraryCreateNoteFormInner({
   const router = useRouter()
 
   useEffect(() => {
+    if (!compact) {
+      return
+    }
+
+    const timer = window.setTimeout(() => titleRef.current?.focus(), 60)
+    return () => window.clearTimeout(timer)
+  }, [compact])
+
+  useEffect(() => {
     if (state.status !== "success") {
       return
     }
@@ -66,24 +75,28 @@ export function LibraryCreateNoteFormInner({
         />
       </div>
 
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div className="min-h-10 space-y-1" aria-live="polite">
           {state.fieldErrors?.title?.[0] ? (
             <p className="text-sm text-destructive">{state.fieldErrors.title[0]}</p>
-          ) : null}
-          {!state.fieldErrors?.title?.[0] && state.fieldErrors?.content?.[0] ? (
+          ) : !state.fieldErrors?.title?.[0] && state.fieldErrors?.content?.[0] ? (
             <p className="text-sm text-destructive">{state.fieldErrors.content[0]}</p>
-          ) : null}
-          {state.message ? (
+          ) : state.message ? (
             <p
               className={cn(
                 "text-sm",
-                state.status === "success" ? "text-primary" : "text-muted-foreground"
+                state.status === "success" ? "text-primary/90" : "text-muted-foreground"
               )}
             >
               {state.message}
             </p>
-          ) : null}
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {compact
+                ? "Una nota breve y clara alcanza para dejar contexto útil."
+                : "Biblioteca es para conocimiento y referencia, no para ejecución."}
+            </p>
+          )}
         </div>
         <InboxSubmitButton label={compact ? "Guardar nota" : "Nueva nota"} pendingLabel="Guardando..." />
       </div>

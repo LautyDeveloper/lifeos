@@ -87,8 +87,8 @@ export function LibraryNoteLifecycleActions({
       {message ? (
         <p
           className={cn(
-            "text-sm",
-            messageType === "success" ? "text-primary" : "text-destructive"
+            "min-h-5 text-sm",
+            messageType === "success" ? "text-primary/90" : "text-destructive"
           )}
         >
           {message}

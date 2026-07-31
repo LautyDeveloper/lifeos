@@ -34,14 +34,14 @@ function AppShellFrame({ children, databaseReady }: { children: React.ReactNode;
       </div>
 
       {mobileOpen ? (
-        <div className="fixed inset-0 z-50 flex bg-black/65 p-3 backdrop-blur-md md:hidden">
+        <div className="fixed inset-0 z-50 flex bg-black/65 p-3 backdrop-blur-md transition-all duration-200 motion-reduce:transition-none md:hidden">
           <button
             type="button"
             aria-label="Cerrar navegación"
             className="absolute inset-0"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="relative z-10 h-full">
+          <div className="relative z-10 h-full transition-transform duration-200 motion-reduce:transition-none">
             <AppSidebar
               mobile
               collapsed={false}
