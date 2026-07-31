@@ -128,9 +128,13 @@ export function LibraryView({ activeNotes, archivedNotes, selectedNote, filters 
             {activeNotes.length ? activeNotes.map((note) => (
               <Link key={note.id} href={buildNoteHref(note.id, filters)} aria-current={note.id === selectedNote?.id ? "page" : undefined}
                 className={cn("block rounded-[20px] border border-transparent px-4 py-3.5 transition", note.id === selectedNote?.id ? "border-white/[0.06] bg-white/[0.045]" : "hover:border-white/[0.04] hover:bg-white/[0.025]")}>
-                <p className="line-clamp-1 text-sm font-medium text-white"><Highlight text={note.title} query={filters.query} /></p>
-                <p className="mt-1 line-clamp-1 text-xs text-muted-foreground"><Highlight text={note.content.replace(/\s+/g, " ")} query={filters.query} /></p>
-                <p className="mt-1 text-[11px] text-muted-foreground">Editada {formatNoteDate(note.updatedAt)}</p>
+                <div className="space-y-2">
+                  <p className="content-title line-clamp-1"><Highlight text={note.title} query={filters.query} /></p>
+                  <p className="context-line line-clamp-2"><Highlight text={note.content.replace(/\s+/g, " ")} query={filters.query} /></p>
+                  <div className="meta-row">
+                    <span className="meta-item">Editada {formatNoteDate(note.updatedAt)}</span>
+                  </div>
+                </div>
               </Link>
             )) : <p className="py-10 text-center text-sm text-muted-foreground">{filters.query ? "No encontramos notas con ese título." : "Todavía no hay notas activas."}</p>}
           </div>
@@ -148,7 +152,7 @@ export function LibraryView({ activeNotes, archivedNotes, selectedNote, filters 
           {selectedNote ? (
             <>
               <Link href={selectedIsArchived ? "/library" : baseHref} className="mb-6 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary xl:hidden"><ArrowLeft className="size-4" /> Volver a las notas</Link>
-              <div className="mb-6 flex items-center justify-between gap-4">
+              <div className="mb-6 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                 <p className="eyebrow">
                   {selectedIsArchived ? "Nota archivada" : "Nota activa"}
                 </p>

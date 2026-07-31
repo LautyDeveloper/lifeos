@@ -130,6 +130,22 @@
   .chip-subtle {
     @apply inline-flex items-center rounded-full border border-white/[0.07] bg-white/[0.025] text-muted-foreground;
   }
+
+  .meta-row {
+    @apply flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] uppercase tracking-[0.14em] text-muted-foreground/75;
+  }
+
+  .meta-item {
+    @apply inline-flex items-center gap-1.5;
+  }
+
+  .context-line {
+    @apply text-sm leading-7 text-muted-foreground;
+  }
+
+  .content-title {
+    @apply text-base font-medium tracking-[-0.02em] text-white;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

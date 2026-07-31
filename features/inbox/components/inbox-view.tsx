@@ -25,7 +25,7 @@ export async function InboxView() {
         <div className="space-y-5">
           <InboxForm databaseReady={Boolean(db)} />
 
-          <p className="px-1 text-sm leading-7 text-muted-foreground">
+          <p className="context-line px-1">
             Lo nuevo queda acá hasta que decidas si es una tarea, un proyecto o una nota.
           </p>
         </div>

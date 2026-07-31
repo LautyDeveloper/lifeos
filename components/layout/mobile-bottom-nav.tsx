@@ -19,17 +19,17 @@ export function MobileBottomNav() {
         const active = item.href === "#more" ? moreActive : item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)
         const content = (
           <>
-            <item.icon className="size-4" />
-            <span className="text-[10px] font-medium">{item.label}</span>
+            <item.icon className="size-3.5" />
+            <span className="text-[10px] font-medium tracking-[0.02em]">{item.label}</span>
           </>
         )
 
         return item.href === "#more" ? (
-          <button key={item.href} type="button" onClick={toggleMobile} aria-label="Abrir más opciones" className={cn("flex min-h-12 flex-col items-center justify-center gap-1 rounded-[18px] text-muted-foreground transition", active && "bg-white/[0.055] text-foreground")}>
+          <button key={item.href} type="button" onClick={toggleMobile} aria-label="Abrir más opciones" className={cn("flex min-h-12 flex-col items-center justify-center gap-1 rounded-[18px] border-b-2 border-transparent text-muted-foreground transition", active && "border-b-primary/80 bg-white/[0.03] text-foreground")}>
             {content}
           </button>
         ) : (
-          <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={cn("flex min-h-12 flex-col items-center justify-center gap-1 rounded-[18px] text-muted-foreground transition", active && "bg-white/[0.055] text-foreground")}>
+          <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={cn("flex min-h-12 flex-col items-center justify-center gap-1 rounded-[18px] border-b-2 border-transparent text-muted-foreground transition", active && "border-b-primary/80 bg-white/[0.03] text-foreground")}>
             {content}
           </Link>
         )

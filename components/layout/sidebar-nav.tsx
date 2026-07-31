@@ -20,18 +20,18 @@ export function SidebarNav({ collapsed, onNavigate }: SidebarNavProps) {
   const areaActive = areaGroup?.items.some((item) => pathname.startsWith(item.href)) ?? false
 
   return (
-    <nav className="space-y-3">
+    <nav className="space-y-4">
       {navigationGroups.map((group, index) => (
         <div key={group.id}>
-          {index > 0 ? <div className="mx-3 mb-3 h-px bg-border/55" /> : null}
+          {index > 0 ? <div className="mx-3 mb-4 h-px bg-border/45" /> : null}
           {group.id === "areas" && !collapsed ? (
             <button
               type="button"
               onClick={() => setAreasOpen(!areasOpen)}
               aria-expanded={areasOpen}
               className={cn(
-                "mb-1 flex min-h-11 w-full items-center justify-between rounded-[18px] px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground transition hover:bg-white/[0.035] hover:text-foreground",
-                areaActive && "bg-white/[0.035] text-foreground"
+                "mb-2 flex min-h-10 w-full items-center justify-between px-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/72 transition hover:text-foreground",
+                areaActive && "text-foreground"
               )}
             >
               Áreas
@@ -51,17 +51,17 @@ export function SidebarNav({ collapsed, onNavigate }: SidebarNavProps) {
                   aria-current={isActive ? "page" : undefined}
                   title={collapsed ? item.label : undefined}
                   className={cn(
-                    "group flex min-h-11 items-center gap-3 rounded-[18px] border px-3 py-2.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none",
+                    "group flex min-h-11 items-center gap-3 rounded-[18px] border-l-2 border-transparent px-3 py-2.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none",
                     collapsed ? "justify-center px-0" : "",
                     isActive
-                      ? "border-white/[0.07] bg-white/[0.055] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
-                      : "border-transparent text-muted-foreground hover:border-white/[0.04] hover:bg-white/[0.03] hover:text-foreground"
+                      ? "border-l-primary/90 bg-white/[0.04] text-white"
+                      : "text-muted-foreground hover:bg-white/[0.022] hover:text-foreground"
                   )}
                 >
                   <item.icon
                     className={cn(
                       "size-4 shrink-0 transition-transform duration-200 motion-reduce:transition-none",
-                      isActive ? "text-primary/90" : "text-muted-foreground group-hover:text-foreground",
+                      isActive ? "text-muted-foreground" : "text-muted-foreground/80 group-hover:text-foreground",
                       !collapsed && "group-hover:scale-105"
                     )}
                   />
