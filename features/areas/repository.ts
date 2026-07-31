@@ -3,12 +3,16 @@ import { and, asc, eq, ne } from "drizzle-orm"
 import { db, getDbOrThrow } from "@/db"
 import { areas, containers, projects, tasks } from "@/db/schema"
 import type {
+  ClearTaskPlannedDateInput,
   CreateTaskInput,
+  PlanTaskForTomorrowInput,
   PlanTaskForTodayInput,
   PauseProjectInput,
   ResumeProjectInput,
+  SetTaskPlannedDateInput,
   ToggleTaskCompletionInput,
 } from "@/features/areas/schemas"
+import { getDateDaysFromNow, parseDateInput } from "@/lib/dates"
 
 export type AreaWorkspace = {
   area: {
@@ -224,7 +228,94 @@ export async function planTaskForToday(input: PlanTaskForTodayInput) {
   const [updatedTask] = await database
     .update(tasks)
     .set({
-      plannedDate: new Date(),
+      plannedDate: getDateDaysFromNow(0),
+    })
+    .where(eq(tasks.id, input.taskId))
+    .returning({
+      id: tasks.id,
+      plannedDate: tasks.plannedDate,
+    })
+
+  return updatedTask
+}
+
+export async function planTaskForTomorrow(input: PlanTaskForTomorrowInput) {
+  const database = getDbOrThrow()
+
+  const [task] = await database
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(eq(tasks.id, input.taskId))
+    .limit(1)
+
+  if (!task) {
+    throw new Error("Task not found.")
+  }
+
+  const [updatedTask] = await database
+    .update(tasks)
+    .set({
+      plannedDate: getDateDaysFromNow(1),
+    })
+    .where(eq(tasks.id, input.taskId))
+    .returning({
+      id: tasks.id,
+      plannedDate: tasks.plannedDate,
+    })
+
+  return updatedTask
+}
+
+export async function setTaskPlannedDate(input: SetTaskPlannedDateInput) {
+  const database = getDbOrThrow()
+
+  const [task] = await database
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(eq(tasks.id, input.taskId))
+    .limit(1)
+
+  if (!task) {
+    throw new Error("Task not found.")
+  }
+
+  const plannedDate = parseDateInput(input.plannedDate)
+
+  if (!plannedDate) {
+    throw new Error("Invalid planning date.")
+  }
+
+  const [updatedTask] = await database
+    .update(tasks)
+    .set({
+      plannedDate,
+    })
+    .where(eq(tasks.id, input.taskId))
+    .returning({
+      id: tasks.id,
+      plannedDate: tasks.plannedDate,
+    })
+
+  return updatedTask
+}
+
+export async function clearTaskPlannedDate(input: ClearTaskPlannedDateInput) {
+  const database = getDbOrThrow()
+
+  const [task] = await database
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(eq(tasks.id, input.taskId))
+    .limit(1)
+
+  if (!task) {
+    throw new Error("Task not found.")
+  }
+
+  const [updatedTask] = await database
+    .update(tasks)
+    .set({
+      plannedDate: null,
     })
     .where(eq(tasks.id, input.taskId))
     .returning({

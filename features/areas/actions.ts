@@ -5,17 +5,23 @@ import type { ActionResult } from "@/types/action-result"
 
 import type { CreateTaskActionState } from "@/features/areas/action-state"
 import {
+  clearTaskPlannedDate,
   createTask,
+  planTaskForTomorrow,
   planTaskForToday,
   pauseProject,
   resumeProject,
+  setTaskPlannedDate,
   toggleTaskCompletion,
 } from "@/features/areas/repository"
 import {
+  clearTaskPlannedDateSchema,
   createTaskSchema,
   pauseProjectSchema,
+  planTaskForTomorrowSchema,
   planTaskForTodaySchema,
   resumeProjectSchema,
+  setTaskPlannedDateSchema,
   toggleTaskCompletionSchema,
 } from "@/features/areas/schemas"
 
@@ -121,6 +127,91 @@ export async function planTaskForTodayAction(formData: FormData): Promise<Action
   revalidatePath("/")
   revalidatePath("/today")
   return { status: "success", message: "Tarea sumada a Hoy.", entityId: parsed.data.taskId }
+}
+
+export async function planTaskForTomorrowAction(formData: FormData): Promise<ActionResult> {
+  const parsed = planTaskForTomorrowSchema.safeParse({
+    taskId: formData.get("taskId"),
+  })
+
+  if (!parsed.success) {
+    console.error("Invalid plan tomorrow payload", parsed.error.flatten().fieldErrors)
+    return { status: "error", message: "La tarea no es válida." }
+  }
+
+  const path = String(formData.get("path") ?? "")
+
+  try {
+    await planTaskForTomorrow(parsed.data)
+  } catch (error) {
+    console.error("Failed to plan task for tomorrow", error)
+    return { status: "error", message: "No pudimos mover la tarea a mañana." }
+  }
+
+  if (path) {
+    revalidatePath(path)
+  }
+  revalidatePath("/")
+  revalidatePath("/today")
+
+  return { status: "success", message: "Tarea sumada a Mañana.", entityId: parsed.data.taskId }
+}
+
+export async function setTaskPlannedDateAction(formData: FormData): Promise<ActionResult> {
+  const parsed = setTaskPlannedDateSchema.safeParse({
+    taskId: formData.get("taskId"),
+    plannedDate: formData.get("plannedDate"),
+  })
+
+  if (!parsed.success) {
+    console.error("Invalid set planning payload", parsed.error.flatten().fieldErrors)
+    return { status: "error", message: "Elegí una fecha válida." }
+  }
+
+  const path = String(formData.get("path") ?? "")
+
+  try {
+    await setTaskPlannedDate(parsed.data)
+  } catch (error) {
+    console.error("Failed to set task planning date", error)
+    return { status: "error", message: "No pudimos actualizar la fecha." }
+  }
+
+  if (path) {
+    revalidatePath(path)
+  }
+  revalidatePath("/")
+  revalidatePath("/today")
+
+  return { status: "success", message: "Fecha actualizada.", entityId: parsed.data.taskId }
+}
+
+export async function clearTaskPlannedDateAction(formData: FormData): Promise<ActionResult> {
+  const parsed = clearTaskPlannedDateSchema.safeParse({
+    taskId: formData.get("taskId"),
+  })
+
+  if (!parsed.success) {
+    console.error("Invalid clear planning payload", parsed.error.flatten().fieldErrors)
+    return { status: "error", message: "La tarea no es válida." }
+  }
+
+  const path = String(formData.get("path") ?? "")
+
+  try {
+    await clearTaskPlannedDate(parsed.data)
+  } catch (error) {
+    console.error("Failed to clear task planning date", error)
+    return { status: "error", message: "No pudimos quitar la fecha." }
+  }
+
+  if (path) {
+    revalidatePath(path)
+  }
+  revalidatePath("/")
+  revalidatePath("/today")
+
+  return { status: "success", message: "La tarea volvió a quedar sin fecha.", entityId: parsed.data.taskId }
 }
 
 export async function pauseProjectAction(formData: FormData): Promise<ActionResult> {

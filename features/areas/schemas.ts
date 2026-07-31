@@ -18,6 +18,22 @@ export const planTaskForTodaySchema = z.object({
   taskId: z.string().uuid("Tarea inválida."),
 })
 
+export const planTaskForTomorrowSchema = z.object({
+  taskId: z.string().uuid("Tarea inválida."),
+})
+
+export const setTaskPlannedDateSchema = z.object({
+  taskId: z.string().uuid("Tarea inválida."),
+  plannedDate: z
+    .string()
+    .trim()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Elegí una fecha válida."),
+})
+
+export const clearTaskPlannedDateSchema = z.object({
+  taskId: z.string().uuid("Tarea inválida."),
+})
+
 export const pauseProjectSchema = z.object({
   projectId: z.string().uuid("Proyecto inválido."),
 })
@@ -29,5 +45,8 @@ export const resumeProjectSchema = z.object({
 export type CreateTaskInput = z.infer<typeof createTaskSchema>
 export type ToggleTaskCompletionInput = z.infer<typeof toggleTaskCompletionSchema>
 export type PlanTaskForTodayInput = z.infer<typeof planTaskForTodaySchema>
+export type PlanTaskForTomorrowInput = z.infer<typeof planTaskForTomorrowSchema>
+export type SetTaskPlannedDateInput = z.infer<typeof setTaskPlannedDateSchema>
+export type ClearTaskPlannedDateInput = z.infer<typeof clearTaskPlannedDateSchema>
 export type PauseProjectInput = z.infer<typeof pauseProjectSchema>
 export type ResumeProjectInput = z.infer<typeof resumeProjectSchema>

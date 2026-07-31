@@ -6,7 +6,7 @@ import { ChevronDown, FolderOpenDot } from "lucide-react"
 import { PageShell } from "@/components/shared/page-shell"
 import { CreateTaskForm } from "@/features/areas/components/create-task-form"
 import { PauseProjectForm } from "@/features/areas/components/pause-project-form"
-import { PlanTaskForTodayForm } from "@/features/areas/components/plan-task-for-today-form"
+import { TaskPlanningControls } from "@/features/areas/components/task-planning-controls"
 import { TaskToggleForm } from "@/features/areas/components/task-toggle-form"
 import type { AreaTaskFilter, AreaWorkspace } from "@/features/areas/repository"
 import { areaPageConfig, type AreaPageSlug } from "@/features/areas/config"
@@ -57,8 +57,15 @@ function ProjectSection({ project, path, filter }: {
                   <p className={cn("text-sm leading-6 text-white", task.completed && "text-muted-foreground line-through")}>{task.title}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <PriorityBadge priority={task.priority as "low" | "medium" | "high" | "urgent"} />
-                    {!task.completed ? <PlanTaskForTodayForm taskId={task.id} path={path} plannedForToday={isDateToday(task.plannedDate)} /> : null}
                   </div>
+                  {!task.completed ? (
+                    <TaskPlanningControls
+                      key={`${task.id}-${task.plannedDate?.toISOString() ?? "none"}`}
+                      taskId={task.id}
+                      path={path}
+                      plannedDate={task.plannedDate}
+                    />
+                  ) : null}
                 </div>
               </div>
             ))}
