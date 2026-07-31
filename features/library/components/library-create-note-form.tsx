@@ -9,6 +9,16 @@ import { InboxSubmitButton } from "@/features/inbox/components/inbox-submit-butt
 import { cn } from "@/lib/utils"
 
 export function LibraryCreateNoteForm() {
+  return <LibraryCreateNoteFormInner />
+}
+
+export function LibraryCreateNoteFormInner({
+  compact = false,
+  redirectToNote = true,
+}: {
+  compact?: boolean
+  redirectToNote?: boolean
+}) {
   const [state, formAction] = useActionState(
     createLibraryNoteAction,
     initialCreateLibraryNoteActionState
@@ -24,13 +34,13 @@ export function LibraryCreateNoteForm() {
 
     formRef.current?.reset()
 
-    if (state.createdNoteId) {
+    if (redirectToNote && state.createdNoteId) {
       router.replace(`/library?note=${state.createdNoteId}`)
       return
     }
 
     titleRef.current?.focus()
-  }, [router, state.createdNoteId, state.resetKey, state.status])
+  }, [redirectToNote, router, state.createdNoteId, state.resetKey, state.status])
 
   return (
     <form ref={formRef} action={formAction} className="space-y-3">
@@ -47,12 +57,13 @@ export function LibraryCreateNoteForm() {
         />
         <textarea
           name="content"
-          rows={5}
+          rows={compact ? 4 : 5}
           placeholder="Guardá una idea, una definición, una referencia o una nota que quieras volver a consultar."
           className={cn(
             "w-full rounded-[22px] border bg-white/[0.03] px-4 py-3 text-sm leading-7 text-white outline-none transition resize-none",
             "placeholder:text-muted-foreground/80 focus:border-primary/40 focus:ring-4 focus:ring-primary/10",
-            state.fieldErrors?.content ? "border-destructive/50" : "border-white/8"
+            state.fieldErrors?.content ? "border-destructive/50" : "border-white/8",
+            compact && "min-h-28"
           )}
         />
       </div>
@@ -76,7 +87,7 @@ export function LibraryCreateNoteForm() {
             </p>
           ) : null}
         </div>
-        <InboxSubmitButton label="Nueva nota" pendingLabel="Guardando..." />
+        <InboxSubmitButton label={compact ? "Guardar nota" : "Nueva nota"} pendingLabel="Guardando..." />
       </div>
     </form>
   )
