@@ -3,7 +3,8 @@ import type { Metadata } from "next"
 import { LibraryView } from "@/features/library/components/library-view"
 import {
   getLibraryNoteById,
-  listLibraryNotes,
+  listActiveLibraryNotes,
+  listArchivedLibraryNotes,
   type LibraryFilters,
 } from "@/features/library/repository"
 
@@ -29,11 +30,23 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
   const rawSort = Array.isArray(resolvedSearchParams.sort) ? resolvedSearchParams.sort[0] : resolvedSearchParams.sort
   const sort: LibraryFilters["sort"] = rawSort === "oldest" || rawSort === "title" ? rawSort : "recent"
   const filters: LibraryFilters = { query, sort, note: requestedNoteId }
-  const notes = await listLibraryNotes(filters)
-  const requestedNote = requestedNoteId
-    ? await getLibraryNoteById(requestedNoteId)
-    : null
-  const selectedNote = requestedNote
+  const [activeNotes, archivedNotes, requestedNote] = await Promise.all([
+    listActiveLibraryNotes(filters),
+    listArchivedLibraryNotes(),
+    requestedNoteId ? getLibraryNoteById(requestedNoteId) : Promise.resolve(null),
+  ])
+  const selectedNote =
+    requestedNote ??
+    activeNotes[0] ??
+    archivedNotes[0] ??
+    null
 
-  return <LibraryView notes={notes} selectedNote={selectedNote} filters={filters} />
+  return (
+    <LibraryView
+      activeNotes={activeNotes}
+      archivedNotes={archivedNotes}
+      selectedNote={selectedNote}
+      filters={filters}
+    />
+  )
 }

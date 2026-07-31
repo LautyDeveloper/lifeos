@@ -29,5 +29,15 @@ export const updateLibraryNoteSchema = z.object({
     }),
 })
 
+const libraryNoteIdSchema = z.object({
+  id: z.string().uuid("Nota inválida."),
+})
+
 export type CreateLibraryNoteInput = z.infer<typeof createLibraryNoteSchema>
 export type UpdateLibraryNoteInput = z.infer<typeof updateLibraryNoteSchema>
+export const archiveLibraryNoteSchema = libraryNoteIdSchema
+export const restoreLibraryNoteSchema = libraryNoteIdSchema
+export const deleteLibraryNoteSchema = libraryNoteIdSchema
+export type ArchiveLibraryNoteInput = z.infer<typeof archiveLibraryNoteSchema>
+export type RestoreLibraryNoteInput = z.infer<typeof restoreLibraryNoteSchema>
+export type DeleteLibraryNoteInput = z.infer<typeof deleteLibraryNoteSchema>

@@ -152,6 +152,10 @@ export const notes = pgTable(
     })
       .defaultNow()
       .notNull(),
+    archivedAt: timestamp("archived_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
   },
   (table) => ({
     containerIdx: index("notes_container_id_idx").on(table.containerId),
