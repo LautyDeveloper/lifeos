@@ -1,10 +1,12 @@
-import { and, asc, eq } from "drizzle-orm"
+import { and, asc, eq, ne } from "drizzle-orm"
 
 import { db, getDbOrThrow } from "@/db"
 import { areas, containers, projects, tasks } from "@/db/schema"
 import type {
   CreateTaskInput,
   PlanTaskForTodayInput,
+  PauseProjectInput,
+  ResumeProjectInput,
   ToggleTaskCompletionInput,
 } from "@/features/areas/schemas"
 
@@ -79,7 +81,13 @@ export async function getAreaWorkspace(areaName: string): Promise<AreaWorkspace 
     })
     .from(projects)
     .innerJoin(containers, eq(containers.id, projects.containerId))
-    .where(and(eq(containers.areaId, area.id), eq(containers.archived, false)))
+    .where(
+      and(
+        eq(containers.areaId, area.id),
+        eq(containers.archived, false),
+        ne(projects.status, "paused")
+      )
+    )
     .orderBy(asc(containers.name), asc(projects.title))
 
   const taskRows = await db
@@ -94,7 +102,13 @@ export async function getAreaWorkspace(areaName: string): Promise<AreaWorkspace 
     .from(tasks)
     .innerJoin(projects, eq(projects.id, tasks.projectId))
     .innerJoin(containers, eq(containers.id, projects.containerId))
-    .where(and(eq(containers.areaId, area.id), eq(containers.archived, false)))
+    .where(
+      and(
+        eq(containers.areaId, area.id),
+        eq(containers.archived, false),
+        ne(projects.status, "paused")
+      )
+    )
     .orderBy(asc(tasks.completed), asc(tasks.createdAt))
 
   const tasksByProjectId = new Map<string, AreaWorkspace["containers"][number]["projects"][number]["tasks"]>()
@@ -219,4 +233,58 @@ export async function planTaskForToday(input: PlanTaskForTodayInput) {
     })
 
   return updatedTask
+}
+
+export async function pauseProject(input: PauseProjectInput) {
+  const database = getDbOrThrow()
+
+  const [project] = await database
+    .select({ id: projects.id })
+    .from(projects)
+    .where(eq(projects.id, input.projectId))
+    .limit(1)
+
+  if (!project) {
+    throw new Error("Project not found.")
+  }
+
+  const [updatedProject] = await database
+    .update(projects)
+    .set({
+      status: "paused",
+    })
+    .where(eq(projects.id, input.projectId))
+    .returning({
+      id: projects.id,
+      status: projects.status,
+    })
+
+  return updatedProject
+}
+
+export async function resumeProject(input: ResumeProjectInput) {
+  const database = getDbOrThrow()
+
+  const [project] = await database
+    .select({ id: projects.id })
+    .from(projects)
+    .where(eq(projects.id, input.projectId))
+    .limit(1)
+
+  if (!project) {
+    throw new Error("Project not found.")
+  }
+
+  const [updatedProject] = await database
+    .update(projects)
+    .set({
+      status: "active",
+    })
+    .where(eq(projects.id, input.projectId))
+    .returning({
+      id: projects.id,
+      status: projects.status,
+    })
+
+  return updatedProject
 }

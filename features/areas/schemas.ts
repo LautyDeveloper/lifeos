@@ -18,6 +18,16 @@ export const planTaskForTodaySchema = z.object({
   taskId: z.string().uuid("Tarea inválida."),
 })
 
+export const pauseProjectSchema = z.object({
+  projectId: z.string().uuid("Proyecto inválido."),
+})
+
+export const resumeProjectSchema = z.object({
+  projectId: z.string().uuid("Proyecto inválido."),
+})
+
 export type CreateTaskInput = z.infer<typeof createTaskSchema>
 export type ToggleTaskCompletionInput = z.infer<typeof toggleTaskCompletionSchema>
 export type PlanTaskForTodayInput = z.infer<typeof planTaskForTodaySchema>
+export type PauseProjectInput = z.infer<typeof pauseProjectSchema>
+export type ResumeProjectInput = z.infer<typeof resumeProjectSchema>

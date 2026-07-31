@@ -7,11 +7,15 @@ import type { CreateTaskActionState } from "@/features/areas/action-state"
 import {
   createTask,
   planTaskForToday,
+  pauseProject,
+  resumeProject,
   toggleTaskCompletion,
 } from "@/features/areas/repository"
 import {
   createTaskSchema,
+  pauseProjectSchema,
   planTaskForTodaySchema,
+  resumeProjectSchema,
   toggleTaskCompletionSchema,
 } from "@/features/areas/schemas"
 
@@ -117,4 +121,68 @@ export async function planTaskForTodayAction(formData: FormData): Promise<Action
   revalidatePath("/")
   revalidatePath("/today")
   return { status: "success", message: "Tarea sumada a Hoy.", entityId: parsed.data.taskId }
+}
+
+export async function pauseProjectAction(formData: FormData): Promise<ActionResult> {
+  const parsed = pauseProjectSchema.safeParse({
+    projectId: formData.get("projectId"),
+  })
+
+  if (!parsed.success) {
+    return { status: "error", message: "El proyecto no es válido." }
+  }
+
+  const path = String(formData.get("path") ?? "")
+
+  try {
+    await pauseProject(parsed.data)
+  } catch (error) {
+    console.error("Failed to pause project", error)
+    return { status: "error", message: "No pudimos mandar el proyecto a Parking." }
+  }
+
+  if (path) {
+    revalidatePath(path)
+  }
+  revalidatePath("/")
+  revalidatePath("/today")
+  revalidatePath("/parking")
+
+  return {
+    status: "success",
+    message: "Proyecto movido a Parking.",
+    entityId: parsed.data.projectId,
+  }
+}
+
+export async function resumeProjectAction(formData: FormData): Promise<ActionResult> {
+  const parsed = resumeProjectSchema.safeParse({
+    projectId: formData.get("projectId"),
+  })
+
+  if (!parsed.success) {
+    return { status: "error", message: "El proyecto no es válido." }
+  }
+
+  const path = String(formData.get("path") ?? "")
+
+  try {
+    await resumeProject(parsed.data)
+  } catch (error) {
+    console.error("Failed to resume project", error)
+    return { status: "error", message: "No pudimos reanudar el proyecto." }
+  }
+
+  if (path) {
+    revalidatePath(path)
+  }
+  revalidatePath("/")
+  revalidatePath("/today")
+  revalidatePath("/parking")
+
+  return {
+    status: "success",
+    message: "Proyecto devuelto al foco activo.",
+    entityId: parsed.data.projectId,
+  }
 }
