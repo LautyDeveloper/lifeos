@@ -34,7 +34,7 @@ export function PauseProjectForm({
         className="min-h-9 rounded-xl border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.05]"
       >
         <PauseCircle className="size-3.5" />
-        Parking
+        Estacionar
       </Button>
     </form>
   )

@@ -46,13 +46,13 @@ export function AppSidebar({
             className="hidden md:inline-flex"
             onClick={onToggleCollapsed}
             title={collapsed ? "Expandir navegación" : "Contraer navegación"}
+            aria-label={collapsed ? "Expandir navegación" : "Contraer navegación"}
           >
             {collapsed ? (
               <PanelLeftOpen className="size-4" />
             ) : (
               <PanelLeftClose className="size-4" />
             )}
-            <span className="sr-only">{collapsed ? "Expandir navegación" : "Contraer navegación"}</span>
           </Button>
         ) : null}
       </div>
