@@ -1,6 +1,7 @@
 import { PauseCircle } from "lucide-react"
 
 import { PageShell } from "@/components/shared/page-shell"
+import { MetricCard } from "@/components/shared/content-patterns"
 import { EmptyState } from "@/components/ui/empty-state"
 import { ResumeProjectForm } from "@/features/parking/components/resume-project-form"
 import type { ParkingProject } from "@/features/parking/repository"
@@ -9,7 +10,7 @@ import { priorityLabels, projectStatusLabels } from "@/types/domain"
 export function ParkingView({ projects }: { projects: ParkingProject[] }) {
   return (
     <PageShell
-      eyebrow="Parking"
+      eyebrow="Estacionados"
       title="Sacá proyectos del foco sin perderlos."
       description="Todo lo que hoy no merece atención activa puede quedar estacionado acá, sin ruido y sin borrarlo."
     >
@@ -37,22 +38,8 @@ export function ParkingView({ projects }: { projects: ParkingProject[] }) {
               </div>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                <div className="surface-2 rounded-[22px] border px-4 py-4">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/80">
-                    Tareas totales
-                  </p>
-                  <p className="mt-2 text-xl font-semibold text-white">
-                    {project.taskSummary.total}
-                  </p>
-                </div>
-                <div className="surface-2 rounded-[22px] border px-4 py-4">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/80">
-                    Pendientes
-                  </p>
-                  <p className="mt-2 text-xl font-semibold text-white">
-                    {project.taskSummary.pending}
-                  </p>
-                </div>
+                <MetricCard label="Tareas totales" value={project.taskSummary.total} />
+                <MetricCard label="Pendientes" value={project.taskSummary.pending} />
               </div>
             </section>
           ))}
@@ -61,7 +48,7 @@ export function ParkingView({ projects }: { projects: ParkingProject[] }) {
         <EmptyState
           icon={PauseCircle}
           title="No hay proyectos estacionados."
-          description="Si algo hoy no merece foco, podés mandarlo a Parking desde cualquiera de tus áreas."
+          description="Si algo hoy no merece foco, podés mandarlo a Estacionados desde cualquiera de tus áreas."
         />
       )}
     </PageShell>

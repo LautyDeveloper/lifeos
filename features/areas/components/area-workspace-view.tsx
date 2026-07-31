@@ -3,7 +3,9 @@
 import Link from "next/link"
 import { ChevronDown, FolderOpenDot } from "lucide-react"
 
+import { SectionHeading } from "@/components/shared/content-patterns"
 import { PageShell } from "@/components/shared/page-shell"
+import { PriorityBadge, StatusBadge } from "@/components/ui/badges"
 import { CreateTaskForm } from "@/features/areas/components/create-task-form"
 import { PauseProjectForm } from "@/features/areas/components/pause-project-form"
 import { ProjectPriorityForm } from "@/features/areas/components/project-priority-form"
@@ -19,32 +21,28 @@ import { cn } from "@/lib/utils"
 import {
   canCreateTasksInProject,
   canPlanTasksInProject,
-  priorityLabels,
-  projectStatusLabels,
   projectStatusSectionLabels,
   type VisibleAreaProjectStatus,
 } from "@/types/domain"
 
 const projectSections: VisibleAreaProjectStatus[] = ["active", "backlog", "done"]
 
-function ProjectSection({
-  project,
-  path,
-  filter,
-}: {
-  project: AreaWorkspace["containers"][number]["projects"][number]
-  path: string
-  filter: AreaTaskFilter
-}) {
-  const storageKey = `life-os.project-open.${project.id}`
-  const [open, setOpen] = useLocalStorage(storageKey, true)
-  const visibleTasks = project.tasks.filter((task) =>
+type AreaProject = AreaWorkspace["containers"][number]["projects"][number]
+
+function filterTasks(project: AreaProject, filter: AreaTaskFilter) {
+  return project.tasks.filter((task) =>
     filter === "completed"
       ? task.completed
       : filter === "today"
         ? !task.completed && isDateToday(task.plannedDate)
         : !task.completed
   )
+}
+
+function ProjectSection({ project, path, filter }: { project: AreaProject; path: string; filter: AreaTaskFilter }) {
+  const storageKey = `life-os.project-open.${project.id}`
+  const [open, setOpen] = useLocalStorage(storageKey, true)
+  const visibleTasks = filterTasks(project, filter)
   const completed = project.tasks.filter((task) => task.completed).length
   const percent = project.tasks.length ? Math.round((completed / project.tasks.length) * 100) : 0
   const canPlanTasks = canPlanTasksInProject(project.status)
@@ -54,267 +52,127 @@ function ProjectSection({
     <details
       id={`project-${project.id}`}
       open={open}
-      onToggle={(event) => {
-        const next = event.currentTarget.open
-        setOpen(next)
-      }}
-      className="group scroll-mt-24 border-t border-white/[0.06] first:border-t-0"
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+      className="group scroll-mt-24 border-t border-white/[0.08] first:border-t-0"
     >
-      <summary className="flex min-h-[4.5rem] cursor-pointer list-none items-start gap-3 py-5 [&::-webkit-details-marker]:hidden">
-        <ChevronDown className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
-        <div className="min-w-0 flex-1 space-y-2">
-          <p className="content-title text-[1.04rem]">{project.title}</p>
-          <div className="space-y-1.5">
-            {project.description ? (
-              <p className="context-line max-w-2xl">{project.description}</p>
-            ) : null}
-            <div className="meta-row">
-              <span className="meta-item">{projectStatusLabels[project.status]}</span>
-              <span className="meta-item">{priorityLabels[project.priority]}</span>
-              <span className="meta-item">{completed}/{project.tasks.length} tareas</span>
-              <span className="meta-item">{percent}% completo</span>
+      <summary className="grid min-h-24 cursor-pointer list-none gap-4 py-5 outline-none sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start [&::-webkit-details-marker]:hidden">
+        <div className="flex min-w-0 gap-3">
+          <ChevronDown className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+          <div className="min-w-0 space-y-2.5">
+            <p className="content-title text-[1.05rem]">{project.title}</p>
+            {project.description ? <p className="context-line max-w-2xl">{project.description}</p> : null}
+            <div className="flex flex-wrap gap-2">
+              <StatusBadge status={project.status} />
+              <PriorityBadge priority={project.priority} />
+              <span className="chip-subtle min-h-7 px-2.5 text-[11px]">{completed}/{project.tasks.length} tareas</span>
             </div>
           </div>
         </div>
-        <div className="hidden pt-0.5 sm:flex">
-          <PauseProjectForm projectId={project.id} path={path} />
+        <div className="flex items-center gap-3 pl-7 sm:min-w-40 sm:pl-0">
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.07]" aria-label={`${percent}% completado`}>
+            <div className="h-full rounded-full bg-primary/85 transition-all" style={{ width: `${percent}%` }} />
+          </div>
+          <span className="w-9 text-right text-xs font-medium text-muted-foreground">{percent}%</span>
         </div>
       </summary>
 
-      <div className="space-y-5 pb-6 pl-0 sm:pl-7">
-        <div className="flex flex-wrap gap-2">
-          <ProjectStatusForm
-            key={`${project.id}-${project.status}`}
-            projectId={project.id}
-            path={path}
-            status={project.status as VisibleAreaProjectStatus}
-          />
-          <ProjectPriorityForm
-            key={`${project.id}-${project.priority}`}
-            projectId={project.id}
-            path={path}
-            priority={project.priority}
-          />
+      <div className="pb-6 pl-0 sm:pl-7">
+        <div className="flex flex-wrap items-center gap-2 border-y border-white/[0.08] py-3">
+          <ProjectStatusForm key={`${project.id}-${project.status}`} projectId={project.id} path={path} status={project.status as VisibleAreaProjectStatus} />
+          <ProjectPriorityForm key={`${project.id}-${project.priority}`} projectId={project.id} path={path} priority={project.priority} />
+          <div className="sm:ml-auto"><PauseProjectForm projectId={project.id} path={path} /></div>
         </div>
 
         {visibleTasks.length ? (
-          <div className="surface-2 divide-y divide-white/[0.06] rounded-[22px] border px-4">
+          <div className="divide-y divide-white/[0.08]">
             {visibleTasks.map((task) => (
-              <div key={task.id} className="flex items-start gap-3 py-4">
+              <article key={task.id} className="flex items-start gap-3 py-4">
                 <TaskToggleForm taskId={task.id} completed={task.completed} path={path} />
                 <div className="min-w-0 flex-1 space-y-2 pt-0.5">
-                  <p
-                    className={cn(
-                      "content-title",
-                      task.completed && "text-muted-foreground line-through"
-                    )}
-                  >
-                    {task.title}
-                  </p>
-                  <div className="space-y-2">
-                    <div className="context-line">
-                      {task.completed
-                        ? "Tarea completada."
-                        : canPlanTasks && task.plannedDate
-                          ? "Ya está planificada dentro del sistema."
-                          : canPlanTasks
-                            ? "Todavía no tiene una fecha de ejecución."
-                            : "Queda visible, pero no se planifica hasta activar el proyecto."}
-                    </div>
-                    <div className="meta-row">
-                      <span className="meta-item">{priorityLabels[task.priority]}</span>
-                      {task.plannedDate ? (
-                        <span className="meta-item">
-                          {new Intl.DateTimeFormat("es-AR", {
-                            day: "2-digit",
-                            month: "short",
-                          }).format(task.plannedDate)}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
+                  <p className={cn("content-title", task.completed && "text-muted-foreground line-through")}>{task.title}</p>
                   <div className="flex flex-wrap items-center gap-2">
-                    <TaskPriorityForm
-                      key={`${task.id}-${task.priority}`}
-                      taskId={task.id}
-                      path={path}
-                      priority={task.priority}
-                    />
+                    <PriorityBadge priority={task.priority} />
+                    {task.plannedDate ? (
+                      <span className="chip-subtle min-h-7 px-2.5 text-[11px]">
+                        {new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short" }).format(task.plannedDate)}
+                      </span>
+                    ) : null}
                   </div>
+                  <TaskPriorityForm key={`${task.id}-${task.priority}`} taskId={task.id} path={path} priority={task.priority} />
                   {!task.completed && canPlanTasks ? (
-                    <TaskPlanningControls
-                      key={`${task.id}-${task.plannedDate?.toISOString() ?? "none"}`}
-                      taskId={task.id}
-                      path={path}
-                      plannedDate={task.plannedDate}
-                    />
+                    <TaskPlanningControls key={`${task.id}-${task.plannedDate?.toISOString() ?? "none"}`} taskId={task.id} path={path} plannedDate={task.plannedDate} />
                   ) : null}
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         ) : (
-          <p className="py-4 text-sm text-muted-foreground">No hay tareas para este filtro.</p>
+          <p className="py-6 text-sm text-muted-foreground">No hay tareas para este filtro.</p>
         )}
 
         {canCreateTasks ? (
-          <div>
-            <CreateTaskForm projectId={project.id} path={path} />
-          </div>
+          <div className="border-t border-white/[0.08] pt-4"><CreateTaskForm projectId={project.id} path={path} /></div>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            Este proyecto ya está terminado. Si necesitás seguir sumando trabajo, volvelo a activo o backlog.
-          </p>
+          <p className="border-t border-white/[0.08] pt-4 text-sm text-muted-foreground">Este proyecto está terminado. Volvelo a activo o backlog para sumar trabajo.</p>
         )}
       </div>
     </details>
   )
 }
 
-function ProjectGroup({
-  title,
-  emptyMessage,
-  projects,
-  path,
-  filter,
-}: {
-  title: string
-  emptyMessage: string
-  projects: AreaWorkspace["containers"][number]["projects"]
-  path: string
-  filter: AreaTaskFilter
-}) {
+function StatusGroup({ status, projects, path, filter }: { status: VisibleAreaProjectStatus; projects: AreaProject[]; path: string; filter: AreaTaskFilter }) {
+  if (!projects.length) return null
+
   return (
-    <div className="surface-2 rounded-[24px] border">
-      <div className="flex items-center justify-between px-4 py-3.5">
-        <p className="text-sm font-medium text-white">{title}</p>
-        <span className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/75">{projects.length}</span>
+    <section aria-labelledby={`status-${status}-${projects[0].id}`}>
+      <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+        <h4 id={`status-${status}-${projects[0].id}`} className="text-sm font-semibold text-white">{projectStatusSectionLabels[status]}</h4>
+        <span className="chip-subtle min-h-7 px-2.5 text-[11px]">{projects.length}</span>
       </div>
-      <div className="border-t border-white/[0.06] px-4">
-        {projects.length ? (
-          projects.map((project) => (
-            <ProjectSection key={project.id} project={project} path={path} filter={filter} />
-          ))
-        ) : (
-          <p className="py-5 text-sm text-muted-foreground">{emptyMessage}</p>
-        )}
-      </div>
-    </div>
+      <div>{projects.map((project) => <ProjectSection key={project.id} project={project} path={path} filter={filter} />)}</div>
+    </section>
   )
 }
 
-export function AreaWorkspaceView({
-  slug,
-  workspace,
-  filter = "active",
-}: {
-  slug: AreaPageSlug
-  workspace: AreaWorkspace | null
-  filter?: AreaTaskFilter
-}) {
+export function AreaWorkspaceView({ slug, workspace, filter = "active" }: { slug: AreaPageSlug; workspace: AreaWorkspace | null; filter?: AreaTaskFilter }) {
   const config = areaPageConfig[slug]
   const path = `/${slug}`
-  const projects =
-    workspace?.containers.reduce((sum, container) => sum + container.projects.length, 0) ?? 0
-  const tasks =
-    workspace?.containers.reduce(
-      (sum, container) =>
-        sum + container.projects.reduce((inner, project) => inner + project.tasks.length, 0),
-      0
-    ) ?? 0
+  const projects = workspace?.containers.reduce((sum, container) => sum + container.projects.length, 0) ?? 0
+  const tasks = workspace?.containers.reduce((sum, container) => sum + container.projects.reduce((inner, project) => inner + project.tasks.length, 0), 0) ?? 0
 
   return (
-    <PageShell
-      eyebrow="Área"
-      title={config.title}
-      description={config.description}
-      actions={
-        workspace ? (
-          <div className="meta-row justify-start md:justify-end">
-            <span className="meta-item"><b className="text-white">{projects}</b> proyectos</span>
-            <span className="meta-item"><b className="text-white">{tasks}</b> tareas</span>
-          </div>
-        ) : null
-      }
-    >
+    <PageShell eyebrow="Área" title={config.title} description={config.description} actions={workspace ? <div className="meta-row"><span className="meta-item"><b className="text-white">{projects}</b> proyectos</span><span className="meta-item"><b className="text-white">{tasks}</b> tareas</span></div> : null}>
       {!workspace ? (
-        <section className="surface-1 rounded-[28px] border p-8 text-center">
-          <p className="font-medium text-white">No pudimos cargar esta área.</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Revisá la conexión de datos e intentá nuevamente.
-          </p>
-        </section>
+        <section className="surface-1 rounded-[28px] border p-8 text-center"><p className="font-medium text-white">No pudimos cargar esta área.</p><p className="mt-2 text-sm text-muted-foreground">Revisá la conexión de datos e intentá nuevamente.</p></section>
       ) : workspace.containers.length === 0 ? (
-        <section className="surface-1 rounded-[28px] border p-8 text-center">
-          <p className="font-medium text-white">Esta área todavía está vacía.</p>
-        </section>
+        <section className="surface-1 rounded-[28px] border p-8 text-center"><p className="font-medium text-white">Esta área todavía está vacía.</p></section>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-6">
           <nav aria-label="Filtrar tareas" className="flex flex-wrap gap-2">
-            {([
-              ["active", "Activas"],
-              ["today", "Para hoy"],
-              ["completed", "Completadas"],
-            ] as const).map(([value, label]) => (
-              <Link
-                key={value}
-                href={`${path}?filter=${value}`}
-                aria-current={filter === value ? "page" : undefined}
-                className={cn(
-                  "inline-flex min-h-10 items-center rounded-[18px] border px-4 text-sm transition",
-                  filter === value
-                    ? "border-white/[0.08] bg-white/[0.045] text-white"
-                    : "border-white/[0.05] text-muted-foreground hover:bg-white/[0.03] hover:text-white"
-                )}
-              >
-                {label}
-              </Link>
+            {([['active', 'Activas'], ['today', 'Para hoy'], ['completed', 'Completadas']] as const).map(([value, label]) => (
+              <Link key={value} href={`${path}?filter=${value}`} aria-current={filter === value ? "page" : undefined} className={cn("inline-flex min-h-11 items-center rounded-[18px] border px-4 text-sm font-medium transition", filter === value ? "border-primary/25 bg-primary/12 text-white" : "border-white/[0.1] text-muted-foreground hover:bg-white/[0.04] hover:text-white")}>{label}</Link>
             ))}
           </nav>
+
           {workspace.containers.map((container) => {
-            const groupedProjects = projectSections.reduce(
-              (accumulator, status) => {
-                accumulator[status] = container.projects.filter((project) => project.status === status)
-                return accumulator
-              },
-              {
-                active: [] as AreaWorkspace["containers"][number]["projects"],
-                backlog: [] as AreaWorkspace["containers"][number]["projects"],
-                done: [] as AreaWorkspace["containers"][number]["projects"],
-              }
-            )
+            const grouped = projectSections.reduce((acc, status) => {
+              acc[status] = container.projects.filter((project) => project.status === status)
+              return acc
+            }, { active: [] as AreaProject[], backlog: [] as AreaProject[], done: [] as AreaProject[] })
+            const pending = container.projects.reduce((sum, project) => sum + project.tasks.filter((task) => !task.completed).length, 0)
 
             return (
-              <section key={container.id} className="surface-1 rounded-[30px] border px-5 py-6 sm:px-7">
-                <div className="flex items-start gap-4 pb-6">
-                  <div className="flex size-11 shrink-0 items-center justify-center rounded-[18px] border border-primary/10 bg-primary/8 text-primary/85">
-                    <FolderOpenDot className="size-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold tracking-[-0.03em] text-white">{container.name}</h3>
-                    {container.description ? (
-                      <p className="context-line mt-2">{container.description}</p>
-                    ) : null}
-                  </div>
-                </div>
+              <section key={container.id} className="surface-1 rounded-[30px] border p-5 sm:p-7">
+                <SectionHeading
+                  title={container.name}
+                  description={container.description ?? undefined}
+                  action={<div className="meta-row"><span className="meta-item"><FolderOpenDot className="size-4 text-primary" /> {container.projects.length} proyectos</span><span className="meta-item">{pending} pendientes</span></div>}
+                />
                 {container.projects.length ? (
-                  <div className="space-y-3">
-                    {projectSections.map((status) => (
-                      <ProjectGroup
-                        key={status}
-                        title={projectStatusSectionLabels[status]}
-                        emptyMessage={`No hay proyectos ${projectStatusSectionLabels[status].toLowerCase()} en este espacio.`}
-                        projects={groupedProjects[status]}
-                        path={path}
-                        filter={filter}
-                      />
-                    ))}
+                  <div className="mt-7 space-y-7">
+                    {projectSections.map((status) => <StatusGroup key={status} status={status} projects={grouped[status]} path={path} filter={filter} />)}
                   </div>
-                ) : (
-                  <p className="border-t border-white/[0.06] pt-6 text-sm text-muted-foreground">
-                    No hay proyectos en este espacio.
-                  </p>
-                )}
+                ) : <p className="mt-6 border-t border-white/[0.08] pt-6 text-sm text-muted-foreground">No hay proyectos en este espacio.</p>}
               </section>
             )
           })}
