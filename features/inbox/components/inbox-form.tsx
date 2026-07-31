@@ -50,10 +50,10 @@ export function InboxForm({
       <div className="flex flex-col gap-6">
         <div className="space-y-3">
           <p className="eyebrow">{compact ? "Nueva captura" : "Captura rápida"}</p>
-          <p className="text-lg font-medium tracking-[-0.03em] text-white">
+          <p className="text-xl font-medium tracking-[-0.035em] text-white">
             Soltalo ahora. Ordenar viene después.
           </p>
-          <p className="text-sm leading-7 text-muted-foreground">
+          <p className="context-line">
             Soltalo acá. No hace falta decidir todavía si es proyecto, tarea o nota.
           </p>
         </div>

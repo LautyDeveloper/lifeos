@@ -54,11 +54,11 @@ export function DashboardView({ summary }: { summary: DashboardSummary }) {
       ) : (
         <div className="grid gap-6 xl:grid-cols-[1.35fr_0.8fr]">
           <section className="surface-1 rounded-[30px] border p-6 md:p-7 xl:col-span-2">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-              <div>
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+              <div className="space-y-2">
                 <p className="eyebrow">Quick actions</p>
-                <h3 className="mt-3 text-2xl font-semibold tracking-[-0.035em] text-white">Movete sin cambiar de pantalla</h3>
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
+                <h3 className="text-2xl font-semibold tracking-[-0.035em] text-white">Movete sin cambiar de pantalla</h3>
+                <p className="context-line max-w-2xl">
                   Capturá, guardá contexto o saltá directo a ejecutar.
                 </p>
               </div>
@@ -73,9 +73,9 @@ export function DashboardView({ summary }: { summary: DashboardSummary }) {
                 <InboxForm databaseReady={summary.databaseReady} compact />
               </div>
               <div className="surface-2 rounded-[24px] border p-5">
-                <div className="space-y-3">
-                  <p className="text-sm font-medium text-white">Nueva nota rápida</p>
-                  <p className="text-sm leading-7 text-muted-foreground">
+                <div className="space-y-2">
+                  <p className="content-title">Nueva nota rápida</p>
+                  <p className="context-line">
                     Guardá una referencia corta en Biblioteca sin salir del dashboard.
                   </p>
                 </div>
@@ -85,24 +85,34 @@ export function DashboardView({ summary }: { summary: DashboardSummary }) {
               </div>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
                 <Link href="/inbox" className="surface-2 group rounded-[24px] border p-5 transition hover:border-white/[0.07] hover:bg-white/[0.03]">
-                  <Inbox className="size-5 text-primary/90" />
-                  <p className="mt-5 text-3xl font-semibold text-white">{summary.pendingInboxCount}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">capturas por procesar</p>
+                  <div className="space-y-2">
+                    <Inbox className="size-5 text-primary/90" />
+                    <p className="content-title text-lg">Inbox pendiente</p>
+                    <p className="context-line">Capturas que todavía no tienen destino dentro del sistema.</p>
+                    <div className="meta-row">
+                      <span className="meta-item"><b className="text-white">{summary.pendingInboxCount}</b> por procesar</span>
+                    </div>
+                  </div>
                 </Link>
                 <div className="surface-2 rounded-[24px] border p-5">
-                  <Layers3 className="size-5 text-primary/90" />
-                  <p className="mt-5 text-3xl font-semibold text-white">{summary.activeProjectsCount}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">proyectos activos</p>
+                  <div className="space-y-2">
+                    <Layers3 className="size-5 text-primary/90" />
+                    <p className="content-title text-lg">Proyectos activos</p>
+                    <p className="context-line">Lo que hoy sigue vivo y en foco dentro de tus áreas.</p>
+                    <div className="meta-row">
+                      <span className="meta-item"><b className="text-white">{summary.activeProjectsCount}</b> activos</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </section>
 
           <section className="surface-1 rounded-[30px] border p-6 md:p-7">
-            <div className="flex items-end justify-between gap-4">
-              <div>
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <div className="space-y-2">
                 <p className="eyebrow">Tu día</p>
-                <h3 className="mt-3 text-2xl font-semibold tracking-[-0.035em] text-white">Lo que ya decidiste</h3>
+                <h3 className="text-2xl font-semibold tracking-[-0.035em] text-white">Lo que ya decidiste</h3>
               </div>
               <Link href="/today" className="flex min-h-11 items-center gap-2 text-sm font-medium text-primary hover:text-white">
                 Ver Hoy <ArrowRight className="size-4" />
@@ -112,11 +122,13 @@ export function DashboardView({ summary }: { summary: DashboardSummary }) {
               {summary.todayTasks.length ? summary.todayTasks.slice(0, 3).map((task) => (
                 <div key={task.id} className="flex items-start gap-4 py-5 first:pt-0 last:pb-0">
                   <CircleDot className="mt-1 size-4 shrink-0 text-primary/85" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-white">{task.title}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{task.area.name} · {task.project.title}</p>
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <p className="content-title">{task.title}</p>
+                    <p className="context-line">{task.area.name} · {task.project.title}</p>
+                    <div className="meta-row">
+                      <span className="meta-item">{priorityLabels[task.priority]}</span>
+                    </div>
                   </div>
-                  <span className="chip-subtle px-2.5 py-1 text-[11px]">{priorityLabels[task.priority]}</span>
                 </div>
               )) : (
                 <div className="py-8 text-center">
@@ -129,9 +141,9 @@ export function DashboardView({ summary }: { summary: DashboardSummary }) {
 
           <section className="surface-1 rounded-[30px] border p-6 md:p-7">
             <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-white">Notas recientes</p>
-                <p className="mt-1 text-sm leading-7 text-muted-foreground">Contexto vivo para decidir mejor.</p>
+              <div className="space-y-2">
+                <p className="content-title">Notas recientes</p>
+                <p className="context-line">Contexto vivo para decidir mejor.</p>
               </div>
               <Link href="/library" className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-white">
                 <BookOpenText className="size-4" /> Biblioteca
@@ -145,15 +157,13 @@ export function DashboardView({ summary }: { summary: DashboardSummary }) {
                     href={`/library?note=${note.id}`}
                     className="block rounded-[22px] border border-white/[0.06] bg-white/[0.02] p-4 transition hover:border-white/[0.08] hover:bg-white/[0.035]"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="line-clamp-1 text-sm font-medium text-white">{note.title}</p>
-                      <span className="shrink-0 text-[11px] text-muted-foreground">
-                        {formatNoteDate(note.updatedAt)}
-                      </span>
+                    <div className="space-y-2">
+                      <p className="content-title line-clamp-1">{note.title}</p>
+                      <p className="context-line">{getNotePreview(note.content)}</p>
+                      <div className="meta-row">
+                        <span className="meta-item">Editada {formatNoteDate(note.updatedAt)}</span>
+                      </div>
                     </div>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      {getNotePreview(note.content)}
-                    </p>
                   </Link>
                 ))
               ) : (
@@ -168,10 +178,10 @@ export function DashboardView({ summary }: { summary: DashboardSummary }) {
           </section>
 
           <section className="surface-1 rounded-[30px] border p-6 md:p-7 xl:col-span-2">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-white">Áreas</p>
-                <p className="mt-1 text-sm leading-7 text-muted-foreground">Dónde está viviendo tu energía.</p>
+            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <div className="space-y-2">
+                <p className="content-title">Áreas</p>
+                <p className="context-line">Dónde está viviendo tu energía.</p>
               </div>
               <Link href="/library" className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-white">
                 <BookOpenText className="size-4" /> Biblioteca
@@ -180,8 +190,10 @@ export function DashboardView({ summary }: { summary: DashboardSummary }) {
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {summary.areas.map((area) => (
                 <div key={area.id} className="surface-2 rounded-[22px] border p-4">
-                  <p className="text-sm font-medium text-white">{area.name}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{area.projects} proyectos</p>
+                  <p className="content-title">{area.name}</p>
+                  <div className="meta-row mt-2">
+                    <span className="meta-item"><b className="text-white">{area.projects}</b> proyectos</span>
+                  </div>
                 </div>
               ))}
             </div>

@@ -55,16 +55,16 @@ export function InboxList({
 
   return (
     <section className="surface-1 rounded-[28px] border p-6 md:p-7">
-      <div className="flex items-center justify-between gap-4">
+      <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
         <div className="space-y-1">
           <p className="eyebrow">Inbox activo</p>
-          <p className="text-base font-medium text-white">Por decidir</p>
-          <p className="text-sm leading-7 text-muted-foreground">
+          <p className="content-title text-lg">Por decidir</p>
+          <p className="context-line">
             Lo más reciente aparece primero.
           </p>
         </div>
-        <div className="chip-subtle px-3 py-1 text-[11px]">
-          {items.length} capturas
+        <div className="meta-row md:justify-end">
+          <span className="meta-item"><b className="text-white">{items.length}</b> capturas</span>
         </div>
       </div>
 
@@ -74,8 +74,13 @@ export function InboxList({
             key={item.id}
             className="py-5 first:pt-0 last:pb-0"
           >
-            <div className="flex items-start justify-between gap-5">
-              <p className="max-w-2xl text-sm leading-7 text-white">{item.content}</p>
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+              <div className="space-y-2">
+                <p className="text-base leading-8 text-white">{item.content}</p>
+                <div className="meta-row">
+                  <span className="meta-item">Capturado {formatCapturedAt(item.capturedAt)}</span>
+                </div>
+              </div>
               <InboxProcessDialog
                 item={{
                   id: item.id,
@@ -86,9 +91,6 @@ export function InboxList({
                 databaseReady={databaseReady}
               />
             </div>
-            <p className="mt-3 text-[11px] uppercase tracking-[0.16em] text-muted-foreground/75">
-              Capturado {formatCapturedAt(item.capturedAt)}
-            </p>
           </article>
         ))}
       </div>

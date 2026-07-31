@@ -1,10 +1,10 @@
 import { PauseCircle } from "lucide-react"
 
 import { PageShell } from "@/components/shared/page-shell"
-import { PriorityBadge, StatusBadge } from "@/components/ui/badges"
 import { EmptyState } from "@/components/ui/empty-state"
 import { ResumeProjectForm } from "@/features/parking/components/resume-project-form"
 import type { ParkingProject } from "@/features/parking/repository"
+import { priorityLabels, projectStatusLabels } from "@/types/domain"
 
 export function ParkingView({ projects }: { projects: ParkingProject[] }) {
   return (
@@ -17,21 +17,21 @@ export function ParkingView({ projects }: { projects: ParkingProject[] }) {
         <div className="space-y-5">
           {projects.map((project) => (
             <section key={project.id} className="surface-1 rounded-[28px] border p-6 sm:p-7">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="space-y-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-xl font-semibold tracking-[-0.03em] text-white">{project.title}</h3>
-                    <StatusBadge status={project.status} />
-                    <PriorityBadge priority={project.priority} />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
+              <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                <div className="space-y-2.5">
+                  <p className="content-title text-xl">{project.title}</p>
+                  <p className="context-line">
                     {project.area.name} · {project.container.name}
                   </p>
                   {project.description ? (
-                    <p className="max-w-2xl text-sm leading-7 text-muted-foreground">
+                    <p className="context-line max-w-2xl">
                       {project.description}
                     </p>
                   ) : null}
+                  <div className="meta-row">
+                    <span className="meta-item">{projectStatusLabels[project.status]}</span>
+                    <span className="meta-item">{priorityLabels[project.priority]}</span>
+                  </div>
                 </div>
                 <ResumeProjectForm projectId={project.id} path="/parking" />
               </div>

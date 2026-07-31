@@ -4,7 +4,6 @@ import Link from "next/link"
 import { ChevronDown, FolderOpenDot } from "lucide-react"
 
 import { PageShell } from "@/components/shared/page-shell"
-import { PriorityBadge, StatusBadge } from "@/components/ui/badges"
 import { CreateTaskForm } from "@/features/areas/components/create-task-form"
 import { PauseProjectForm } from "@/features/areas/components/pause-project-form"
 import { ProjectPriorityForm } from "@/features/areas/components/project-priority-form"
@@ -20,6 +19,8 @@ import { cn } from "@/lib/utils"
 import {
   canCreateTasksInProject,
   canPlanTasksInProject,
+  priorityLabels,
+  projectStatusLabels,
   projectStatusSectionLabels,
   type VisibleAreaProjectStatus,
 } from "@/types/domain"
@@ -59,26 +60,28 @@ function ProjectSection({
       }}
       className="group scroll-mt-24 border-t border-white/[0.06] first:border-t-0"
     >
-      <summary className="flex min-h-[4.5rem] cursor-pointer list-none items-center gap-3 py-5 [&::-webkit-details-marker]:hidden">
-        <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
-        <div className="min-w-0 flex-1">
-          <p className="text-[1.02rem] font-medium tracking-[-0.02em] text-white">{project.title}</p>
-          <p className="mt-1 text-[11px] uppercase tracking-[0.16em] text-muted-foreground/75">
-            {completed}/{project.tasks.length} tareas · {percent}%
-          </p>
+      <summary className="flex min-h-[4.5rem] cursor-pointer list-none items-start gap-3 py-5 [&::-webkit-details-marker]:hidden">
+        <ChevronDown className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <p className="content-title text-[1.04rem]">{project.title}</p>
+          <div className="space-y-1.5">
+            {project.description ? (
+              <p className="context-line max-w-2xl">{project.description}</p>
+            ) : null}
+            <div className="meta-row">
+              <span className="meta-item">{projectStatusLabels[project.status]}</span>
+              <span className="meta-item">{priorityLabels[project.priority]}</span>
+              <span className="meta-item">{completed}/{project.tasks.length} tareas</span>
+              <span className="meta-item">{percent}% completo</span>
+            </div>
+          </div>
         </div>
-        <div className="hidden items-center gap-2 sm:flex">
-          <StatusBadge status={project.status} />
-          <PriorityBadge priority={project.priority} />
+        <div className="hidden pt-0.5 sm:flex">
           <PauseProjectForm projectId={project.id} path={path} />
         </div>
       </summary>
 
       <div className="space-y-5 pb-6 pl-0 sm:pl-7">
-        {project.description ? (
-          <p className="max-w-2xl text-sm leading-7 text-muted-foreground">{project.description}</p>
-        ) : null}
-
         <div className="flex flex-wrap gap-2">
           <ProjectStatusForm
             key={`${project.id}-${project.status}`}
@@ -99,17 +102,38 @@ function ProjectSection({
             {visibleTasks.map((task) => (
               <div key={task.id} className="flex items-start gap-3 py-4">
                 <TaskToggleForm taskId={task.id} completed={task.completed} path={path} />
-                <div className="min-w-0 flex-1 pt-1.5">
+                <div className="min-w-0 flex-1 space-y-2 pt-0.5">
                   <p
                     className={cn(
-                      "text-sm leading-7 text-white",
+                      "content-title",
                       task.completed && "text-muted-foreground line-through"
                     )}
                   >
                     {task.title}
                   </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2">
-                    <PriorityBadge priority={task.priority} />
+                  <div className="space-y-2">
+                    <div className="context-line">
+                      {task.completed
+                        ? "Tarea completada."
+                        : canPlanTasks && task.plannedDate
+                          ? "Ya está planificada dentro del sistema."
+                          : canPlanTasks
+                            ? "Todavía no tiene una fecha de ejecución."
+                            : "Queda visible, pero no se planifica hasta activar el proyecto."}
+                    </div>
+                    <div className="meta-row">
+                      <span className="meta-item">{priorityLabels[task.priority]}</span>
+                      {task.plannedDate ? (
+                        <span className="meta-item">
+                          {new Intl.DateTimeFormat("es-AR", {
+                            day: "2-digit",
+                            month: "short",
+                          }).format(task.plannedDate)}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
                     <TaskPriorityForm
                       key={`${task.id}-${task.priority}`}
                       taskId={task.id}
@@ -124,11 +148,6 @@ function ProjectSection({
                       path={path}
                       plannedDate={task.plannedDate}
                     />
-                  ) : null}
-                  {!task.completed && !canPlanTasks ? (
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Activá el proyecto para planificar estas tareas.
-                    </p>
                   ) : null}
                 </div>
               </div>
@@ -211,13 +230,9 @@ export function AreaWorkspaceView({
       description={config.description}
       actions={
         workspace ? (
-          <div className="flex gap-3 text-sm text-muted-foreground">
-            <span className="chip-subtle px-3 py-1.5 text-[11px] uppercase tracking-[0.16em]">
-              <b className="mr-1 text-white">{projects}</b> proyectos
-            </span>
-            <span className="chip-subtle px-3 py-1.5 text-[11px] uppercase tracking-[0.16em]">
-              <b className="mr-1 text-white">{tasks}</b> tareas
-            </span>
+          <div className="meta-row justify-start md:justify-end">
+            <span className="meta-item"><b className="text-white">{projects}</b> proyectos</span>
+            <span className="meta-item"><b className="text-white">{tasks}</b> tareas</span>
           </div>
         ) : null
       }
@@ -246,10 +261,10 @@ export function AreaWorkspaceView({
                 href={`${path}?filter=${value}`}
                 aria-current={filter === value ? "page" : undefined}
                 className={cn(
-                  "inline-flex min-h-11 items-center rounded-[18px] border px-4 text-sm transition",
+                  "inline-flex min-h-10 items-center rounded-[18px] border px-4 text-sm transition",
                   filter === value
-                    ? "border-primary/15 bg-primary/12 text-primary"
-                    : "border-white/[0.07] text-muted-foreground hover:bg-white/[0.03] hover:text-white"
+                    ? "border-white/[0.08] bg-white/[0.045] text-white"
+                    : "border-white/[0.05] text-muted-foreground hover:bg-white/[0.03] hover:text-white"
                 )}
               >
                 {label}
@@ -272,13 +287,13 @@ export function AreaWorkspaceView({
             return (
               <section key={container.id} className="surface-1 rounded-[30px] border px-5 py-6 sm:px-7">
                 <div className="flex items-start gap-4 pb-6">
-                  <div className="flex size-11 shrink-0 items-center justify-center rounded-[18px] border border-primary/14 bg-primary/10 text-primary/90">
+                  <div className="flex size-11 shrink-0 items-center justify-center rounded-[18px] border border-primary/10 bg-primary/8 text-primary/85">
                     <FolderOpenDot className="size-4" />
                   </div>
                   <div>
                     <h3 className="text-xl font-semibold tracking-[-0.03em] text-white">{container.name}</h3>
                     {container.description ? (
-                      <p className="mt-2 text-sm leading-7 text-muted-foreground">{container.description}</p>
+                      <p className="context-line mt-2">{container.description}</p>
                     ) : null}
                   </div>
                 </div>

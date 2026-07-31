@@ -128,13 +128,13 @@ function DialogSession({
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={`process-title-${item.id}`} tabIndex={-1} className="surface-1 relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-5 outline-none md:p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.26em] text-primary/90">
+            <p className="eyebrow">
               Procesar inbox
             </p>
-            <h3 id={`process-title-${item.id}`} className="text-2xl font-semibold tracking-tight text-white">
+            <h3 id={`process-title-${item.id}`} className="text-2xl font-semibold tracking-[-0.04em] text-white">
               Elegí dónde guardar esta captura
             </h3>
-            <p className="max-w-xl text-sm leading-7 text-muted-foreground">
+            <p className="context-line max-w-xl">
               Completá solo la información necesaria. La captura saldrá de esta lista.
             </p>
           </div>
@@ -149,11 +149,11 @@ function DialogSession({
           </button>
         </div>
 
-        <div className="mt-5 rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
-          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+        <div className="surface-2 mt-5 rounded-[24px] border p-4">
+          <p className="eyebrow">
             Captura original
           </p>
-          <p className="mt-2 text-sm leading-7 text-white">{item.content}</p>
+          <p className="mt-2 text-base leading-8 text-white">{item.content}</p>
         </div>
 
         <form action={formAction} className="mt-5 space-y-5">
@@ -174,8 +174,8 @@ function DialogSession({
                 className={cn(
                   "rounded-[22px] border px-4 py-4 text-left transition",
                   formState.target === value
-                    ? "border-primary/30 bg-primary/10 text-white"
-                    : "border-white/8 bg-white/[0.03] text-muted-foreground hover:text-white"
+                    ? "border-white/[0.08] bg-white/[0.045] text-white"
+                    : "border-white/[0.06] bg-white/[0.02] text-muted-foreground hover:bg-white/[0.03] hover:text-white"
                 )}
               >
                 <p className="text-sm font-medium">{targetLabels[value]}</p>
@@ -351,7 +351,7 @@ function DialogSession({
                   ) : null}
                 </div>
               ) : (
-                <div className="rounded-[24px] border border-dashed border-white/10 px-5 py-8 text-center">
+              <div className="rounded-[24px] border border-dashed border-white/10 px-5 py-8 text-center">
                   <p className="text-sm font-medium text-white">
                     Todavía no hay proyectos disponibles.
                   </p>
@@ -453,7 +453,7 @@ export function InboxProcessDialog({
         type="button"
         disabled={!databaseReady}
         onClick={() => setSessionId(Date.now())}
-        className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-3 text-xs font-medium text-primary transition hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex min-h-11 items-center gap-2 rounded-[18px] border border-white/[0.07] bg-white/[0.03] px-3 text-xs font-medium text-white transition hover:bg-white/[0.05] disabled:cursor-not-allowed disabled:opacity-60"
       >
         Procesar
         <ChevronDown className="size-3.5" />
