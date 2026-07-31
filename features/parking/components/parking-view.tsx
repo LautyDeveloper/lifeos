@@ -14,13 +14,13 @@ export function ParkingView({ projects }: { projects: ParkingProject[] }) {
       description="Todo lo que hoy no merece atención activa puede quedar estacionado acá, sin ruido y sin borrarlo."
     >
       {projects.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {projects.map((project) => (
-            <section key={project.id} className="surface-1 rounded-2xl border p-5 sm:p-6">
+            <section key={project.id} className="surface-1 rounded-[28px] border p-6 sm:p-7">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-lg font-semibold text-white">{project.title}</h3>
+                    <h3 className="text-xl font-semibold tracking-[-0.03em] text-white">{project.title}</h3>
                     <StatusBadge status={project.status} />
                     <PriorityBadge priority={project.priority} />
                   </div>
@@ -36,17 +36,17 @@ export function ParkingView({ projects }: { projects: ParkingProject[] }) {
                 <ResumeProjectForm projectId={project.id} path="/parking" />
               </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <div className="surface-2 rounded-[22px] border px-4 py-4">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/80">
                     Tareas totales
                   </p>
                   <p className="mt-2 text-xl font-semibold text-white">
                     {project.taskSummary.total}
                   </p>
                 </div>
-                <div className="rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                <div className="surface-2 rounded-[22px] border px-4 py-4">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/80">
                     Pendientes
                   </p>
                   <p className="mt-2 text-xl font-semibold text-white">

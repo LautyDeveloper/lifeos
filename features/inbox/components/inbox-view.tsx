@@ -21,11 +21,11 @@ export async function InboxView() {
       title="Capturá ahora. Decidí después."
       description="Un espacio liviano para sacar ideas de la cabeza sin cortar el ritmo."
     >
-      <div className="grid gap-5 xl:grid-cols-[0.75fr_1.25fr]">
-        <div className="space-y-4">
+      <div className="grid gap-6 xl:grid-cols-[0.7fr_1.3fr]">
+        <div className="space-y-5">
           <InboxForm databaseReady={Boolean(db)} />
 
-          <p className="px-2 text-sm leading-6 text-muted-foreground">
+          <p className="px-1 text-sm leading-7 text-muted-foreground">
             Lo nuevo queda acá hasta que decidas si es una tarea, un proyecto o una nota.
           </p>
         </div>

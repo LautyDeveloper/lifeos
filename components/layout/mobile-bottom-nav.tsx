@@ -14,7 +14,7 @@ export function MobileBottomNav() {
   const moreActive = moreItems.some((item) => pathname.startsWith(item.href))
 
   return (
-    <nav aria-label="Navegación principal" className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-4 rounded-2xl border border-white/10 bg-[oklch(0.16_0.012_260/0.94)] p-1.5 shadow-2xl backdrop-blur-xl md:hidden">
+    <nav aria-label="Navegación principal" className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-4 rounded-[26px] border border-white/[0.08] bg-[oklch(0.17_0.004_225/0.96)] p-1.5 shadow-[0_24px_60px_-24px_rgba(0,0,0,0.85)] backdrop-blur-xl md:hidden">
       {mobileNavigationItems.map((item) => {
         const active = item.href === "#more" ? moreActive : item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)
         const content = (
@@ -25,11 +25,11 @@ export function MobileBottomNav() {
         )
 
         return item.href === "#more" ? (
-          <button key={item.href} type="button" onClick={toggleMobile} aria-label="Abrir más opciones" className={cn("flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-muted-foreground", active && "bg-primary/10 text-primary")}>
+          <button key={item.href} type="button" onClick={toggleMobile} aria-label="Abrir más opciones" className={cn("flex min-h-12 flex-col items-center justify-center gap-1 rounded-[18px] text-muted-foreground transition", active && "bg-white/[0.055] text-foreground")}>
             {content}
           </button>
         ) : (
-          <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={cn("flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-muted-foreground", active && "bg-primary/10 text-primary")}>
+          <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={cn("flex min-h-12 flex-col items-center justify-center gap-1 rounded-[18px] text-muted-foreground transition", active && "bg-white/[0.055] text-foreground")}>
             {content}
           </Link>
         )

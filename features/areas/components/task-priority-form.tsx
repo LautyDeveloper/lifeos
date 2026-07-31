@@ -21,8 +21,8 @@ export function TaskPriorityForm({
   const { notify } = useToast()
 
   return (
-    <label className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/8 px-3 text-xs text-muted-foreground">
-      <span>Prioridad</span>
+    <label className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.015] px-3 text-[11px] text-muted-foreground">
+      <span className="uppercase tracking-[0.14em]">Prioridad</span>
       <select
         value={currentPriority}
         disabled={pending}
@@ -47,7 +47,7 @@ export function TaskPriorityForm({
             notify({ message: result.message, tone: "success" })
           })
         }}
-        className={cn("bg-transparent text-xs text-white outline-none", pending && "opacity-70")}
+        className={cn("bg-transparent text-[11px] text-white outline-none", pending && "opacity-70")}
       >
         {priorityValues.map((option) => (
           <option key={option} value={option} className="bg-[#0b0d12] text-white">

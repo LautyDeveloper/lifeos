@@ -42,8 +42,8 @@ export function InboxList({
 }) {
   if (items.length === 0) {
     return (
-      <section className="surface-1 rounded-2xl border p-6 md:p-8">
-        <div className="px-5 py-10 text-center">
+      <section className="surface-1 rounded-[28px] border p-6 md:p-8">
+        <div className="px-5 py-12 text-center">
           <p className="text-base font-medium text-white">Todavía no hay capturas.</p>
           <p className="mx-auto mt-2 max-w-lg text-sm leading-7 text-muted-foreground">
             Cuando una idea aparezca, entra acá primero. Ordenar viene después.
@@ -54,27 +54,28 @@ export function InboxList({
   }
 
   return (
-    <section className="surface-1 rounded-2xl border p-5 md:p-6">
+    <section className="surface-1 rounded-[28px] border p-6 md:p-7">
       <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-white">Por decidir</p>
-          <p className="text-sm text-muted-foreground">
+        <div className="space-y-1">
+          <p className="eyebrow">Inbox activo</p>
+          <p className="text-base font-medium text-white">Por decidir</p>
+          <p className="text-sm leading-7 text-muted-foreground">
             Lo más reciente aparece primero.
           </p>
         </div>
-        <div className="rounded-full border border-white/8 bg-white/[0.03] px-3 py-1 text-xs text-muted-foreground">
+        <div className="chip-subtle px-3 py-1 text-[11px]">
           {items.length} capturas
         </div>
       </div>
 
-      <div className="mt-5 divide-y divide-white/8">
+      <div className="mt-6 divide-y divide-white/[0.06]">
         {items.map((item) => (
           <article
             key={item.id}
-            className="py-4 first:pt-0 last:pb-0"
+            className="py-5 first:pt-0 last:pb-0"
           >
-            <div className="flex items-start justify-between gap-4">
-              <p className="text-sm leading-7 text-white">{item.content}</p>
+            <div className="flex items-start justify-between gap-5">
+              <p className="max-w-2xl text-sm leading-7 text-white">{item.content}</p>
               <InboxProcessDialog
                 item={{
                   id: item.id,
@@ -85,7 +86,7 @@ export function InboxList({
                 databaseReady={databaseReady}
               />
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">
+            <p className="mt-3 text-[11px] uppercase tracking-[0.16em] text-muted-foreground/75">
               Capturado {formatCapturedAt(item.capturedAt)}
             </p>
           </article>

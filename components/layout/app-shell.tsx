@@ -19,7 +19,7 @@ function AppShellFrame({ children, databaseReady }: { children: React.ReactNode;
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto flex min-h-screen max-w-[1720px] gap-4 px-3 py-3 md:px-4 xl:gap-6 xl:px-6 xl:py-5">
+      <div className="mx-auto flex min-h-screen max-w-[1760px] gap-4 px-3 py-3 md:px-4 xl:gap-8 xl:px-7 xl:py-6">
         <div className="hidden md:block">
           <AppSidebar
             collapsed={collapsed}
@@ -29,12 +29,12 @@ function AppShellFrame({ children, databaseReady }: { children: React.ReactNode;
 
         <div className="relative flex min-w-0 flex-1 flex-col">
           <AppTopbar />
-          <main className="flex-1 px-3 py-5 pb-28 sm:px-4 md:pb-8 xl:px-6 xl:py-8">{children}</main>
+          <main className="flex-1 px-3 py-6 pb-28 sm:px-4 md:pb-8 xl:px-7 xl:py-10">{children}</main>
         </div>
       </div>
 
       {mobileOpen ? (
-        <div className="fixed inset-0 z-50 flex bg-black/60 p-3 backdrop-blur-sm md:hidden">
+        <div className="fixed inset-0 z-50 flex bg-black/65 p-3 backdrop-blur-md md:hidden">
           <button
             type="button"
             aria-label="Cerrar navegación"

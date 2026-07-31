@@ -34,7 +34,7 @@ export function CreateTaskForm({
   }, [state.resetKey, state.status])
 
   if (!open && state.status !== "error") {
-    return <button type="button" onClick={() => setOpen(true)} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-primary hover:bg-primary/10"><Plus className="size-4" /> Agregar tarea</button>
+    return <button type="button" onClick={() => setOpen(true)} className="inline-flex min-h-11 items-center gap-2 rounded-[18px] border border-transparent px-3 text-sm font-medium text-primary transition hover:bg-white/[0.03]"><Plus className="size-4" /> Agregar tarea</button>
   }
 
   return (
@@ -48,8 +48,7 @@ export function CreateTaskForm({
           name="title"
           placeholder="Nueva tarea dentro de este proyecto..."
           className={cn(
-            "h-11 flex-1 rounded-2xl border bg-white/[0.03] px-4 text-sm text-white outline-none transition",
-            "placeholder:text-muted-foreground/80 focus:border-primary/40 focus:ring-4 focus:ring-primary/10",
+            "field-base h-11 flex-1 rounded-2xl px-4 text-sm",
             state.fieldErrors?.title ? "border-destructive/50" : "border-white/8"
           )}
         />
@@ -57,7 +56,7 @@ export function CreateTaskForm({
           label="Agregar tarea"
           pendingLabel="Guardando..."
         />
-        <button type="button" onClick={() => setOpen(false)} className="inline-flex size-11 items-center justify-center rounded-xl text-muted-foreground hover:bg-white/[0.04] hover:text-white" aria-label="Cancelar nueva tarea"><X className="size-4" /></button>
+        <button type="button" onClick={() => setOpen(false)} className="inline-flex size-11 items-center justify-center rounded-[18px] text-muted-foreground transition hover:bg-white/[0.03] hover:text-white" aria-label="Cancelar nueva tarea"><X className="size-4" /></button>
       </div>
 
       {state.fieldErrors?.title?.[0] ? (

@@ -35,7 +35,7 @@ function buildLibraryHref(filters: LibraryFilters) {
 function Highlight({ text, query }: { text: string; query?: string }) {
   if (!query?.trim()) return text
   const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-  return <>{text.split(new RegExp(`(${escaped})`, "ig")).map((part, index) => part.toLowerCase() === query.toLowerCase() ? <mark key={index} className="rounded bg-primary/20 text-white">{part}</mark> : part)}</>
+  return <>{text.split(new RegExp(`(${escaped})`, "ig")).map((part, index) => part.toLowerCase() === query.toLowerCase() ? <mark key={index} className="rounded bg-primary/12 px-0.5 text-white">{part}</mark> : part)}</>
 }
 
 function ArchivedNoteList({
@@ -104,14 +104,14 @@ export function LibraryView({ activeNotes, archivedNotes, selectedNote, filters 
   return (
     <PageShell eyebrow="Biblioteca" title="Ideas a las que vale la pena volver." description="Referencias y notas, separadas del ruido operativo.">
       <div className="grid gap-5 xl:min-h-[calc(100dvh-20rem)] xl:grid-cols-[0.72fr_1.28fr]">
-        <aside className={cn("surface-1 rounded-2xl border p-4 sm:p-5", selectedNote && "hidden xl:block")}>
+        <aside className={cn("surface-1 rounded-[28px] border p-5 sm:p-6", selectedNote && "hidden xl:block")}>
           <form method="get" className="grid gap-3 sm:grid-cols-[1fr_auto] xl:grid-cols-1">
             <label className="relative">
               <Search className="absolute left-3 top-3.5 size-4 text-muted-foreground" />
               <span className="sr-only">Buscar notas</span>
-              <input name="q" defaultValue={filters.query} placeholder="Buscar por título..." className="h-11 w-full rounded-xl border border-white/8 bg-white/[0.025] pl-10 pr-3 text-sm text-white outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/10" />
+              <input name="q" defaultValue={filters.query} placeholder="Buscar por título..." className="field-base h-11 w-full rounded-2xl pl-10 pr-3 text-sm" />
             </label>
-            <select name="sort" defaultValue={filters.sort ?? "recent"} aria-label="Ordenar notas" className="h-11 rounded-xl border border-white/8 bg-card px-3 text-sm text-white outline-none focus:border-primary/40">
+            <select name="sort" defaultValue={filters.sort ?? "recent"} aria-label="Ordenar notas" className="field-base h-11 rounded-2xl px-3 text-sm">
               <option value="recent">Más recientes</option>
               <option value="oldest">Más antiguas</option>
               <option value="title">Por título</option>
@@ -119,15 +119,15 @@ export function LibraryView({ activeNotes, archivedNotes, selectedNote, filters 
             <button type="submit" className="sr-only">Aplicar filtros</button>
           </form>
 
-          <details className="mt-4 rounded-xl border border-white/8">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 text-sm font-medium text-white [&::-webkit-details-marker]:hidden"><FilePlus2 className="size-4 text-primary" /> Nueva nota</summary>
-            <div className="border-t border-white/8 p-3"><LibraryCreateNoteForm /></div>
+          <details className="surface-2 mt-5 rounded-[24px] border">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-4 text-sm font-medium text-white [&::-webkit-details-marker]:hidden"><FilePlus2 className="size-4 text-primary/90" /> Nueva nota</summary>
+            <div className="border-t border-white/[0.06] p-4"><LibraryCreateNoteForm /></div>
           </details>
 
-          <div className="mt-5 space-y-1">
+          <div className="mt-6 space-y-2">
             {activeNotes.length ? activeNotes.map((note) => (
               <Link key={note.id} href={buildNoteHref(note.id, filters)} aria-current={note.id === selectedNote?.id ? "page" : undefined}
-                className={cn("block rounded-xl px-3 py-3 transition", note.id === selectedNote?.id ? "bg-primary/10" : "hover:bg-white/[0.035]")}>
+                className={cn("block rounded-[20px] border border-transparent px-4 py-3.5 transition", note.id === selectedNote?.id ? "border-white/[0.06] bg-white/[0.045]" : "hover:border-white/[0.04] hover:bg-white/[0.025]")}>
                 <p className="line-clamp-1 text-sm font-medium text-white"><Highlight text={note.title} query={filters.query} /></p>
                 <p className="mt-1 line-clamp-1 text-xs text-muted-foreground"><Highlight text={note.content.replace(/\s+/g, " ")} query={filters.query} /></p>
                 <p className="mt-1 text-[11px] text-muted-foreground">Editada {formatNoteDate(note.updatedAt)}</p>
@@ -135,7 +135,7 @@ export function LibraryView({ activeNotes, archivedNotes, selectedNote, filters 
             )) : <p className="py-10 text-center text-sm text-muted-foreground">{filters.query ? "No encontramos notas con ese título." : "Todavía no hay notas activas."}</p>}
           </div>
 
-          <section className="mt-6 rounded-xl border border-white/8 p-3">
+          <section className="surface-2 mt-7 rounded-[24px] border p-4">
             <div className="mb-3 flex items-center gap-2 px-1">
               <Archive className="size-4 text-muted-foreground" />
               <p className="text-sm font-medium text-white">Archivadas</p>
@@ -144,15 +144,15 @@ export function LibraryView({ activeNotes, archivedNotes, selectedNote, filters 
           </section>
         </aside>
 
-        <section className={cn("surface-1 rounded-2xl border p-5 sm:p-7", !selectedNote && "hidden xl:block")}>
+        <section className={cn("surface-1 rounded-[30px] border p-6 sm:p-8", !selectedNote && "hidden xl:block")}>
           {selectedNote ? (
             <>
-              <Link href={selectedIsArchived ? "/library" : baseHref} className="mb-5 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary xl:hidden"><ArrowLeft className="size-4" /> Volver a las notas</Link>
-              <div className="mb-5 flex items-center justify-between gap-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+              <Link href={selectedIsArchived ? "/library" : baseHref} className="mb-6 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary xl:hidden"><ArrowLeft className="size-4" /> Volver a las notas</Link>
+              <div className="mb-6 flex items-center justify-between gap-4">
+                <p className="eyebrow">
                   {selectedIsArchived ? "Nota archivada" : "Nota activa"}
                 </p>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/80">
                   {selectedIsArchived && selectedNote.archivedAt
                     ? `Archivada ${formatNoteDate(selectedNote.archivedAt)}`
                     : `Editada ${formatNoteDate(selectedNote.updatedAt)}`}

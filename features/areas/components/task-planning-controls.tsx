@@ -66,7 +66,7 @@ export function TaskPlanningControls({
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2">
       {currentPlannedDate ? (
-        <span className="inline-flex min-h-8 items-center rounded-full border border-primary/20 bg-primary/10 px-3 text-xs font-medium text-primary">
+        <span className="inline-flex min-h-8 items-center rounded-full border border-primary/14 bg-primary/8 px-3 text-[11px] font-medium text-primary/90">
           {formatPlanningDateLabel(currentPlannedDate)}
         </span>
       ) : null}
@@ -83,7 +83,7 @@ export function TaskPlanningControls({
               return planTaskForTodayAction(data)
             }, getDateDaysFromNow(0))
           }
-          className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/8 px-3 text-xs font-medium text-muted-foreground transition hover:border-primary/25 hover:text-primary"
+          className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.015] px-3 text-[11px] font-medium text-muted-foreground transition hover:border-white/[0.1] hover:text-white"
         >
           {pending ? <LoaderCircle className="size-3.5 animate-spin" /> : <CalendarDays className="size-3.5" />}
           Hoy
@@ -102,14 +102,14 @@ export function TaskPlanningControls({
               return planTaskForTomorrowAction(data)
             }, getDateDaysFromNow(1))
           }
-          className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/8 px-3 text-xs font-medium text-muted-foreground transition hover:border-primary/25 hover:text-primary"
+          className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.015] px-3 text-[11px] font-medium text-muted-foreground transition hover:border-white/[0.1] hover:text-white"
         >
           {pending ? <LoaderCircle className="size-3.5 animate-spin" /> : <CalendarDays className="size-3.5" />}
           Mañana
         </button>
       ) : null}
 
-      <label className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/8 px-3 text-xs font-medium text-muted-foreground transition hover:border-primary/25">
+      <label className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.015] px-3 text-[11px] font-medium text-muted-foreground transition hover:border-white/[0.1] hover:text-white">
         <CalendarDays className="size-3.5" />
         <span>Otra fecha</span>
         <input
@@ -149,7 +149,7 @@ export function TaskPlanningControls({
           variant="ghost"
           size="xs"
           disabled={pending}
-          className={cn("min-h-8 rounded-full px-3 text-xs text-muted-foreground hover:text-white")}
+          className={cn("min-h-8 rounded-full px-3 text-[11px] text-muted-foreground hover:bg-white/[0.03] hover:text-white")}
           onClick={() =>
             syncPlanning(async () => {
               const data = new FormData()
