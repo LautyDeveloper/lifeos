@@ -2,6 +2,7 @@ import Link from "next/link"
 import { CalendarCheck2, Sparkles } from "lucide-react"
 
 import { PageShell } from "@/components/shared/page-shell"
+import { TaskPlanningControls } from "@/features/areas/components/task-planning-controls"
 import { TaskToggleForm } from "@/features/areas/components/task-toggle-form"
 import type { TodayTask } from "@/features/today/repository"
 import { PriorityBadge } from "@/components/ui/badges"
@@ -27,6 +28,12 @@ export function TodayView({ tasks, progress }: { tasks: TodayTask[]; progress: {
                   <div className="min-w-0 flex-1">
                     <p className="font-medium leading-6 text-white">{task.title}</p>
                     <Link href={task.originHref} className="mt-1 inline-flex min-h-7 items-center text-sm text-muted-foreground hover:text-primary">{task.area.name} · {task.container.name} · {task.project.title}</Link>
+                    <TaskPlanningControls
+                      key={`${task.id}-${task.plannedDate?.toISOString() ?? "none"}`}
+                      taskId={task.id}
+                      path="/today"
+                      plannedDate={task.plannedDate}
+                    />
                   </div>
                   <PriorityBadge priority={task.priority} className="hidden sm:inline-flex" />
                 </article>
