@@ -31,11 +31,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((toast) => {
           const Icon = toast.tone === "error" ? CircleAlert : toast.tone === "info" ? Info : CheckCircle2
           return (
-            <div key={toast.id} role="status" className="surface-1 flex w-full items-center gap-3 rounded-xl border p-3 shadow-2xl">
-              <Icon className={toast.tone === "error" ? "size-4 shrink-0 text-red-300" : "size-4 shrink-0 text-primary"} />
-              <p className="min-w-0 flex-1 text-sm text-white">{toast.message}</p>
-              {toast.action ? <button type="button" onClick={async () => { await toast.action?.onClick(); dismiss(toast.id) }} className="min-h-9 rounded-lg px-2 text-sm font-medium text-primary">{toast.action.label}</button> : null}
-              <button type="button" onClick={() => dismiss(toast.id)} className="flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:text-white" aria-label="Cerrar notificación"><X className="size-4" /></button>
+            <div key={toast.id} role="status" className="surface-1 flex w-full items-center gap-3 rounded-[20px] border px-4 py-3 shadow-[0_24px_50px_-26px_rgba(0,0,0,0.9)]">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.02]">
+                <Icon className={toast.tone === "error" ? "size-4 text-red-200" : "size-4 text-primary/90"} />
+              </div>
+              <p className="min-w-0 flex-1 text-sm leading-6 text-white">{toast.message}</p>
+              {toast.action ? <button type="button" onClick={async () => { await toast.action?.onClick(); dismiss(toast.id) }} className="min-h-9 rounded-[14px] px-2.5 text-sm font-medium text-primary hover:text-white">{toast.action.label}</button> : null}
+              <button type="button" onClick={() => dismiss(toast.id)} className="flex size-9 items-center justify-center rounded-[14px] text-muted-foreground hover:bg-white/[0.03] hover:text-white" aria-label="Cerrar notificación"><X className="size-4" /></button>
             </div>
           )
         })}

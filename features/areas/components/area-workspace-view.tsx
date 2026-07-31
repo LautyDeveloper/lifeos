@@ -57,13 +57,13 @@ function ProjectSection({
         const next = event.currentTarget.open
         setOpen(next)
       }}
-      className="group scroll-mt-24 border-t border-white/8 first:border-t-0"
+      className="group scroll-mt-24 border-t border-white/[0.06] first:border-t-0"
     >
-      <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 py-4 [&::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-[4.5rem] cursor-pointer list-none items-center gap-3 py-5 [&::-webkit-details-marker]:hidden">
         <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
         <div className="min-w-0 flex-1">
-          <p className="font-medium text-white">{project.title}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="text-[1.02rem] font-medium tracking-[-0.02em] text-white">{project.title}</p>
+          <p className="mt-1 text-[11px] uppercase tracking-[0.16em] text-muted-foreground/75">
             {completed}/{project.tasks.length} tareas · {percent}%
           </p>
         </div>
@@ -74,9 +74,9 @@ function ProjectSection({
         </div>
       </summary>
 
-      <div className="space-y-4 pb-5 pl-0 sm:pl-7">
+      <div className="space-y-5 pb-6 pl-0 sm:pl-7">
         {project.description ? (
-          <p className="text-sm leading-6 text-muted-foreground">{project.description}</p>
+          <p className="max-w-2xl text-sm leading-7 text-muted-foreground">{project.description}</p>
         ) : null}
 
         <div className="flex flex-wrap gap-2">
@@ -95,14 +95,14 @@ function ProjectSection({
         </div>
 
         {visibleTasks.length ? (
-          <div className="divide-y divide-white/8 rounded-xl bg-white/[0.02] px-3">
+          <div className="surface-2 divide-y divide-white/[0.06] rounded-[22px] border px-4">
             {visibleTasks.map((task) => (
-              <div key={task.id} className="flex items-start gap-3 py-3">
+              <div key={task.id} className="flex items-start gap-3 py-4">
                 <TaskToggleForm taskId={task.id} completed={task.completed} path={path} />
                 <div className="min-w-0 flex-1 pt-1.5">
                   <p
                     className={cn(
-                      "text-sm leading-6 text-white",
+                      "text-sm leading-7 text-white",
                       task.completed && "text-muted-foreground line-through"
                     )}
                   >
@@ -166,12 +166,12 @@ function ProjectGroup({
   filter: AreaTaskFilter
 }) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/[0.02]">
-      <div className="flex items-center justify-between px-4 py-3">
+    <div className="surface-2 rounded-[24px] border">
+      <div className="flex items-center justify-between px-4 py-3.5">
         <p className="text-sm font-medium text-white">{title}</p>
-        <span className="text-xs text-muted-foreground">{projects.length}</span>
+        <span className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/75">{projects.length}</span>
       </div>
-      <div className="border-t border-white/8 px-4">
+      <div className="border-t border-white/[0.06] px-4">
         {projects.length ? (
           projects.map((project) => (
             <ProjectSection key={project.id} project={project} path={path} filter={filter} />
@@ -211,30 +211,30 @@ export function AreaWorkspaceView({
       description={config.description}
       actions={
         workspace ? (
-          <div className="flex gap-5 text-sm text-muted-foreground">
-            <span>
-              <b className="text-white">{projects}</b> proyectos
+          <div className="flex gap-3 text-sm text-muted-foreground">
+            <span className="chip-subtle px-3 py-1.5 text-[11px] uppercase tracking-[0.16em]">
+              <b className="mr-1 text-white">{projects}</b> proyectos
             </span>
-            <span>
-              <b className="text-white">{tasks}</b> tareas
+            <span className="chip-subtle px-3 py-1.5 text-[11px] uppercase tracking-[0.16em]">
+              <b className="mr-1 text-white">{tasks}</b> tareas
             </span>
           </div>
         ) : null
       }
     >
       {!workspace ? (
-        <section className="surface-1 rounded-2xl border p-8 text-center">
+        <section className="surface-1 rounded-[28px] border p-8 text-center">
           <p className="font-medium text-white">No pudimos cargar esta área.</p>
           <p className="mt-2 text-sm text-muted-foreground">
             Revisá la conexión de datos e intentá nuevamente.
           </p>
         </section>
       ) : workspace.containers.length === 0 ? (
-        <section className="surface-1 rounded-2xl border p-8 text-center">
+        <section className="surface-1 rounded-[28px] border p-8 text-center">
           <p className="font-medium text-white">Esta área todavía está vacía.</p>
         </section>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <nav aria-label="Filtrar tareas" className="flex flex-wrap gap-2">
             {([
               ["active", "Activas"],
@@ -246,10 +246,10 @@ export function AreaWorkspaceView({
                 href={`${path}?filter=${value}`}
                 aria-current={filter === value ? "page" : undefined}
                 className={cn(
-                  "inline-flex min-h-11 items-center rounded-xl border px-4 text-sm",
+                  "inline-flex min-h-11 items-center rounded-[18px] border px-4 text-sm transition",
                   filter === value
-                    ? "border-primary/20 bg-primary/10 text-primary"
-                    : "border-white/8 text-muted-foreground hover:text-white"
+                    ? "border-primary/15 bg-primary/12 text-primary"
+                    : "border-white/[0.07] text-muted-foreground hover:bg-white/[0.03] hover:text-white"
                 )}
               >
                 {label}
@@ -270,15 +270,15 @@ export function AreaWorkspaceView({
             )
 
             return (
-              <section key={container.id} className="surface-1 rounded-2xl border px-4 py-5 sm:px-6">
-                <div className="flex items-start gap-3 pb-5">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <section key={container.id} className="surface-1 rounded-[30px] border px-5 py-6 sm:px-7">
+                <div className="flex items-start gap-4 pb-6">
+                  <div className="flex size-11 shrink-0 items-center justify-center rounded-[18px] border border-primary/14 bg-primary/10 text-primary/90">
                     <FolderOpenDot className="size-4" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-white">{container.name}</h3>
+                    <h3 className="text-xl font-semibold tracking-[-0.03em] text-white">{container.name}</h3>
                     {container.description ? (
-                      <p className="mt-1 text-sm text-muted-foreground">{container.description}</p>
+                      <p className="mt-2 text-sm leading-7 text-muted-foreground">{container.description}</p>
                     ) : null}
                   </div>
                 </div>
@@ -296,7 +296,7 @@ export function AreaWorkspaceView({
                     ))}
                   </div>
                 ) : (
-                  <p className="border-t border-white/8 pt-6 text-sm text-muted-foreground">
+                  <p className="border-t border-white/[0.06] pt-6 text-sm text-muted-foreground">
                     No hay proyectos en este espacio.
                   </p>
                 )}

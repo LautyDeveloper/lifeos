@@ -20,7 +20,7 @@ export function InboxSubmitButton({
     <Button
       type="submit"
       disabled={pending || disabled}
-      className="h-11 rounded-2xl bg-primary px-5 text-primary-foreground hover:bg-primary/90"
+      className="h-11 rounded-[18px] px-5"
     >
       {pending ? <LoaderCircle className="size-4 animate-spin" /> : null}
       {pending ? pendingLabel : label}

@@ -23,8 +23,8 @@ export function ProjectStatusForm({
   const { notify } = useToast()
 
   return (
-    <label className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-3 text-xs text-muted-foreground">
-      <span>Estado</span>
+    <label className="inline-flex min-h-9 items-center gap-2 rounded-[18px] border border-white/[0.07] bg-white/[0.02] px-3 text-[11px] text-muted-foreground">
+      <span className="uppercase tracking-[0.14em]">Estado</span>
       <select
         value={currentStatus}
         disabled={pending}
@@ -49,7 +49,7 @@ export function ProjectStatusForm({
             notify({ message: result.message, tone: "success" })
           })
         }}
-        className={cn("bg-transparent text-xs text-white outline-none", pending && "opacity-70")}
+        className={cn("bg-transparent text-[11px] text-white outline-none", pending && "opacity-70")}
       >
         {statusOptions.map((option) => (
           <option key={option} value={option} className="bg-[#0b0d12] text-white">

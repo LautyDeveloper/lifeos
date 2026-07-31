@@ -50,8 +50,7 @@ export function LibraryCreateNoteFormInner({
           name="title"
           placeholder="Nueva nota de referencia..."
           className={cn(
-            "h-11 w-full rounded-2xl border bg-white/[0.03] px-4 text-sm text-white outline-none transition",
-            "placeholder:text-muted-foreground/80 focus:border-primary/40 focus:ring-4 focus:ring-primary/10",
+            "field-base h-11 w-full rounded-2xl px-4 text-sm",
             state.fieldErrors?.title ? "border-destructive/50" : "border-white/8"
           )}
         />
@@ -60,8 +59,7 @@ export function LibraryCreateNoteFormInner({
           rows={compact ? 4 : 5}
           placeholder="Guardá una idea, una definición, una referencia o una nota que quieras volver a consultar."
           className={cn(
-            "w-full rounded-[22px] border bg-white/[0.03] px-4 py-3 text-sm leading-7 text-white outline-none transition resize-none",
-            "placeholder:text-muted-foreground/80 focus:border-primary/40 focus:ring-4 focus:ring-primary/10",
+            "field-base w-full resize-none rounded-[22px] px-4 py-3 text-sm leading-7",
             state.fieldErrors?.content ? "border-destructive/50" : "border-white/8",
             compact && "min-h-28"
           )}

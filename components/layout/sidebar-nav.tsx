@@ -23,13 +23,16 @@ export function SidebarNav({ collapsed, onNavigate }: SidebarNavProps) {
     <nav className="space-y-3">
       {navigationGroups.map((group, index) => (
         <div key={group.id}>
-          {index > 0 ? <div className="mx-3 mb-3 h-px bg-border/70" /> : null}
+          {index > 0 ? <div className="mx-3 mb-3 h-px bg-border/55" /> : null}
           {group.id === "areas" && !collapsed ? (
             <button
               type="button"
               onClick={() => setAreasOpen(!areasOpen)}
               aria-expanded={areasOpen}
-              className={cn("mb-1 flex min-h-11 w-full items-center justify-between rounded-xl px-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground transition hover:bg-white/[0.04] hover:text-foreground", areaActive && "bg-primary/[0.07] text-primary")}
+              className={cn(
+                "mb-1 flex min-h-11 w-full items-center justify-between rounded-[18px] px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground transition hover:bg-white/[0.035] hover:text-foreground",
+                areaActive && "bg-white/[0.035] text-foreground"
+              )}
             >
               Áreas
               <ChevronDown className={cn("size-4 transition-transform", areasOpen && "rotate-180")} />
@@ -48,17 +51,17 @@ export function SidebarNav({ collapsed, onNavigate }: SidebarNavProps) {
                   aria-current={isActive ? "page" : undefined}
                   title={collapsed ? item.label : undefined}
                   className={cn(
-                    "group flex min-h-11 items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none",
+                    "group flex min-h-11 items-center gap-3 rounded-[18px] border px-3 py-2.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none",
                     collapsed ? "justify-center px-0" : "",
                     isActive
-                      ? "border-white/10 bg-white/[0.07] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-                      : "border-transparent text-muted-foreground hover:border-white/6 hover:bg-white/[0.04] hover:text-foreground"
+                      ? "border-white/[0.07] bg-white/[0.055] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+                      : "border-transparent text-muted-foreground hover:border-white/[0.04] hover:bg-white/[0.03] hover:text-foreground"
                   )}
                 >
                   <item.icon
                     className={cn(
                       "size-4 shrink-0 transition-transform duration-200 motion-reduce:transition-none",
-                      isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
+                      isActive ? "text-primary/90" : "text-muted-foreground group-hover:text-foreground",
                       !collapsed && "group-hover:scale-105"
                     )}
                   />

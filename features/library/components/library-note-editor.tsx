@@ -61,9 +61,9 @@ export function LibraryNoteEditor({
     <form onSubmit={(event) => { event.preventDefault(); save() }} className="space-y-4">
       <div className="space-y-3">
         <input value={title} disabled={isArchived} onChange={(event) => setTitle(event.target.value)} aria-label="Título de la nota" placeholder="Título de la nota"
-          className={cn("h-12 w-full rounded-xl border bg-white/[0.03] px-4 text-base text-white outline-none transition focus:border-primary/40 focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-80", !title.trim() || title.length > 180 ? "border-destructive/50" : "border-white/8")} />
+          className={cn("field-base h-12 w-full rounded-2xl px-4 text-base disabled:cursor-not-allowed disabled:opacity-80", !title.trim() || title.length > 180 ? "border-destructive/50" : "border-white/8")} />
         <textarea value={content} disabled={isArchived} onChange={(event) => setContent(event.target.value)} aria-label="Contenido de la nota" rows={16} placeholder="Contenido de la nota"
-          className={cn("min-h-[320px] w-full resize-y rounded-xl border bg-white/[0.03] px-4 py-4 text-sm leading-7 text-white outline-none transition focus:border-primary/40 focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-80", !content.trim() ? "border-destructive/50" : "border-white/8")} />
+          className={cn("field-base min-h-[320px] w-full resize-y rounded-[24px] px-4 py-4 text-sm leading-7 disabled:cursor-not-allowed disabled:opacity-80", !content.trim() ? "border-destructive/50" : "border-white/8")} />
       </div>
       {isArchived ? (
         <div className="space-y-3">
@@ -79,7 +79,7 @@ export function LibraryNoteEditor({
         </div>
       ) : (
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <p role="status" aria-live="polite" className={cn("text-sm", status === "error" ? "text-red-300" : status === "saved" ? "text-primary" : "text-muted-foreground")}>
+          <p role="status" aria-live="polite" className={cn("text-sm", status === "error" ? "text-red-300" : status === "saved" ? "text-primary/90" : "text-muted-foreground")}>
             {status === "saving" || pending ? "Guardando..." : status === "dirty" ? "Cambios pendientes" : status === "error" ? "No se pudo guardar. Reintentá." : "Guardado"}
           </p>
           <div className="flex flex-wrap items-center gap-2">

@@ -45,17 +45,20 @@ export function InboxForm({
           formRef.current?.requestSubmit()
         }
       }}
-      className="surface-1 rounded-2xl border p-5 md:p-6"
+      className="surface-1 rounded-[28px] border p-6 md:p-7"
     >
-      <div className="flex flex-col gap-5">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-white">{compact ? "Nueva captura" : "Captura rápida"}</p>
-          <p className="text-sm leading-6 text-muted-foreground">
+      <div className="flex flex-col gap-6">
+        <div className="space-y-3">
+          <p className="eyebrow">{compact ? "Nueva captura" : "Captura rápida"}</p>
+          <p className="text-lg font-medium tracking-[-0.03em] text-white">
+            Soltalo ahora. Ordenar viene después.
+          </p>
+          <p className="text-sm leading-7 text-muted-foreground">
             Soltalo acá. No hace falta decidir todavía si es proyecto, tarea o nota.
           </p>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           <textarea
             ref={textareaRef}
             name="content"
@@ -63,8 +66,7 @@ export function InboxForm({
             disabled={!databaseReady}
             placeholder="Ej: pensar el flujo para procesar ideas del inbox..."
             className={cn(
-              "min-h-32 w-full resize-none rounded-[24px] border bg-white/[0.03] px-4 py-3 text-sm leading-6 text-white outline-none transition",
-              "placeholder:text-muted-foreground/80 focus:border-primary/40 focus:bg-white/[0.045] focus:ring-4 focus:ring-primary/10",
+              "field-base min-h-36 w-full resize-none rounded-[24px] px-4 py-4 text-sm leading-7",
               "disabled:cursor-not-allowed disabled:opacity-60",
               state.fieldErrors?.content ? "border-destructive/50" : "border-white/8"
             )}
