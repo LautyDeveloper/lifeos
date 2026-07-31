@@ -11,6 +11,7 @@ import type { ProcessInboxTarget } from "@/features/inbox/schemas"
 import { deriveInboxTitle } from "@/features/inbox/utils"
 import { InboxSubmitButton } from "@/features/inbox/components/inbox-submit-button"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/components/ui/toast-provider"
 
 type AreaWithContainers = {
   id: string
@@ -80,6 +81,7 @@ function DialogSession({
   const [formState, setFormState] = useState(() =>
     buildInitialFormState(item.content, areasWithContainers, projectOptions)
   )
+  const { notify } = useToast()
   const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -95,6 +97,12 @@ function DialogSession({
       window.removeEventListener("keydown", handleKeyDown)
     }
   }, [onCancel])
+
+  useEffect(() => {
+    if (actionState.status !== "success") return
+    notify({ message: actionState.message ?? "Captura procesada.", tone: "success" })
+    onCancel()
+  }, [actionState.message, actionState.status, notify, onCancel])
 
   const selectedArea = useMemo(
     () =>

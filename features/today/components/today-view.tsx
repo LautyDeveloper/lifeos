@@ -1,22 +1,11 @@
-import { CalendarCheck2 } from "lucide-react"
+import Link from "next/link"
+import { CalendarCheck2, Sparkles } from "lucide-react"
 
 import { PageShell } from "@/components/shared/page-shell"
 import { TaskToggleForm } from "@/features/areas/components/task-toggle-form"
 import type { TodayTask } from "@/features/today/repository"
-
-const priorityLabels = {
-  urgent: "Urgente",
-  high: "Alta",
-  medium: "Media",
-  low: "Baja",
-}
-
-const priorityStyles = {
-  urgent: "bg-destructive/12 text-red-300",
-  high: "bg-amber-400/10 text-amber-200",
-  medium: "bg-primary/10 text-primary",
-  low: "bg-white/[0.04] text-muted-foreground",
-}
+import { PriorityBadge } from "@/components/ui/badges"
+import { EmptyState } from "@/components/ui/empty-state"
 
 export function TodayView({ tasks, progress }: { tasks: TodayTask[]; progress: { completed: number; total: number } }) {
   const percent = progress.total ? Math.round((progress.completed / progress.total) * 100) : 0
@@ -32,29 +21,25 @@ export function TodayView({ tasks, progress }: { tasks: TodayTask[]; progress: {
           {tasks.length ? (
             <div className="divide-y divide-white/8">
               {tasks.map((task) => (
-                <article key={task.id} className="flex items-start gap-3 py-4 first:pt-0 last:pb-0">
+                <article key={task.id} className="relative flex items-start gap-3 py-4 pl-3 transition-all duration-200 first:pt-0 last:pb-0 motion-reduce:transition-none">
+                  <span className={`absolute bottom-3 left-0 top-3 w-0.5 rounded-full ${task.priority === "urgent" ? "bg-red-300" : task.priority === "high" ? "bg-amber-200" : "bg-primary/40"}`} aria-hidden="true" />
                   <TaskToggleForm taskId={task.id} completed={task.completed} path="/today" />
                   <div className="min-w-0 flex-1">
                     <p className="font-medium leading-6 text-white">{task.title}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{task.area.name} · {task.container.name} · {task.project.title}</p>
+                    <Link href={task.originHref} className="mt-1 inline-flex min-h-7 items-center text-sm text-muted-foreground hover:text-primary">{task.area.name} · {task.container.name} · {task.project.title}</Link>
                   </div>
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${priorityStyles[task.priority]}`}>
-                    {priorityLabels[task.priority]}
-                  </span>
+                  <PriorityBadge priority={task.priority} className="hidden sm:inline-flex" />
                 </article>
               ))}
             </div>
           ) : (
-            <div className="py-14 text-center">
-              <CalendarCheck2 className="mx-auto size-7 text-primary" />
-              <p className="mt-4 font-medium text-white">La jornada está despejada.</p>
-              <p className="mt-2 text-sm text-muted-foreground">Planificá desde un área cuando quieras sumar foco.</p>
-            </div>
+            <EmptyState icon={CalendarCheck2} title="La jornada está despejada." description="Planificá desde un área cuando quieras sumar foco." action={{ href: "/work", label: "Elegir una tarea" }} />
           )}
         </section>
 
         <aside className="surface-1 h-fit rounded-2xl border p-5">
-          <p className="text-sm font-medium text-white">Progreso del día</p>
+          {percent === 100 && progress.total > 0 ? <Sparkles className="size-6 animate-pulse text-primary motion-reduce:animate-none" /> : null}
+          <p className="mt-2 text-sm font-medium text-white">{percent === 100 && progress.total > 0 ? "Día completado" : "Progreso del día"}</p>
           <p className="mt-5 text-4xl font-semibold tracking-tight text-white">{percent}%</p>
           <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
             <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${percent}%` }} />

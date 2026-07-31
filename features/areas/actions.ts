@@ -1,6 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import type { ActionResult } from "@/types/action-result"
 
 import type { CreateTaskActionState } from "@/features/areas/action-state"
 import {
@@ -63,7 +64,7 @@ export async function createTaskAction(
   }
 }
 
-export async function toggleTaskCompletionAction(formData: FormData) {
+export async function toggleTaskCompletionAction(formData: FormData): Promise<ActionResult> {
   const parsed = toggleTaskCompletionSchema.safeParse({
     taskId: formData.get("taskId"),
     completed: formData.get("completed"),
@@ -71,7 +72,7 @@ export async function toggleTaskCompletionAction(formData: FormData) {
 
   if (!parsed.success) {
     console.error("Invalid toggle task payload", parsed.error.flatten().fieldErrors)
-    return
+    return { status: "error", message: "La tarea no es válida." }
   }
 
   const path = String(formData.get("path") ?? "")
@@ -80,7 +81,7 @@ export async function toggleTaskCompletionAction(formData: FormData) {
     await toggleTaskCompletion(parsed.data)
   } catch (error) {
     console.error("Failed to toggle task completion", error)
-    return
+    return { status: "error", message: "No pudimos actualizar la tarea." }
   }
 
   if (path) {
@@ -88,16 +89,17 @@ export async function toggleTaskCompletionAction(formData: FormData) {
   }
   revalidatePath("/")
   revalidatePath("/today")
+  return { status: "success", message: parsed.data.completed ? "Tarea completada." : "Tarea restaurada.", entityId: parsed.data.taskId }
 }
 
-export async function planTaskForTodayAction(formData: FormData) {
+export async function planTaskForTodayAction(formData: FormData): Promise<ActionResult> {
   const parsed = planTaskForTodaySchema.safeParse({
     taskId: formData.get("taskId"),
   })
 
   if (!parsed.success) {
     console.error("Invalid plan task payload", parsed.error.flatten().fieldErrors)
-    return
+    return { status: "error", message: "La tarea no es válida." }
   }
 
   const path = String(formData.get("path") ?? "")
@@ -106,7 +108,7 @@ export async function planTaskForTodayAction(formData: FormData) {
     await planTaskForToday(parsed.data)
   } catch (error) {
     console.error("Failed to plan task for today", error)
-    return
+    return { status: "error", message: "No pudimos planificar la tarea." }
   }
 
   if (path) {
@@ -114,4 +116,5 @@ export async function planTaskForTodayAction(formData: FormData) {
   }
   revalidatePath("/")
   revalidatePath("/today")
+  return { status: "success", message: "Tarea sumada a Hoy.", entityId: parsed.data.taskId }
 }

@@ -10,6 +10,7 @@ export type TodayTask = {
   completed: boolean
   plannedDate: Date | null
   priority: "low" | "medium" | "high" | "urgent"
+  originHref: string
   project: {
     id: string
     title: string
@@ -67,6 +68,7 @@ export async function getTodayTasks(now: Date = new Date()): Promise<TodayTask[]
     completed: row.completed,
     plannedDate: row.plannedDate,
     priority: row.priority,
+    originHref: `/${({ Trabajo: "work", Dev: "dev", Estudio: "study", Salud: "health" } as Record<string, string>)[row.areaName] ?? ""}#project-${row.projectId}`,
     project: {
       id: row.projectId,
       title: row.projectTitle,

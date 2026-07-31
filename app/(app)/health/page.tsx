@@ -7,8 +7,10 @@ export const metadata: Metadata = {
   title: "Salud",
 }
 
-export default async function HealthPage() {
+export default async function HealthPage({ searchParams }: { searchParams?: Promise<{ filter?: string }> }) {
   const workspace = await getAreaWorkspace("Salud")
+  const rawFilter = (await searchParams)?.filter
+  const filter = rawFilter === "today" || rawFilter === "completed" ? rawFilter : "active"
 
-  return <AreaWorkspaceView slug="health" workspace={workspace} />
+  return <AreaWorkspaceView slug="health" workspace={workspace} filter={filter} />
 }

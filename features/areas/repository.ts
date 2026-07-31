@@ -36,6 +36,8 @@ export type AreaWorkspace = {
   }>
 }
 
+export type AreaTaskFilter = "active" | "today" | "completed"
+
 export async function getAreaWorkspace(areaName: string): Promise<AreaWorkspace | null> {
   if (!db) {
     return null

@@ -22,11 +22,11 @@ export function AppSidebar({
   return (
     <aside
       className={cn(
-        "surface-1 flex h-full flex-col rounded-2xl border",
+        "surface-1 flex h-full flex-col rounded-2xl border transition-[width,padding] duration-200 motion-reduce:transition-none",
         mobile ? "w-full max-w-[320px] p-3" : collapsed ? "w-20 p-3" : "w-72 p-4"
       )}
     >
-      <div className="flex items-center justify-between gap-3">
+      <div className={cn("flex items-center justify-between gap-3", collapsed && !mobile && "flex-col")}>
         <div className={cn("flex items-center gap-3", collapsed && !mobile && "justify-center")}>
           <div className="flex size-11 items-center justify-center rounded-xl bg-primary/14 text-primary ring-1 ring-inset ring-primary/20">
             <Sparkles className="size-5" />
@@ -45,13 +45,14 @@ export function AppSidebar({
             size="icon-sm"
             className="hidden md:inline-flex"
             onClick={onToggleCollapsed}
+            title={collapsed ? "Expandir navegación" : "Contraer navegación"}
           >
             {collapsed ? (
               <PanelLeftOpen className="size-4" />
             ) : (
               <PanelLeftClose className="size-4" />
             )}
-            <span className="sr-only">Toggle sidebar</span>
+            <span className="sr-only">{collapsed ? "Expandir navegación" : "Contraer navegación"}</span>
           </Button>
         ) : null}
       </div>

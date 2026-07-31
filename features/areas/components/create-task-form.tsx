@@ -1,6 +1,7 @@
 "use client"
 
-import { useActionState, useEffect, useRef } from "react"
+import { useActionState, useEffect, useRef, useState } from "react"
+import { Plus, X } from "lucide-react"
 
 import { initialCreateTaskActionState } from "@/features/areas/action-state"
 import { createTaskAction } from "@/features/areas/actions"
@@ -20,6 +21,7 @@ export function CreateTaskForm({
   )
   const formRef = useRef<HTMLFormElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const [open, setOpen] = useState(false)
 
   useEffect(() => {
     if (state.status !== "success") {
@@ -27,8 +29,13 @@ export function CreateTaskForm({
     }
 
     formRef.current?.reset()
-    inputRef.current?.focus()
+    const timer = window.setTimeout(() => setOpen(false), 0)
+    return () => window.clearTimeout(timer)
   }, [state.resetKey, state.status])
+
+  if (!open && state.status !== "error") {
+    return <button type="button" onClick={() => setOpen(true)} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-primary hover:bg-primary/10"><Plus className="size-4" /> Agregar tarea</button>
+  }
 
   return (
     <form ref={formRef} action={formAction} className="space-y-3">
@@ -50,6 +57,7 @@ export function CreateTaskForm({
           label="Agregar tarea"
           pendingLabel="Guardando..."
         />
+        <button type="button" onClick={() => setOpen(false)} className="inline-flex size-11 items-center justify-center rounded-xl text-muted-foreground hover:bg-white/[0.04] hover:text-white" aria-label="Cancelar nueva tarea"><X className="size-4" /></button>
       </div>
 
       {state.fieldErrors?.title?.[0] ? (

@@ -30,15 +30,10 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
   const sort: LibraryFilters["sort"] = rawSort === "oldest" || rawSort === "title" ? rawSort : "recent"
   const filters: LibraryFilters = { query, sort, note: requestedNoteId }
   const notes = await listLibraryNotes(filters)
-  const fallbackNoteId = notes[0]?.id
   const requestedNote = requestedNoteId
     ? await getLibraryNoteById(requestedNoteId)
     : null
   const selectedNote = requestedNote
-    ? requestedNote
-    : fallbackNoteId
-      ? await getLibraryNoteById(fallbackNoteId)
-      : null
 
   return <LibraryView notes={notes} selectedNote={selectedNote} filters={filters} />
 }

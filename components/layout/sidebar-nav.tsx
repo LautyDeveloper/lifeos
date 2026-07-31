@@ -16,6 +16,8 @@ type SidebarNavProps = {
 export function SidebarNav({ collapsed, onNavigate }: SidebarNavProps) {
   const pathname = usePathname()
   const { areasOpen, setAreasOpen } = useSidebarState()
+  const areaGroup = navigationGroups.find((group) => group.id === "areas")
+  const areaActive = areaGroup?.items.some((item) => pathname.startsWith(item.href)) ?? false
 
   return (
     <nav className="space-y-3">
@@ -27,7 +29,7 @@ export function SidebarNav({ collapsed, onNavigate }: SidebarNavProps) {
               type="button"
               onClick={() => setAreasOpen(!areasOpen)}
               aria-expanded={areasOpen}
-              className="mb-1 flex min-h-11 w-full items-center justify-between rounded-xl px-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground transition hover:bg-white/[0.04] hover:text-foreground"
+              className={cn("mb-1 flex min-h-11 w-full items-center justify-between rounded-xl px-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground transition hover:bg-white/[0.04] hover:text-foreground", areaActive && "bg-primary/[0.07] text-primary")}
             >
               Áreas
               <ChevronDown className={cn("size-4 transition-transform", areasOpen && "rotate-180")} />
@@ -44,6 +46,7 @@ export function SidebarNav({ collapsed, onNavigate }: SidebarNavProps) {
                   href={item.href}
                   onClick={onNavigate}
                   aria-current={isActive ? "page" : undefined}
+                  title={collapsed ? item.label : undefined}
                   className={cn(
                     "group flex min-h-11 items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none",
                     collapsed ? "justify-center px-0" : "",
@@ -54,7 +57,7 @@ export function SidebarNav({ collapsed, onNavigate }: SidebarNavProps) {
                 >
                   <item.icon
                     className={cn(
-                      "size-4 shrink-0 transition-transform duration-200",
+                      "size-4 shrink-0 transition-transform duration-200 motion-reduce:transition-none",
                       isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
                       !collapsed && "group-hover:scale-105"
                     )}

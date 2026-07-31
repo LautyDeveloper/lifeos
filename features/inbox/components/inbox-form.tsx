@@ -12,9 +12,11 @@ import { cn } from "@/lib/utils"
 export function InboxForm({
   databaseReady,
   compact = false,
+  onSuccess,
 }: {
   databaseReady: boolean
   compact?: boolean
+  onSuccess?: () => void
 }) {
   const [state, formAction] = useActionState(
     createInboxItemAction,
@@ -30,12 +32,19 @@ export function InboxForm({
 
     formRef.current?.reset()
     textareaRef.current?.focus()
-  }, [state.resetKey, state.status])
+    onSuccess?.()
+  }, [onSuccess, state.resetKey, state.status])
 
   return (
     <form
       ref={formRef}
       action={formAction}
+      onKeyDown={(event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+          event.preventDefault()
+          formRef.current?.requestSubmit()
+        }
+      }}
       className="surface-1 rounded-2xl border p-5 md:p-6"
     >
       <div className="flex flex-col gap-5">

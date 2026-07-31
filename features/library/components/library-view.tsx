@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { FilePlus2, Search } from "lucide-react"
+import { ArrowLeft, FilePlus2, Search } from "lucide-react"
 
 import { PageShell } from "@/components/shared/page-shell"
 import { LibraryCreateNoteForm } from "@/features/library/components/library-create-note-form"
@@ -19,6 +19,12 @@ function buildNoteHref(noteId: string, filters: LibraryFilters) {
   return `/library?${params.toString()}`
 }
 
+function Highlight({ text, query }: { text: string; query?: string }) {
+  if (!query?.trim()) return text
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  return <>{text.split(new RegExp(`(${escaped})`, "ig")).map((part, index) => part.toLowerCase() === query.toLowerCase() ? <mark key={index} className="rounded bg-primary/20 text-white">{part}</mark> : part)}</>
+}
+
 export function LibraryView({ notes, selectedNote, filters }: {
   notes: LibraryNoteListItem[]
   selectedNote: LibraryNote | null
@@ -26,8 +32,8 @@ export function LibraryView({ notes, selectedNote, filters }: {
 }) {
   return (
     <PageShell eyebrow="Biblioteca" title="Ideas a las que vale la pena volver." description="Referencias y notas, separadas del ruido operativo.">
-      <div className="grid min-h-[620px] gap-5 xl:grid-cols-[0.72fr_1.28fr]">
-        <aside className="surface-1 rounded-2xl border p-4 sm:p-5">
+      <div className="grid gap-5 xl:min-h-[calc(100dvh-20rem)] xl:grid-cols-[0.72fr_1.28fr]">
+        <aside className={cn("surface-1 rounded-2xl border p-4 sm:p-5", selectedNote && "hidden xl:block")}>
           <form method="get" className="grid gap-3 sm:grid-cols-[1fr_auto] xl:grid-cols-1">
             <label className="relative">
               <Search className="absolute left-3 top-3.5 size-4 text-muted-foreground" />
@@ -51,19 +57,21 @@ export function LibraryView({ notes, selectedNote, filters }: {
             {notes.length ? notes.map((note) => (
               <Link key={note.id} href={buildNoteHref(note.id, filters)} aria-current={note.id === selectedNote?.id ? "page" : undefined}
                 className={cn("block rounded-xl px-3 py-3 transition", note.id === selectedNote?.id ? "bg-primary/10" : "hover:bg-white/[0.035]")}>
-                <p className="line-clamp-1 text-sm font-medium text-white">{note.title}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{formatNoteDate(note.createdAt)}</p>
+                <p className="line-clamp-1 text-sm font-medium text-white"><Highlight text={note.title} query={filters.query} /></p>
+                <p className="mt-1 line-clamp-1 text-xs text-muted-foreground"><Highlight text={note.content.replace(/\s+/g, " ")} query={filters.query} /></p>
+                <p className="mt-1 text-[11px] text-muted-foreground">Editada {formatNoteDate(note.updatedAt)}</p>
               </Link>
             )) : <p className="py-10 text-center text-sm text-muted-foreground">{filters.query ? "No encontramos notas con ese título." : "Todavía no hay notas."}</p>}
           </div>
         </aside>
 
-        <section className="surface-1 rounded-2xl border p-5 sm:p-7">
+        <section className={cn("surface-1 rounded-2xl border p-5 sm:p-7", !selectedNote && "hidden xl:block")}>
           {selectedNote ? (
             <>
+              <Link href={`/library${filters.query || filters.sort !== "recent" ? `?${new URLSearchParams({ ...(filters.query ? { q: filters.query } : {}), ...(filters.sort && filters.sort !== "recent" ? { sort: filters.sort } : {}) }).toString()}` : ""}`} className="mb-5 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary xl:hidden"><ArrowLeft className="size-4" /> Volver a las notas</Link>
               <div className="mb-5 flex items-center justify-between gap-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Nota activa</p>
-                <span className="text-xs text-muted-foreground">{formatNoteDate(selectedNote.createdAt)}</span>
+                <span className="text-xs text-muted-foreground">Editada {formatNoteDate(selectedNote.updatedAt)}</span>
               </div>
               <LibraryNoteEditor note={selectedNote} />
             </>

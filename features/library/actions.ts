@@ -14,6 +14,7 @@ import {
   createLibraryNoteSchema,
   updateLibraryNoteSchema,
 } from "@/features/library/schemas"
+import type { ActionResult } from "@/types/action-result"
 
 export async function createLibraryNoteAction(
   previousState: CreateLibraryNoteActionState,
@@ -57,6 +58,22 @@ export async function createLibraryNoteAction(
       message: "No pudimos crear la nota. Probá de nuevo.",
       resetKey: previousState.resetKey,
     }
+  }
+}
+
+export async function saveLibraryNoteAction(formData: FormData): Promise<ActionResult> {
+  const parsed = updateLibraryNoteSchema.safeParse({
+    id: formData.get("id"),
+    title: formData.get("title"),
+    content: formData.get("content"),
+  })
+  if (!parsed.success) return { status: "error", message: "Completá el título y el contenido antes de guardar." }
+  try {
+    const note = await updateLibraryNote(parsed.data)
+    revalidatePath("/library")
+    return { status: "success", message: "Cambios guardados.", entityId: note.id }
+  } catch {
+    return { status: "error", message: "No pudimos guardar. Tus cambios siguen en el editor." }
   }
 }
 

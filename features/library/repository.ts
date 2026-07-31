@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, isNull } from "drizzle-orm"
+import { and, asc, desc, eq, ilike, isNull, or } from "drizzle-orm"
 
 import { db, getDbOrThrow } from "@/db"
 import { notes } from "@/db/schema"
@@ -12,6 +12,7 @@ export type LibraryNoteListItem = {
   title: string
   content: string
   createdAt: Date
+  updatedAt: Date
 }
 
 export type LibraryNote = LibraryNoteListItem
@@ -32,7 +33,7 @@ export async function listLibraryNotes(filters: LibraryFilters = {}): Promise<Li
       ? asc(notes.createdAt)
       : filters.sort === "title"
         ? asc(notes.title)
-        : desc(notes.createdAt)
+        : desc(notes.updatedAt)
 
   return db
     .select({
@@ -40,9 +41,10 @@ export async function listLibraryNotes(filters: LibraryFilters = {}): Promise<Li
       title: notes.title,
       content: notes.content,
       createdAt: notes.createdAt,
+      updatedAt: notes.updatedAt,
     })
     .from(notes)
-    .where(and(isNull(notes.containerId), query ? ilike(notes.title, `%${query}%`) : undefined))
+    .where(and(isNull(notes.containerId), query ? or(ilike(notes.title, `%${query}%`), ilike(notes.content, `%${query}%`)) : undefined))
     .orderBy(orderBy)
 }
 
@@ -57,6 +59,7 @@ export async function getLibraryNoteById(id: string): Promise<LibraryNote | null
       title: notes.title,
       content: notes.content,
       createdAt: notes.createdAt,
+      updatedAt: notes.updatedAt,
     })
     .from(notes)
     .where(and(eq(notes.id, id), isNull(notes.containerId)))
@@ -80,6 +83,7 @@ export async function createLibraryNote(input: CreateLibraryNoteInput) {
       title: notes.title,
       content: notes.content,
       createdAt: notes.createdAt,
+      updatedAt: notes.updatedAt,
     })
 
   return note
@@ -103,6 +107,7 @@ export async function updateLibraryNote(input: UpdateLibraryNoteInput) {
     .set({
       title: input.title,
       content: input.content,
+      updatedAt: new Date(),
     })
     .where(and(eq(notes.id, input.id), isNull(notes.containerId)))
     .returning({
@@ -110,6 +115,7 @@ export async function updateLibraryNote(input: UpdateLibraryNoteInput) {
       title: notes.title,
       content: notes.content,
       createdAt: notes.createdAt,
+      updatedAt: notes.updatedAt,
     })
 
   return updatedNote
