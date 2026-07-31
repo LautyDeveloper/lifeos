@@ -41,10 +41,7 @@ export function TaskPriorityForm({
             if (result.status === "error") {
               setCurrentPriority(previousPriority)
               notify({ message: result.message, tone: "error" })
-              return
             }
-
-            notify({ message: result.message, tone: "success" })
           })
         }}
         className={cn("bg-transparent text-[11px] text-white outline-none", pending && "opacity-70")}

@@ -43,10 +43,7 @@ export function ProjectStatusForm({
             if (result.status === "error") {
               setCurrentStatus(previousStatus)
               notify({ message: result.message, tone: "error" })
-              return
             }
-
-            notify({ message: result.message, tone: "success" })
           })
         }}
         className={cn("bg-transparent text-[11px] text-white outline-none", pending && "opacity-70")}

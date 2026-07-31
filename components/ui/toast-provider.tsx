@@ -31,7 +31,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((toast) => {
           const Icon = toast.tone === "error" ? CircleAlert : toast.tone === "info" ? Info : CheckCircle2
           return (
-            <div key={toast.id} role="status" className="surface-1 flex w-full items-center gap-3 rounded-[20px] border px-4 py-3 shadow-[0_24px_50px_-26px_rgba(0,0,0,0.9)]">
+            <div key={toast.id} role="status" className="surface-1 flex w-full items-center gap-3 rounded-[20px] border px-4 py-3 shadow-[0_24px_50px_-26px_rgba(0,0,0,0.9)] transition-all duration-200 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-reduce:transition-none">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.02]">
                 <Icon className={toast.tone === "error" ? "size-4 text-red-200" : "size-4 text-primary/90"} />
               </div>

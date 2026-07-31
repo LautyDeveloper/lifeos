@@ -23,6 +23,7 @@ export function LibraryNoteEditor({
   const [title, setTitle] = useState(note.title)
   const [content, setContent] = useState(note.content)
   const [status, setStatus] = useState<SaveStatus>("saved")
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const lastSaved = useRef(JSON.stringify({ title: note.title, content: note.content }))
 
@@ -32,6 +33,7 @@ export function LibraryNoteEditor({
     const snapshot = JSON.stringify({ title, content })
     if (snapshot === lastSaved.current) return
     setStatus("saving")
+    setErrorMessage(null)
     startTransition(async () => {
       const data = new FormData()
       data.set("id", note.id)
@@ -43,6 +45,7 @@ export function LibraryNoteEditor({
         setStatus("saved")
       } else {
         setStatus("error")
+        setErrorMessage(result.message)
       }
     })
   }, [content, isArchived, note.id, title])
@@ -79,8 +82,25 @@ export function LibraryNoteEditor({
         </div>
       ) : (
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <p role="status" aria-live="polite" className={cn("text-sm", status === "error" ? "text-red-300" : status === "saved" ? "text-primary/90" : "text-muted-foreground")}>
-            {status === "saving" || pending ? "Guardando..." : status === "dirty" ? "Cambios pendientes" : status === "error" ? "No se pudo guardar. Reintentá." : "Guardado"}
+          <p
+            role="status"
+            aria-live="polite"
+            className={cn(
+              "min-h-5 text-sm",
+              status === "error"
+                ? "text-destructive"
+                : status === "saved"
+                  ? "text-primary/90"
+                  : "text-muted-foreground"
+            )}
+          >
+            {status === "saving" || pending
+              ? "Guardando cambios..."
+              : status === "dirty"
+                ? "Tenés cambios pendientes."
+                : status === "error"
+                  ? errorMessage ?? "No se pudo guardar. Reintentá."
+                  : "Todo guardado."}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <LibraryNoteLifecycleActions

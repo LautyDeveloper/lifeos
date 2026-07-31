@@ -33,12 +33,34 @@ export function CreateTaskForm({
     return () => window.clearTimeout(timer)
   }, [state.resetKey, state.status])
 
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    const timer = window.setTimeout(() => inputRef.current?.focus(), 40)
+    return () => window.clearTimeout(timer)
+  }, [open])
+
   if (!open && state.status !== "error") {
-    return <button type="button" onClick={() => setOpen(true)} className="inline-flex min-h-11 items-center gap-2 rounded-[18px] border border-transparent px-3 text-sm font-medium text-primary transition hover:bg-white/[0.03]"><Plus className="size-4" /> Agregar tarea</button>
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex min-h-11 items-center gap-2 rounded-[18px] border border-transparent px-3 text-sm font-medium text-primary transition hover:bg-white/[0.03]"
+      >
+        <Plus className="size-4" />
+        Agregar tarea
+      </button>
+    )
   }
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-3">
+    <form
+      ref={formRef}
+      action={formAction}
+      className="space-y-3 overflow-hidden rounded-[22px] border border-white/[0.05] bg-white/[0.02] p-3 transition-all duration-200 motion-reduce:transition-none"
+    >
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="path" value={path} />
 
@@ -59,19 +81,24 @@ export function CreateTaskForm({
         <button type="button" onClick={() => setOpen(false)} className="inline-flex size-11 items-center justify-center rounded-[18px] text-muted-foreground transition hover:bg-white/[0.03] hover:text-white" aria-label="Cancelar nueva tarea"><X className="size-4" /></button>
       </div>
 
-      {state.fieldErrors?.title?.[0] ? (
-        <p className="text-sm text-destructive">{state.fieldErrors.title[0]}</p>
-      ) : null}
-      {state.message ? (
-        <p
-          className={cn(
-            "text-sm",
-            state.status === "success" ? "text-primary" : "text-muted-foreground"
-          )}
-        >
-          {state.message}
-        </p>
-      ) : null}
+      <div className="min-h-5" aria-live="polite">
+        {state.fieldErrors?.title?.[0] ? (
+          <p className="text-sm text-destructive">{state.fieldErrors.title[0]}</p>
+        ) : state.message ? (
+          <p
+            className={cn(
+              "text-sm",
+              state.status === "success" ? "text-primary/90" : "text-muted-foreground"
+            )}
+          >
+            {state.message}
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            La tarea se guarda directamente dentro de este proyecto.
+          </p>
+        )}
+      </div>
     </form>
   )
 }

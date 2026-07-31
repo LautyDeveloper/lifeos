@@ -125,7 +125,7 @@ function DialogSession({
         onClick={onCancel}
       />
 
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={`process-title-${item.id}`} tabIndex={-1} className="surface-1 relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-5 outline-none md:p-6">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={`process-title-${item.id}`} tabIndex={-1} className="surface-1 relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-5 outline-none transition-all duration-200 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-[0.98] motion-reduce:transition-none md:p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
             <p className="eyebrow">
@@ -205,8 +205,7 @@ function DialogSession({
                 }))
               }
               className={cn(
-                "h-12 w-full rounded-[20px] border bg-white/[0.03] px-4 text-sm text-white outline-none transition",
-                "focus:border-primary/40 focus:ring-4 focus:ring-primary/10",
+                "field-base h-12 w-full rounded-[20px] px-4 text-sm",
                 actionState.fieldErrors?.title ? "border-destructive/50" : "border-white/8"
               )}
             />
@@ -236,7 +235,7 @@ function DialogSession({
                         selectedContainerId: nextArea?.containers[0]?.id ?? "",
                       }))
                     }}
-                    className="h-12 w-full rounded-[20px] border border-white/8 bg-white/[0.03] px-4 text-sm text-white outline-none transition focus:border-primary/40 focus:ring-4 focus:ring-primary/10"
+                    className="field-base h-12 w-full rounded-[20px] px-4 text-sm"
                   >
                     {areasWithContainers.map((area) => (
                       <option key={area.id} value={area.id} className="bg-neutral-950">
@@ -264,8 +263,7 @@ function DialogSession({
                       }))
                     }
                     className={cn(
-                      "h-12 w-full rounded-[20px] border bg-white/[0.03] px-4 text-sm text-white outline-none transition",
-                      "focus:border-primary/40 focus:ring-4 focus:ring-primary/10",
+                      "field-base h-12 w-full rounded-[20px] px-4 text-sm",
                       actionState.fieldErrors?.containerId
                         ? "border-destructive/50"
                         : "border-white/8"
@@ -304,7 +302,7 @@ function DialogSession({
                     }))
                   }
                   placeholder="Podés sumar contexto, pero no hace falta para avanzar."
-                  className="min-h-28 w-full resize-none rounded-[20px] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-muted-foreground/80 focus:border-primary/40 focus:ring-4 focus:ring-primary/10"
+                  className="field-base min-h-28 w-full resize-none rounded-[20px] px-4 py-3 text-sm leading-6"
                 />
               </div>
             </div>
@@ -331,8 +329,7 @@ function DialogSession({
                       }))
                     }
                     className={cn(
-                      "h-12 w-full rounded-[20px] border bg-white/[0.03] px-4 text-sm text-white outline-none transition",
-                      "focus:border-primary/40 focus:ring-4 focus:ring-primary/10",
+                      "field-base h-12 w-full rounded-[20px] px-4 text-sm",
                       actionState.fieldErrors?.projectId
                         ? "border-destructive/50"
                         : "border-white/8"
@@ -387,8 +384,7 @@ function DialogSession({
                     }))
                   }
                   className={cn(
-                    "min-h-40 w-full resize-none rounded-[20px] border bg-white/[0.03] px-4 py-3 text-sm leading-6 text-white outline-none transition",
-                    "focus:border-primary/40 focus:ring-4 focus:ring-primary/10",
+                    "field-base min-h-40 w-full resize-none rounded-[20px] px-4 py-3 text-sm leading-6",
                     actionState.fieldErrors?.content
                       ? "border-destructive/50"
                       : "border-white/8"
@@ -401,10 +397,19 @@ function DialogSession({
             </div>
           ) : null}
 
-          <div className="flex flex-col gap-3 border-t border-white/8 pt-5 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-1">
+          <div className="flex flex-col gap-3 border-t border-white/8 pt-5 md:flex-row md:items-end md:justify-between">
+            <div className="min-h-10 space-y-1" aria-live="polite">
               {actionState.message ? (
-                <p role="status" aria-live="polite" className="text-sm text-muted-foreground">{actionState.message}</p>
+                <p
+                  role="status"
+                  aria-live="polite"
+                  className={cn(
+                    "text-sm",
+                    actionState.status === "error" ? "text-destructive" : "text-muted-foreground"
+                  )}
+                >
+                  {actionState.message}
+                </p>
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Procesar mueve esta captura fuera del inbox activo.
@@ -412,11 +417,11 @@ function DialogSession({
               )}
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
                 onClick={onCancel}
-                className="inline-flex h-11 items-center justify-center rounded-2xl border border-white/8 px-4 text-sm text-muted-foreground transition hover:text-white"
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-white/8 px-4 text-sm text-muted-foreground transition hover:bg-white/[0.03] hover:text-white"
               >
                 Cancelar
               </button>
