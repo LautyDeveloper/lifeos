@@ -4,6 +4,8 @@ import { and, eq, inArray } from "drizzle-orm"
 
 import { getDbOrThrow } from "@/db"
 import { areas, containers, inboxItems, notes, projects, tasks } from "@/db/schema"
+import { getDateDaysFromNow } from "@/lib/dates"
+import type { Priority, ProjectStatus } from "@/types/domain"
 
 const areaSeeds = [
   { name: "Trabajo", icon: "BriefcaseBusiness", color: "#7dd3fc" },
@@ -29,23 +31,36 @@ const inboxSeeds = [
   "Anotar ideas para la biblioteca de conocimiento.",
 ] as const
 
-const projectSeeds = [
-  { containerName: "Gasti", title: "Operación semanal", description: "Prioridades activas del trabajo.", status: "active" },
-  { containerName: "Life OS", title: "MVP", description: "Entrega incremental del sistema operativo personal.", status: "active" },
-  { containerName: "AutoPanel", title: "Roadmap", description: "Próximos hitos del producto técnico.", status: "active" },
-  { containerName: "Física", title: "Parcial 1", description: "Plan base para preparar el parcial.", status: "backlog" },
-  { containerName: "Gimnasio", title: "Rutina base", description: "Estructura mínima para sostener constancia.", status: "active" },
-  { containerName: "Life OS", title: "Exploración futura", description: "Ideas reservadas para más adelante.", status: "paused" },
+const projectSeeds: ReadonlyArray<{
+  containerName: string
+  title: string
+  description: string
+  status: ProjectStatus
+  priority: Priority
+}> = [
+  { containerName: "Gasti", title: "Operación semanal", description: "Prioridades activas del trabajo.", status: "active", priority: "high" },
+  { containerName: "Life OS", title: "MVP", description: "Entrega incremental del sistema operativo personal.", status: "active", priority: "urgent" },
+  { containerName: "AutoPanel", title: "Roadmap", description: "Próximos hitos del producto técnico.", status: "done", priority: "medium" },
+  { containerName: "Física", title: "Parcial 1", description: "Plan base para preparar el parcial.", status: "backlog", priority: "medium" },
+  { containerName: "Gimnasio", title: "Rutina base", description: "Estructura mínima para sostener constancia.", status: "active", priority: "medium" },
+  { containerName: "Life OS", title: "Exploración futura", description: "Ideas reservadas para más adelante.", status: "paused", priority: "low" },
 ] as const
 
-const taskSeeds = [
-  { projectTitle: "Operación semanal", title: "Preparar prioridades del cliente." },
-  { projectTitle: "Operación semanal", title: "Revisar entregables pendientes." },
-  { projectTitle: "MVP", title: "Definir el siguiente PR del producto." },
-  { projectTitle: "MVP", title: "Validar el flujo completo de inbox." },
-  { projectTitle: "Roadmap", title: "Agrupar próximas iniciativas técnicas." },
-  { projectTitle: "Parcial 1", title: "Resolver ejercicios clave de dinámica." },
-  { projectTitle: "Rutina base", title: "Planificar la próxima sesión de entrenamiento." },
+const taskSeeds: ReadonlyArray<{
+  projectTitle: string
+  title: string
+  priority: Priority
+  completed: boolean
+  plannedDateOffset?: number
+}> = [
+  { projectTitle: "Operación semanal", title: "Preparar prioridades del cliente.", priority: "high", completed: false, plannedDateOffset: 0 },
+  { projectTitle: "Operación semanal", title: "Revisar entregables pendientes.", priority: "medium", completed: false },
+  { projectTitle: "MVP", title: "Definir el siguiente PR del producto.", priority: "urgent", completed: false, plannedDateOffset: 0 },
+  { projectTitle: "MVP", title: "Validar el flujo completo de inbox.", priority: "high", completed: false, plannedDateOffset: 1 },
+  { projectTitle: "Roadmap", title: "Agrupar próximas iniciativas técnicas.", priority: "low", completed: true },
+  { projectTitle: "Parcial 1", title: "Resolver ejercicios clave de dinámica.", priority: "medium", completed: false, plannedDateOffset: 0 },
+  { projectTitle: "Rutina base", title: "Planificar la próxima sesión de entrenamiento.", priority: "medium", completed: false },
+  { projectTitle: "Exploración futura", title: "Guardar ideas para una versión futura del onboarding.", priority: "low", completed: false, plannedDateOffset: 0 },
 ] as const
 
 const libraryNoteSeeds = [
@@ -162,7 +177,17 @@ async function seedProjects() {
         title: project.title,
         description: project.description,
         status: project.status,
+        priority: project.priority,
       })
+    } else {
+      await db
+        .update(projects)
+        .set({
+          description: project.description,
+          status: project.status as ProjectStatus,
+          priority: project.priority as Priority,
+        })
+        .where(eq(projects.id, existing[0].id))
     }
   }
 }
@@ -195,7 +220,25 @@ async function seedTasks() {
       await db.insert(tasks).values({
         projectId,
         title: task.title,
+        priority: task.priority,
+        completed: task.completed,
+        plannedDate:
+          typeof task.plannedDateOffset === "number"
+            ? getDateDaysFromNow(task.plannedDateOffset)
+            : null,
       })
+    } else {
+      await db
+        .update(tasks)
+        .set({
+          priority: task.priority as Priority,
+          completed: task.completed,
+          plannedDate:
+            typeof task.plannedDateOffset === "number"
+              ? getDateDaysFromNow(task.plannedDateOffset)
+              : null,
+        })
+        .where(eq(tasks.id, existing[0].id))
     }
   }
 }

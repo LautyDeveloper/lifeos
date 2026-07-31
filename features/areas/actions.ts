@@ -1,29 +1,44 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import type { ActionResult } from "@/types/action-result"
 
+import type { ActionResult } from "@/types/action-result"
 import type { CreateTaskActionState } from "@/features/areas/action-state"
 import {
   clearTaskPlannedDate,
   createTask,
   planTaskForTomorrow,
   planTaskForToday,
-  pauseProject,
-  resumeProject,
   setTaskPlannedDate,
   toggleTaskCompletion,
+  updateProjectPriority,
+  updateProjectStatus,
+  updateTaskPriority,
 } from "@/features/areas/repository"
 import {
   clearTaskPlannedDateSchema,
   createTaskSchema,
-  pauseProjectSchema,
   planTaskForTomorrowSchema,
   planTaskForTodaySchema,
-  resumeProjectSchema,
   setTaskPlannedDateSchema,
   toggleTaskCompletionSchema,
+  updateProjectPrioritySchema,
+  updateProjectStatusSchema,
+  updateTaskPrioritySchema,
 } from "@/features/areas/schemas"
+
+function revalidateOperationalPaths(path: string, options?: { parking?: boolean }) {
+  if (path) {
+    revalidatePath(path)
+  }
+
+  revalidatePath("/")
+  revalidatePath("/today")
+
+  if (options?.parking) {
+    revalidatePath("/parking")
+  }
+}
 
 export async function createTaskAction(
   previousState: CreateTaskActionState,
@@ -56,16 +71,12 @@ export async function createTaskAction(
     console.error("Failed to create task", error)
     return {
       status: "error",
-      message: "No pudimos crear la tarea. Probá de nuevo.",
+      message: "Ese proyecto no permite nuevas tareas en este estado.",
       resetKey: previousState.resetKey,
     }
   }
 
-  if (path) {
-    revalidatePath(path)
-  }
-  revalidatePath("/")
-  revalidatePath("/today")
+  revalidateOperationalPaths(path)
 
   return {
     status: "success",
@@ -94,12 +105,13 @@ export async function toggleTaskCompletionAction(formData: FormData): Promise<Ac
     return { status: "error", message: "No pudimos actualizar la tarea." }
   }
 
-  if (path) {
-    revalidatePath(path)
+  revalidateOperationalPaths(path)
+
+  return {
+    status: "success",
+    message: parsed.data.completed ? "Tarea completada." : "Tarea restaurada.",
+    entityId: parsed.data.taskId,
   }
-  revalidatePath("/")
-  revalidatePath("/today")
-  return { status: "success", message: parsed.data.completed ? "Tarea completada." : "Tarea restaurada.", entityId: parsed.data.taskId }
 }
 
 export async function planTaskForTodayAction(formData: FormData): Promise<ActionResult> {
@@ -118,14 +130,11 @@ export async function planTaskForTodayAction(formData: FormData): Promise<Action
     await planTaskForToday(parsed.data)
   } catch (error) {
     console.error("Failed to plan task for today", error)
-    return { status: "error", message: "No pudimos planificar la tarea." }
+    return { status: "error", message: "Solo podés planificar tareas de proyectos activos." }
   }
 
-  if (path) {
-    revalidatePath(path)
-  }
-  revalidatePath("/")
-  revalidatePath("/today")
+  revalidateOperationalPaths(path)
+
   return { status: "success", message: "Tarea sumada a Hoy.", entityId: parsed.data.taskId }
 }
 
@@ -145,14 +154,10 @@ export async function planTaskForTomorrowAction(formData: FormData): Promise<Act
     await planTaskForTomorrow(parsed.data)
   } catch (error) {
     console.error("Failed to plan task for tomorrow", error)
-    return { status: "error", message: "No pudimos mover la tarea a mañana." }
+    return { status: "error", message: "Solo podés planificar tareas de proyectos activos." }
   }
 
-  if (path) {
-    revalidatePath(path)
-  }
-  revalidatePath("/")
-  revalidatePath("/today")
+  revalidateOperationalPaths(path)
 
   return { status: "success", message: "Tarea sumada a Mañana.", entityId: parsed.data.taskId }
 }
@@ -174,14 +179,10 @@ export async function setTaskPlannedDateAction(formData: FormData): Promise<Acti
     await setTaskPlannedDate(parsed.data)
   } catch (error) {
     console.error("Failed to set task planning date", error)
-    return { status: "error", message: "No pudimos actualizar la fecha." }
+    return { status: "error", message: "Solo podés planificar tareas de proyectos activos." }
   }
 
-  if (path) {
-    revalidatePath(path)
-  }
-  revalidatePath("/")
-  revalidatePath("/today")
+  revalidateOperationalPaths(path)
 
   return { status: "success", message: "Fecha actualizada.", entityId: parsed.data.taskId }
 }
@@ -205,18 +206,15 @@ export async function clearTaskPlannedDateAction(formData: FormData): Promise<Ac
     return { status: "error", message: "No pudimos quitar la fecha." }
   }
 
-  if (path) {
-    revalidatePath(path)
-  }
-  revalidatePath("/")
-  revalidatePath("/today")
+  revalidateOperationalPaths(path)
 
   return { status: "success", message: "La tarea volvió a quedar sin fecha.", entityId: parsed.data.taskId }
 }
 
-export async function pauseProjectAction(formData: FormData): Promise<ActionResult> {
-  const parsed = pauseProjectSchema.safeParse({
+export async function updateProjectStatusAction(formData: FormData): Promise<ActionResult> {
+  const parsed = updateProjectStatusSchema.safeParse({
     projectId: formData.get("projectId"),
+    status: formData.get("status"),
   })
 
   if (!parsed.success) {
@@ -226,54 +224,80 @@ export async function pauseProjectAction(formData: FormData): Promise<ActionResu
   const path = String(formData.get("path") ?? "")
 
   try {
-    await pauseProject(parsed.data)
+    await updateProjectStatus(parsed.data)
   } catch (error) {
-    console.error("Failed to pause project", error)
-    return { status: "error", message: "No pudimos mandar el proyecto a Parking." }
+    console.error("Failed to update project status", error)
+    return { status: "error", message: "No pudimos actualizar el estado del proyecto." }
   }
 
-  if (path) {
-    revalidatePath(path)
-  }
-  revalidatePath("/")
-  revalidatePath("/today")
-  revalidatePath("/parking")
+  revalidateOperationalPaths(path, { parking: parsed.data.status === "paused" || path === "/parking" })
+
+  const messages = {
+    backlog: "Proyecto movido a Backlog.",
+    active: "Proyecto devuelto al foco activo.",
+    paused: "Proyecto movido a Parking.",
+    done: "Proyecto marcado como terminado.",
+  } as const
 
   return {
     status: "success",
-    message: "Proyecto movido a Parking.",
+    message: messages[parsed.data.status],
     entityId: parsed.data.projectId,
   }
 }
 
-export async function resumeProjectAction(formData: FormData): Promise<ActionResult> {
-  const parsed = resumeProjectSchema.safeParse({
+export async function updateProjectPriorityAction(formData: FormData): Promise<ActionResult> {
+  const parsed = updateProjectPrioritySchema.safeParse({
     projectId: formData.get("projectId"),
+    priority: formData.get("priority"),
   })
 
   if (!parsed.success) {
-    return { status: "error", message: "El proyecto no es válido." }
+    return { status: "error", message: "La prioridad del proyecto no es válida." }
   }
 
   const path = String(formData.get("path") ?? "")
 
   try {
-    await resumeProject(parsed.data)
+    await updateProjectPriority(parsed.data)
   } catch (error) {
-    console.error("Failed to resume project", error)
-    return { status: "error", message: "No pudimos reanudar el proyecto." }
+    console.error("Failed to update project priority", error)
+    return { status: "error", message: "No pudimos actualizar la prioridad del proyecto." }
   }
 
-  if (path) {
-    revalidatePath(path)
-  }
-  revalidatePath("/")
-  revalidatePath("/today")
-  revalidatePath("/parking")
+  revalidateOperationalPaths(path, { parking: path === "/parking" })
 
   return {
     status: "success",
-    message: "Proyecto devuelto al foco activo.",
+    message: "Prioridad del proyecto actualizada.",
     entityId: parsed.data.projectId,
+  }
+}
+
+export async function updateTaskPriorityAction(formData: FormData): Promise<ActionResult> {
+  const parsed = updateTaskPrioritySchema.safeParse({
+    taskId: formData.get("taskId"),
+    priority: formData.get("priority"),
+  })
+
+  if (!parsed.success) {
+    return { status: "error", message: "La prioridad de la tarea no es válida." }
+  }
+
+  const path = String(formData.get("path") ?? "")
+
+  try {
+    await updateTaskPriority(parsed.data)
+  } catch (error) {
+    console.error("Failed to update task priority", error)
+    return { status: "error", message: "No pudimos actualizar la prioridad de la tarea." }
+  }
+
+  revalidateOperationalPaths(path)
+
+  return {
+    status: "success",
+    message: "Prioridad de la tarea actualizada.",
+    entityId: parsed.data.taskId,
   }
 }

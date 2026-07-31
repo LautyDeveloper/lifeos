@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { priorityValues, projectStatusValues } from "@/types/domain"
+
 export const createTaskSchema = z.object({
   projectId: z.string().uuid("Proyecto inválido."),
   title: z
@@ -34,12 +36,19 @@ export const clearTaskPlannedDateSchema = z.object({
   taskId: z.string().uuid("Tarea inválida."),
 })
 
-export const pauseProjectSchema = z.object({
+export const updateProjectStatusSchema = z.object({
   projectId: z.string().uuid("Proyecto inválido."),
+  status: z.enum(projectStatusValues, "Elegí un estado válido."),
 })
 
-export const resumeProjectSchema = z.object({
+export const updateProjectPrioritySchema = z.object({
   projectId: z.string().uuid("Proyecto inválido."),
+  priority: z.enum(priorityValues, "Elegí una prioridad válida."),
+})
+
+export const updateTaskPrioritySchema = z.object({
+  taskId: z.string().uuid("Tarea inválida."),
+  priority: z.enum(priorityValues, "Elegí una prioridad válida."),
 })
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>
@@ -48,5 +57,6 @@ export type PlanTaskForTodayInput = z.infer<typeof planTaskForTodaySchema>
 export type PlanTaskForTomorrowInput = z.infer<typeof planTaskForTomorrowSchema>
 export type SetTaskPlannedDateInput = z.infer<typeof setTaskPlannedDateSchema>
 export type ClearTaskPlannedDateInput = z.infer<typeof clearTaskPlannedDateSchema>
-export type PauseProjectInput = z.infer<typeof pauseProjectSchema>
-export type ResumeProjectInput = z.infer<typeof resumeProjectSchema>
+export type UpdateProjectStatusInput = z.infer<typeof updateProjectStatusSchema>
+export type UpdateProjectPriorityInput = z.infer<typeof updateProjectPrioritySchema>
+export type UpdateTaskPriorityInput = z.infer<typeof updateTaskPrioritySchema>
