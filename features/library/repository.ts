@@ -27,7 +27,7 @@ export type LibraryFilters = {
 }
 
 function getLibraryNoteScope() {
-  return and(isNull(notes.containerId), isNull(notes.projectId))
+  return and(isNull(notes.containerId), isNull(notes.projectId), isNull(notes.taskId))
 }
 
 export async function listActiveLibraryNotes(
@@ -115,6 +115,7 @@ export async function createLibraryNote(input: CreateLibraryNoteInput) {
       content: input.content,
       containerId: null,
       projectId: null,
+      taskId: null,
     })
     .returning({
       id: notes.id,

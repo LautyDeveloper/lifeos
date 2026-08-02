@@ -59,7 +59,14 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
         updatedAt: notes.updatedAt,
       })
       .from(notes)
-      .where(and(isNull(notes.containerId), isNull(notes.projectId), isNull(notes.archivedAt)))
+      .where(
+        and(
+          isNull(notes.containerId),
+          isNull(notes.projectId),
+          isNull(notes.taskId),
+          isNull(notes.archivedAt)
+        )
+      )
       .orderBy(sql`${notes.updatedAt} desc`)
       .limit(4),
   ])

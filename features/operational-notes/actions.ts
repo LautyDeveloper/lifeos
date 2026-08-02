@@ -2,18 +2,27 @@
 
 import { revalidatePath } from "next/cache"
 
+import type { ActionResult } from "@/types/action-result"
 import type {
   CreateOperationalNoteActionState,
   UpdateOperationalNoteActionState,
 } from "@/features/operational-notes/action-state"
 import {
+  archiveOperationalNote,
   createContainerNote,
   createProjectNote,
+  createTaskNote,
+  deleteOperationalNote,
+  restoreOperationalNote,
   updateOperationalNote,
 } from "@/features/operational-notes/repository"
 import {
+  archiveOperationalNoteSchema,
   createContainerNoteSchema,
   createProjectNoteSchema,
+  createTaskNoteSchema,
+  deleteOperationalNoteSchema,
+  restoreOperationalNoteSchema,
   updateOperationalNoteSchema,
 } from "@/features/operational-notes/schemas"
 
@@ -119,6 +128,54 @@ export async function createProjectNoteAction(
   }
 }
 
+export async function createTaskNoteAction(
+  previousState: CreateOperationalNoteActionState,
+  formData: FormData
+): Promise<CreateOperationalNoteActionState> {
+  const parsed = createTaskNoteSchema.safeParse({
+    taskId: formData.get("taskId"),
+    title: formData.get("title"),
+    content: formData.get("content"),
+  })
+
+  if (!parsed.success) {
+    const fieldErrors = parsed.error.flatten().fieldErrors
+
+    return {
+      status: "error",
+      message: "Revisá la nota antes de guardarla.",
+      fieldErrors: {
+        taskId: fieldErrors.taskId,
+        title: fieldErrors.title,
+        content: fieldErrors.content,
+      },
+      resetKey: previousState.resetKey,
+    }
+  }
+
+  const path = String(formData.get("path") ?? "")
+
+  try {
+    const note = await createTaskNote(parsed.data)
+    revalidateOperationalNotesPath(path)
+
+    return {
+      status: "success",
+      message: "Nota guardada dentro de la tarea.",
+      createdNoteId: note.id,
+      resetKey: previousState.resetKey + 1,
+    }
+  } catch (error) {
+    console.error("Failed to create task note", error)
+
+    return {
+      status: "error",
+      message: "No pudimos guardar esta nota. Probá de nuevo.",
+      resetKey: previousState.resetKey,
+    }
+  }
+}
+
 export async function updateOperationalNoteAction(
   previousState: UpdateOperationalNoteActionState,
   formData: FormData
@@ -164,5 +221,65 @@ export async function updateOperationalNoteAction(
     status: "success",
     message: "Nota actualizada.",
     resetKey: previousState.resetKey + 1,
+  }
+}
+
+export async function archiveOperationalNoteAction(formData: FormData): Promise<ActionResult> {
+  const parsed = archiveOperationalNoteSchema.safeParse({
+    id: formData.get("id"),
+  })
+
+  if (!parsed.success) {
+    return { status: "error", message: "No pudimos archivar esa nota." }
+  }
+
+  const path = String(formData.get("path") ?? "")
+
+  try {
+    const note = await archiveOperationalNote(parsed.data)
+    revalidateOperationalNotesPath(path)
+    return { status: "success", message: "Nota archivada.", entityId: note.id }
+  } catch {
+    return { status: "error", message: "No pudimos archivar la nota. Probá de nuevo." }
+  }
+}
+
+export async function restoreOperationalNoteAction(formData: FormData): Promise<ActionResult> {
+  const parsed = restoreOperationalNoteSchema.safeParse({
+    id: formData.get("id"),
+  })
+
+  if (!parsed.success) {
+    return { status: "error", message: "No pudimos restaurar esa nota." }
+  }
+
+  const path = String(formData.get("path") ?? "")
+
+  try {
+    const note = await restoreOperationalNote(parsed.data)
+    revalidateOperationalNotesPath(path)
+    return { status: "success", message: "Nota restaurada.", entityId: note.id }
+  } catch {
+    return { status: "error", message: "No pudimos restaurar la nota. Probá de nuevo." }
+  }
+}
+
+export async function deleteOperationalNoteAction(formData: FormData): Promise<ActionResult> {
+  const parsed = deleteOperationalNoteSchema.safeParse({
+    id: formData.get("id"),
+  })
+
+  if (!parsed.success) {
+    return { status: "error", message: "No pudimos eliminar esa nota." }
+  }
+
+  const path = String(formData.get("path") ?? "")
+
+  try {
+    const note = await deleteOperationalNote(parsed.data)
+    revalidateOperationalNotesPath(path)
+    return { status: "success", message: "Nota eliminada.", entityId: note.id }
+  } catch {
+    return { status: "error", message: "No pudimos eliminar la nota. Probá de nuevo." }
   }
 }

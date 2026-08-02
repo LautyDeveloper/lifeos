@@ -11,6 +11,7 @@ import {
 import {
   createContainerNoteAction,
   createProjectNoteAction,
+  createTaskNoteAction,
 } from "@/features/operational-notes/actions"
 import { cn } from "@/lib/utils"
 
@@ -27,7 +28,7 @@ function CreateOperationalNoteFormInner({
   placeholder,
 }: {
   action: CreateAction
-  hiddenFieldName: "containerId" | "projectId"
+  hiddenFieldName: "containerId" | "projectId" | "taskId"
   hiddenFieldValue: string
   path: string
   placeholder: string
@@ -171,6 +172,24 @@ export function CreateProjectNoteForm({
       hiddenFieldValue={projectId}
       path={path}
       placeholder="Título de la nota del proyecto..."
+    />
+  )
+}
+
+export function CreateTaskNoteForm({
+  taskId,
+  path,
+}: {
+  taskId: string
+  path: string
+}) {
+  return (
+    <CreateOperationalNoteFormInner
+      action={createTaskNoteAction}
+      hiddenFieldName="taskId"
+      hiddenFieldValue={taskId}
+      path={path}
+      placeholder="Título de la nota de la tarea..."
     />
   )
 }

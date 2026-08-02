@@ -4,6 +4,7 @@ export type CreateOperationalNoteActionState = {
   fieldErrors?: {
     containerId?: string[]
     projectId?: string[]
+    taskId?: string[]
     title?: string[]
     content?: string[]
   }

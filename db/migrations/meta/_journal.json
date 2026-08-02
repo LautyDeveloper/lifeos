@@ -43,6 +43,13 @@
       "when": 1785638298805,
       "tag": "0005_overrated_blacklash",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785639423361,
+      "tag": "0006_zippy_dragon_man",
+      "breakpoints": true
     }
   ]
 }

@@ -24,12 +24,30 @@ export const createProjectNoteSchema = z.object({
   content: noteContentSchema,
 })
 
+export const createTaskNoteSchema = z.object({
+  taskId: z.string().uuid("Tarea inválida."),
+  title: noteTitleSchema,
+  content: noteContentSchema,
+})
+
 export const updateOperationalNoteSchema = z.object({
   id: z.string().uuid("Nota inválida."),
   title: noteTitleSchema,
   content: noteContentSchema,
 })
 
+const operationalNoteIdSchema = z.object({
+  id: z.string().uuid("Nota inválida."),
+})
+
+export const archiveOperationalNoteSchema = operationalNoteIdSchema
+export const restoreOperationalNoteSchema = operationalNoteIdSchema
+export const deleteOperationalNoteSchema = operationalNoteIdSchema
+
 export type CreateContainerNoteInput = z.infer<typeof createContainerNoteSchema>
 export type CreateProjectNoteInput = z.infer<typeof createProjectNoteSchema>
+export type CreateTaskNoteInput = z.infer<typeof createTaskNoteSchema>
 export type UpdateOperationalNoteInput = z.infer<typeof updateOperationalNoteSchema>
+export type ArchiveOperationalNoteInput = z.infer<typeof archiveOperationalNoteSchema>
+export type RestoreOperationalNoteInput = z.infer<typeof restoreOperationalNoteSchema>
+export type DeleteOperationalNoteInput = z.infer<typeof deleteOperationalNoteSchema>

@@ -8,6 +8,7 @@ import {
   type UpdateOperationalNoteActionState,
 } from "@/features/operational-notes/action-state"
 import { updateOperationalNoteAction } from "@/features/operational-notes/actions"
+import { OperationalNoteLifecycleActions } from "@/features/operational-notes/components/operational-note-lifecycle-actions"
 import { InboxSubmitButton } from "@/features/inbox/components/inbox-submit-button"
 import { cn } from "@/lib/utils"
 
@@ -66,6 +67,7 @@ export function OperationalNoteEditor({
 
   return (
     <details
+      id={`note-${note.id}`}
       open={open}
       onToggle={(event) => setOpen(event.currentTarget.open)}
       className="group rounded-[22px] border border-white/[0.06] bg-white/[0.02] px-4 py-3"
@@ -134,7 +136,10 @@ export function OperationalNoteEditor({
               </p>
             )}
           </div>
-          <InboxSubmitButton label="Guardar" pendingLabel="Guardando..." />
+          <div className="flex flex-wrap items-center gap-2">
+            <OperationalNoteLifecycleActions noteId={note.id} path={path} mode="active" />
+            <InboxSubmitButton label="Guardar" pendingLabel="Guardando..." />
+          </div>
         </div>
       </form>
     </details>

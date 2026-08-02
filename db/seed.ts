@@ -111,6 +111,23 @@ const projectNoteSeeds = [
   },
 ] as const
 
+const taskNoteSeeds = [
+  {
+    taskTitle: "Definir el siguiente PR del producto.",
+    title: "Qué tiene que resolver",
+    content:
+      "El próximo paso tiene que cerrar un loop real, no solo sumar UI. Si una pieza no conecta captura, organización o ejecución, todavía no entra.",
+    archived: false,
+  },
+  {
+    taskTitle: "Preparar prioridades del cliente.",
+    title: "Contexto de la reunión",
+    content:
+      "Llegar con tres prioridades claras y un resumen breve de bloqueos evita volver a pensar el contexto en el momento.",
+    archived: true,
+  },
+] as const
+
 async function seedAreas() {
   const db = getDbOrThrow()
   const existingAreas = await db
@@ -306,7 +323,14 @@ async function seedLibraryNotes() {
   const existingNotes = await db
     .select({ title: notes.title })
     .from(notes)
-    .where(inArray(notes.title, libraryNoteSeeds.map((note) => note.title)))
+    .where(
+      and(
+        inArray(notes.title, libraryNoteSeeds.map((note) => note.title)),
+        isNull(notes.containerId),
+        isNull(notes.projectId),
+        isNull(notes.taskId)
+      )
+    )
 
   const existingTitles = new Set(existingNotes.map((note) => note.title))
   const missingNotes = libraryNoteSeeds
@@ -316,6 +340,7 @@ async function seedLibraryNotes() {
       content: note.content,
       containerId: null,
       projectId: null,
+      taskId: null,
     }))
 
   if (missingNotes.length > 0) {
@@ -355,6 +380,7 @@ async function seedContainerNotes() {
       await db.insert(notes).values({
         containerId: container.id,
         projectId: null,
+        taskId: null,
         title: note.title,
         content: note.content,
       })
@@ -394,13 +420,14 @@ async function seedProjectNotes() {
     const existing = await db
       .select({ id: notes.id })
       .from(notes)
-      .where(and(eq(notes.projectId, project.id), eq(notes.title, note.title)))
+      .where(and(eq(notes.projectId, project.id), isNull(notes.taskId), eq(notes.title, note.title)))
       .limit(1)
 
     if (existing.length === 0) {
       await db.insert(notes).values({
         containerId: project.containerId,
         projectId: project.id,
+        taskId: null,
         title: note.title,
         content: note.content,
       })
@@ -418,6 +445,61 @@ async function seedProjectNotes() {
   }
 }
 
+async function seedTaskNotes() {
+  const db = getDbOrThrow()
+  const availableTasks = await db
+    .select({
+      id: tasks.id,
+      title: tasks.title,
+      projectId: tasks.projectId,
+      containerId: projects.containerId,
+    })
+    .from(tasks)
+    .innerJoin(projects, eq(projects.id, tasks.projectId))
+    .where(inArray(tasks.title, taskNoteSeeds.map((note) => note.taskTitle)))
+
+  const taskByTitle = new Map(availableTasks.map((task) => [task.title, task]))
+
+  for (const note of taskNoteSeeds) {
+    const task = taskByTitle.get(note.taskTitle)
+
+    if (!task) {
+      continue
+    }
+
+    const existing = await db
+      .select({ id: notes.id })
+      .from(notes)
+      .where(and(eq(notes.taskId, task.id), eq(notes.title, note.title)))
+      .limit(1)
+
+    const archivedAt = note.archived ? new Date() : null
+
+    if (existing.length === 0) {
+      await db.insert(notes).values({
+        containerId: task.containerId,
+        projectId: task.projectId,
+        taskId: task.id,
+        title: note.title,
+        content: note.content,
+        archivedAt,
+      })
+      continue
+    }
+
+    await db
+      .update(notes)
+      .set({
+        containerId: task.containerId,
+        projectId: task.projectId,
+        content: note.content,
+        archivedAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(notes.id, existing[0].id))
+  }
+}
+
 async function main() {
   await seedAreas()
   await seedContainers()
@@ -427,6 +509,7 @@ async function main() {
   await seedLibraryNotes()
   await seedContainerNotes()
   await seedProjectNotes()
+  await seedTaskNotes()
 
   console.log("Life OS seeds completed.")
 }

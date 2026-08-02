@@ -25,8 +25,10 @@ import {
   type VisibleAreaProjectStatus,
 } from "@/types/domain"
 import {
+  AreaOperationalNotesOverview,
   ContainerNotesSection,
   ProjectNotesSection,
+  TaskNotesSection,
 } from "@/features/operational-notes/components/operational-notes-section"
 
 const projectSections: VisibleAreaProjectStatus[] = ["active", "backlog", "done"]
@@ -159,6 +161,7 @@ function ProjectSection({
                       plannedDate={task.plannedDate}
                     />
                   ) : null}
+                  <TaskNotesSection taskId={task.id} notes={task.notes} path={path} />
                 </div>
               </article>
             ))}
@@ -266,6 +269,12 @@ export function AreaWorkspaceView({
         </section>
       ) : (
         <div className="space-y-6">
+          <AreaOperationalNotesOverview
+            notes={workspace.activeNotes}
+            archivedNotes={workspace.archivedNotes}
+            path={path}
+          />
+
           <nav aria-label="Filtrar tareas" className="flex flex-wrap gap-2">
             {([
               ["active", "Activas"],

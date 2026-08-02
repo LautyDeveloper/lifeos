@@ -244,6 +244,7 @@ export async function processInboxItemToNote(input: ProcessInboxToNoteInput) {
       content: input.content,
       containerId: null,
       projectId: null,
+      taskId: null,
     })
     .returning({
       id: notes.id,
