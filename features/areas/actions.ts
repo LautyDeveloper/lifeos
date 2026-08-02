@@ -338,7 +338,7 @@ export async function updateProjectStatusAction(formData: FormData): Promise<Act
   const messages = {
     backlog: "Proyecto movido a Backlog.",
     active: "Proyecto devuelto al foco activo.",
-    paused: "Proyecto movido a Parking.",
+    paused: "Proyecto movido a Estacionados.",
     done: "Proyecto marcado como terminado.",
   } as const
 

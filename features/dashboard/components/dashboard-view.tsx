@@ -1,6 +1,7 @@
 import Link from "next/link"
-import { ArrowRight, BookOpenText, CalendarCheck2, CircleDot, Inbox, Layers3 } from "lucide-react"
+import { ArrowRight, ArrowUpRight, BookOpenText, CalendarCheck2, CircleDot, Inbox, Layers3 } from "lucide-react"
 
+import { SectionHeading } from "@/components/shared/content-patterns"
 import { PageShell } from "@/components/shared/page-shell"
 import { EmptyState } from "@/components/ui/empty-state"
 import type { DashboardSummary } from "@/features/dashboard/repository"
@@ -32,6 +33,13 @@ function formatNoteDate(value: Date) {
   }).format(value)
 }
 
+const areaHrefByName: Record<string, string> = {
+  Trabajo: "/work",
+  Dev: "/dev",
+  Estudio: "/study",
+  Salud: "/health",
+}
+
 export function DashboardView({ summary }: { summary: DashboardSummary }) {
   const empty =
     summary.todayTasks.length === 0 &&
@@ -54,19 +62,12 @@ export function DashboardView({ summary }: { summary: DashboardSummary }) {
       ) : (
         <div className="grid gap-6 xl:grid-cols-[1.35fr_0.8fr]">
           <section className="surface-1 rounded-[30px] border p-6 md:p-7 xl:col-span-2">
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-              <div className="space-y-2">
-                <p className="eyebrow">Quick actions</p>
-                <h3 className="text-2xl font-semibold tracking-[-0.035em] text-white">Movete sin cambiar de pantalla</h3>
-                <p className="context-line max-w-2xl">
-                  Capturá, guardá contexto o saltá directo a ejecutar.
-                </p>
-              </div>
-              <Link href="/today" className="inline-flex min-h-11 items-center gap-2 rounded-[18px] border border-primary/15 bg-primary/12 px-4 text-sm font-medium text-primary transition hover:border-primary/20 hover:bg-primary/18 hover:text-white">
+            <SectionHeading eyebrow="Acciones rápidas" title="Movete sin cambiar de pantalla" description="Capturá, guardá contexto o saltá directo a ejecutar." action={
+              <Link href="/today" className="inline-flex min-h-11 items-center gap-2 rounded-[18px] border border-primary/25 bg-primary/12 px-4 text-sm font-medium text-primary transition hover:bg-primary/20 hover:text-white">
                 <CalendarCheck2 className="size-4" />
                 Ir a Hoy
               </Link>
-            </div>
+            } />
 
             <div className="mt-7 grid gap-5 lg:grid-cols-[1fr_1fr_0.72fr]">
               <div className="surface-2 rounded-[24px] border p-1.5">
@@ -178,23 +179,18 @@ export function DashboardView({ summary }: { summary: DashboardSummary }) {
           </section>
 
           <section className="surface-1 rounded-[30px] border p-6 md:p-7 xl:col-span-2">
-            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-              <div className="space-y-2">
-                <p className="content-title">Áreas</p>
-                <p className="context-line">Dónde está viviendo tu energía.</p>
-              </div>
-              <Link href="/library" className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-white">
-                <BookOpenText className="size-4" /> Biblioteca
-              </Link>
-            </div>
+            <SectionHeading title="Áreas" description="Dónde está viviendo tu energía." />
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {summary.areas.map((area) => (
-                <div key={area.id} className="surface-2 rounded-[22px] border p-4">
-                  <p className="content-title">{area.name}</p>
+                <Link key={area.id} href={areaHrefByName[area.name] ?? "/"} className="surface-2 group rounded-[22px] border p-4 transition hover:border-primary/20 hover:bg-white/[0.045]">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="content-title">{area.name}</p>
+                    <ArrowUpRight className="size-4 text-muted-foreground transition group-hover:text-primary" aria-hidden="true" />
+                  </div>
                   <div className="meta-row mt-2">
                     <span className="meta-item"><b className="text-white">{area.projects}</b> proyectos</span>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </section>

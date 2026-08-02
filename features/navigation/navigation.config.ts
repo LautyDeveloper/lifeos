@@ -42,12 +42,15 @@ export const navigationGroups: NavigationGroup[] = [
   },
 ]
 
-export const mobileNavigationItems = [
+export const mobilePrimaryNavigationItems = [
   { href: "/", label: "Inicio", icon: Home },
   { href: "/today", label: "Hoy", icon: CalendarDays },
   { href: "/inbox", label: "Capturas", icon: Inbox },
-  { href: "#more", label: "Más", icon: Ellipsis },
 ] as const
+
+export const mobileMoreNavigationGroups = navigationGroups.slice(1)
+
+export const mobileMoreItem = { label: "Más", icon: Ellipsis } as const
 
 export function findNavigationItem(pathname: string) {
   return navigationGroups

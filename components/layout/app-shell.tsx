@@ -3,6 +3,7 @@
 import { AppSidebar } from "@/components/layout/app-sidebar"
 import { AppTopbar } from "@/components/layout/app-topbar"
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav"
+import { MobileMoreSheet } from "@/components/layout/mobile-more-sheet"
 import { GlobalCapture } from "@/features/inbox/components/global-capture"
 import {
   SidebarStateProvider,
@@ -33,24 +34,7 @@ function AppShellFrame({ children, databaseReady }: { children: React.ReactNode;
         </div>
       </div>
 
-      {mobileOpen ? (
-        <div className="fixed inset-0 z-50 flex bg-black/65 p-3 backdrop-blur-md transition-all duration-200 motion-reduce:transition-none md:hidden">
-          <button
-            type="button"
-            aria-label="Cerrar navegación"
-            className="absolute inset-0"
-            onClick={() => setMobileOpen(false)}
-          />
-          <div className="relative z-10 h-full transition-transform duration-200 motion-reduce:transition-none">
-            <AppSidebar
-              mobile
-              collapsed={false}
-              onCloseMobile={() => setMobileOpen(false)}
-              onToggleCollapsed={toggleCollapsed}
-            />
-          </div>
-        </div>
-      ) : null}
+      <MobileMoreSheet open={mobileOpen} onClose={() => setMobileOpen(false)} />
       <GlobalCapture databaseReady={databaseReady} />
       <MobileBottomNav />
     </div>

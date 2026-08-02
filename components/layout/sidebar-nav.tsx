@@ -30,7 +30,7 @@ export function SidebarNav({ collapsed, onNavigate }: SidebarNavProps) {
               onClick={() => setAreasOpen(!areasOpen)}
               aria-expanded={areasOpen}
               className={cn(
-                "mb-2 flex min-h-10 w-full items-center justify-between px-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/72 transition hover:text-foreground",
+                "mb-2 flex min-h-10 w-full items-center justify-between rounded-xl px-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground transition hover:bg-white/[0.025] hover:text-white",
                 areaActive && "text-foreground"
               )}
             >
@@ -54,14 +54,14 @@ export function SidebarNav({ collapsed, onNavigate }: SidebarNavProps) {
                     "group flex min-h-11 items-center gap-3 rounded-[18px] border-l-2 border-transparent px-3 py-2.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none",
                     collapsed ? "justify-center px-0" : "",
                     isActive
-                      ? "border-l-primary/90 bg-white/[0.04] text-white"
-                      : "text-muted-foreground hover:bg-white/[0.022] hover:text-foreground"
+                      ? "border-l-primary bg-white/[0.055] text-white"
+                      : "text-muted-foreground hover:bg-white/[0.035] hover:text-white"
                   )}
                 >
                   <item.icon
                     className={cn(
                       "size-4 shrink-0 transition-transform duration-200 motion-reduce:transition-none",
-                      isActive ? "text-muted-foreground" : "text-muted-foreground/80 group-hover:text-foreground",
+                      isActive ? "text-primary" : "text-muted-foreground group-hover:text-white",
                       !collapsed && "group-hover:scale-105"
                     )}
                   />
