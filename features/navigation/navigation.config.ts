@@ -2,6 +2,7 @@ import {
   BookOpen,
   BriefcaseBusiness,
   CalendarDays,
+  ClipboardCheck,
   Ellipsis,
   FolderKanban,
   HeartPulse,
@@ -21,6 +22,7 @@ import type { NavigationGroupData, NavigationIconKey, NavigationItemData } from 
 export const navigationIconMap = {
   Home,
   CalendarDays,
+  ClipboardCheck,
   Inbox,
   BriefcaseBusiness,
   MonitorCog,
@@ -42,6 +44,7 @@ const staticCoreItems: NavigationItemData[] = [
 ] as const
 
 const staticSystemItems: NavigationItemData[] = [
+  { href: "/review", label: "Review", iconKey: "ClipboardCheck" },
   { href: "/library", label: "Biblioteca", iconKey: "FolderKanban" },
   { href: "/parking", label: "Estacionados", iconKey: "ParkingSquare" },
   { href: "/settings", label: "Configuración", iconKey: "Settings" },

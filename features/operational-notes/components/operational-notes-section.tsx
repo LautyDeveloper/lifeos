@@ -178,6 +178,7 @@ export function AreaOperationalNotesOverview({
               {notes.map((note) => (
                 <article
                   key={note.id}
+                  id={`note-${note.id}`}
                   className="rounded-[22px] border border-white/[0.06] bg-white/[0.02] px-4 py-4"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -218,6 +219,7 @@ export function AreaOperationalNotesOverview({
               {archivedNotes.map((note) => (
                 <article
                   key={note.id}
+                  id={`note-${note.id}`}
                   className="rounded-[22px] border border-white/[0.06] bg-white/[0.02] px-4 py-4"
                 >
                   <div className="space-y-3">

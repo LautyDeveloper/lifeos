@@ -18,6 +18,10 @@ export function getDateDaysFromNow(offset: number, now: Date = new Date()) {
   return start
 }
 
+export function getDateDaysAgo(days: number, now: Date = new Date()) {
+  return getDateDaysFromNow(-days, now)
+}
+
 export function getTodayRange(now: Date = new Date()) {
   const start = getStartOfDay(now)
 
