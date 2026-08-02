@@ -9,6 +9,7 @@ import type {
   RestoreLibraryNoteInput,
   UpdateLibraryNoteInput,
 } from "@/features/library/schemas"
+import { DomainError } from "@/lib/domain-errors"
 
 export type LibraryNoteListItem = {
   id: string
@@ -26,7 +27,7 @@ export type LibraryFilters = {
   note?: string
 }
 
-function getLibraryNoteScope() {
+export function getLibraryNoteScope() {
   return and(isNull(notes.containerId), isNull(notes.projectId), isNull(notes.taskId))
 }
 
@@ -139,7 +140,7 @@ export async function updateLibraryNote(input: UpdateLibraryNoteInput) {
     .limit(1)
 
   if (!existingNote) {
-    throw new Error("Library note not found.")
+    throw new DomainError("not_found", "Library note not found.")
   }
 
   const [updatedNote] = await database
@@ -172,7 +173,7 @@ export async function archiveLibraryNote(input: ArchiveLibraryNoteInput) {
     .limit(1)
 
   if (!existingNote) {
-    throw new Error("Active library note not found.")
+    throw new DomainError("invalid_state", "Active library note not found.")
   }
 
   const [archivedNote] = await database
@@ -200,7 +201,7 @@ export async function restoreLibraryNote(input: RestoreLibraryNoteInput) {
     .limit(1)
 
   if (!existingNote) {
-    throw new Error("Archived library note not found.")
+    throw new DomainError("invalid_state", "Archived library note not found.")
   }
 
   const [restoredNote] = await database
@@ -228,7 +229,7 @@ export async function deleteLibraryNote(input: DeleteLibraryNoteInput) {
     .limit(1)
 
   if (!existingNote) {
-    throw new Error("Archived library note not found.")
+    throw new DomainError("invalid_state", "Archived library note not found.")
   }
 
   const [deletedNote] = await database

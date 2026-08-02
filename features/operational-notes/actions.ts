@@ -25,6 +25,35 @@ import {
   restoreOperationalNoteSchema,
   updateOperationalNoteSchema,
 } from "@/features/operational-notes/schemas"
+import { isDomainError } from "@/lib/domain-errors"
+
+function getOperationalNoteErrorMessage(
+  error: unknown,
+  fallback: string,
+  options?: {
+    notFound?: string
+    invalidState?: string
+    archivedContext?: string
+  }
+) {
+  if (!isDomainError(error)) {
+    return fallback
+  }
+
+  if (error.code === "not_found") {
+    return options?.notFound ?? fallback
+  }
+
+  if (error.code === "archived_context") {
+    return options?.archivedContext ?? fallback
+  }
+
+  if (error.code === "invalid_state") {
+    return options?.invalidState ?? fallback
+  }
+
+  return fallback
+}
 
 function revalidateOperationalNotesPath(path: string) {
   if (path) {
@@ -74,7 +103,10 @@ export async function createContainerNoteAction(
 
     return {
       status: "error",
-      message: "No pudimos guardar esta nota. Probá de nuevo.",
+      message: getOperationalNoteErrorMessage(error, "No pudimos guardar la nota.", {
+        notFound: "Ese espacio ya no existe.",
+        archivedContext: "Ese espacio está archivado y ya no admite notas.",
+      }),
       resetKey: previousState.resetKey,
     }
   }
@@ -122,7 +154,11 @@ export async function createProjectNoteAction(
 
     return {
       status: "error",
-      message: "No pudimos guardar esta nota. Probá de nuevo.",
+      message: getOperationalNoteErrorMessage(error, "No pudimos guardar la nota.", {
+        notFound: "Ese proyecto ya no existe.",
+        archivedContext: "El container de este proyecto está archivado.",
+        invalidState: "Ese proyecto ya no admite notas en este contexto.",
+      }),
       resetKey: previousState.resetKey,
     }
   }
@@ -170,7 +206,11 @@ export async function createTaskNoteAction(
 
     return {
       status: "error",
-      message: "No pudimos guardar esta nota. Probá de nuevo.",
+      message: getOperationalNoteErrorMessage(error, "No pudimos guardar la nota.", {
+        notFound: "Esa tarea ya no existe.",
+        archivedContext: "El contexto de esta tarea está archivado.",
+        invalidState: "Esa tarea ya no admite notas en este contexto.",
+      }),
       resetKey: previousState.resetKey,
     }
   }
@@ -210,7 +250,11 @@ export async function updateOperationalNoteAction(
 
     return {
       status: "error",
-      message: "No pudimos guardar los cambios. Probá de nuevo.",
+      message: getOperationalNoteErrorMessage(error, "No pudimos guardar los cambios.", {
+        notFound: "La nota ya no existe.",
+        archivedContext: "El contexto de esta nota ya no está activo.",
+        invalidState: "La nota ya no se puede editar.",
+      }),
       resetKey: previousState.resetKey,
     }
   }
@@ -239,8 +283,13 @@ export async function archiveOperationalNoteAction(formData: FormData): Promise<
     const note = await archiveOperationalNote(parsed.data)
     revalidateOperationalNotesPath(path)
     return { status: "success", message: "Nota archivada.", entityId: note.id }
-  } catch {
-    return { status: "error", message: "No pudimos archivar la nota. Probá de nuevo." }
+  } catch (error) {
+    return {
+      status: "error",
+      message: getOperationalNoteErrorMessage(error, "No pudimos archivar la nota.", {
+        invalidState: "La nota ya no está activa.",
+      }),
+    }
   }
 }
 
@@ -259,8 +308,14 @@ export async function restoreOperationalNoteAction(formData: FormData): Promise<
     const note = await restoreOperationalNote(parsed.data)
     revalidateOperationalNotesPath(path)
     return { status: "success", message: "Nota restaurada.", entityId: note.id }
-  } catch {
-    return { status: "error", message: "No pudimos restaurar la nota. Probá de nuevo." }
+  } catch (error) {
+    return {
+      status: "error",
+      message: getOperationalNoteErrorMessage(error, "No pudimos restaurar la nota.", {
+        invalidState: "La nota ya no está archivada.",
+        archivedContext: "El contexto de esta nota sigue archivado.",
+      }),
+    }
   }
 }
 
@@ -279,7 +334,12 @@ export async function deleteOperationalNoteAction(formData: FormData): Promise<A
     const note = await deleteOperationalNote(parsed.data)
     revalidateOperationalNotesPath(path)
     return { status: "success", message: "Nota eliminada.", entityId: note.id }
-  } catch {
-    return { status: "error", message: "No pudimos eliminar la nota. Probá de nuevo." }
+  } catch (error) {
+    return {
+      status: "error",
+      message: getOperationalNoteErrorMessage(error, "No pudimos eliminar la nota.", {
+        invalidState: "Solo podés eliminar notas archivadas.",
+      }),
+    }
   }
 }

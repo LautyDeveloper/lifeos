@@ -19,6 +19,7 @@ import {
   processInboxToProjectSchema,
   processInboxToTaskSchema,
 } from "@/features/inbox/schemas"
+import { isDomainError } from "@/lib/domain-errors"
 
 export async function createInboxItemAction(
   previousState: InboxActionState,
@@ -43,10 +44,12 @@ export async function createInboxItemAction(
 
   try {
     await createInboxItem(parsed.data)
-  } catch {
+  } catch (error) {
     return {
       status: "error",
-      message: "Configurá DATABASE_URL para empezar a guardar capturas reales.",
+      message: isDomainError(error)
+        ? "Configurá DATABASE_URL para empezar a guardar capturas reales."
+        : "No pudimos guardar la captura.",
       resetKey: previousState.resetKey,
     }
   }
@@ -71,6 +74,36 @@ function mapProcessFieldErrors(
     content: fieldErrors.content,
     inboxItemId: fieldErrors.inboxItemId,
   }
+}
+
+function getInboxProcessingErrorMessage(error: unknown, target: "project" | "task" | "note") {
+  if (!isDomainError(error)) {
+    return "No pudimos procesar la captura."
+  }
+
+  if (error.code === "not_found") {
+    if (target === "project") {
+      return "La captura o el container ya no están disponibles."
+    }
+
+    if (target === "task") {
+      return "La captura o el proyecto ya no están disponibles."
+    }
+
+    return "La captura ya no está disponible."
+  }
+
+  if (error.code === "archived_context") {
+    return "Ese destino está archivado y ya no acepta nuevas entradas."
+  }
+
+  if (error.code === "invalid_state") {
+    return target === "task"
+      ? "Ese proyecto ya no acepta tareas nuevas."
+      : "Ese destino ya no está disponible para procesar la captura."
+  }
+
+  return "No pudimos procesar la captura."
 }
 
 export async function processInboxItemAction(
@@ -154,7 +187,7 @@ export async function processInboxItemAction(
     console.error("Failed to process inbox item", error)
     return {
       status: "error",
-      message: "No pudimos procesar esta captura. Probá de nuevo.",
+      message: getInboxProcessingErrorMessage(error, target),
       processedTarget: target,
       resetKey: previousState.resetKey,
     }

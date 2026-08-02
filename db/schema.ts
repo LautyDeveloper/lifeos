@@ -1,12 +1,14 @@
-import { relations } from "drizzle-orm"
+import { relations, sql } from "drizzle-orm"
 import {
   boolean,
+  check,
   index,
   integer,
   pgEnum,
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core"
@@ -25,20 +27,30 @@ export const priorityEnum = pgEnum("priority", [
   "urgent",
 ])
 
-export const areas = pgTable("areas", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  slug: varchar("slug", { length: 32 }).notNull(),
-  name: varchar("name", { length: 120 }).notNull(),
-  icon: varchar("icon", { length: 64 }).notNull(),
-  color: varchar("color", { length: 32 }).notNull(),
-  sortOrder: integer("sort_order").default(0).notNull(),
-  createdAt: timestamp("created_at", {
-    withTimezone: true,
-    mode: "date",
+export const areas = pgTable(
+  "areas",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    slug: varchar("slug", { length: 32 }).notNull(),
+    name: varchar("name", { length: 120 }).notNull(),
+    icon: varchar("icon", { length: 64 }).notNull(),
+    color: varchar("color", { length: 32 }).notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    slugUnique: uniqueIndex("areas_slug_unique").on(table.slug),
+    nameNotBlank: check(
+      "areas_name_not_blank",
+      sql`char_length(trim(${table.name})) > 0`
+    ),
   })
-    .defaultNow()
-    .notNull(),
-})
+)
 
 export const containers = pgTable(
   "containers",
@@ -60,6 +72,10 @@ export const containers = pgTable(
   },
   (table) => ({
     areaIdx: index("containers_area_id_idx").on(table.areaId),
+    nameNotBlank: check(
+      "containers_name_not_blank",
+      sql`char_length(trim(${table.name})) > 0`
+    ),
   })
 )
 
@@ -84,6 +100,10 @@ export const projects = pgTable(
   (table) => ({
     containerIdx: index("projects_container_id_idx").on(table.containerId),
     statusIdx: index("projects_status_idx").on(table.status),
+    titleNotBlank: check(
+      "projects_title_not_blank",
+      sql`char_length(trim(${table.title})) > 0`
+    ),
   })
 )
 
@@ -111,6 +131,10 @@ export const tasks = pgTable(
   (table) => ({
     projectIdx: index("tasks_project_id_idx").on(table.projectId),
     plannedDateIdx: index("tasks_planned_date_idx").on(table.plannedDate),
+    titleNotBlank: check(
+      "tasks_title_not_blank",
+      sql`char_length(trim(${table.title})) > 0`
+    ),
   })
 )
 
@@ -132,6 +156,10 @@ export const inboxItems = pgTable(
   },
   (table) => ({
     capturedAtIdx: index("inbox_items_captured_at_idx").on(table.capturedAt),
+    contentNotBlank: check(
+      "inbox_items_content_not_blank",
+      sql`char_length(trim(${table.content})) > 0`
+    ),
   })
 )
 
@@ -171,6 +199,36 @@ export const notes = pgTable(
     containerIdx: index("notes_container_id_idx").on(table.containerId),
     projectIdx: index("notes_project_id_idx").on(table.projectId),
     taskIdx: index("notes_task_id_idx").on(table.taskId),
+    titleNotBlank: check(
+      "notes_title_not_blank",
+      sql`char_length(trim(${table.title})) > 0`
+    ),
+    contentNotBlank: check(
+      "notes_content_not_blank",
+      sql`char_length(trim(${table.content})) > 0`
+    ),
+    contextShapeValid: check(
+      "notes_context_shape_valid",
+      sql`
+        (
+          ${table.containerId} is null
+          and ${table.projectId} is null
+          and ${table.taskId} is null
+        ) or (
+          ${table.containerId} is not null
+          and ${table.projectId} is null
+          and ${table.taskId} is null
+        ) or (
+          ${table.containerId} is not null
+          and ${table.projectId} is not null
+          and ${table.taskId} is null
+        ) or (
+          ${table.containerId} is not null
+          and ${table.projectId} is not null
+          and ${table.taskId} is not null
+        )
+      `
+    ),
   })
 )
 
