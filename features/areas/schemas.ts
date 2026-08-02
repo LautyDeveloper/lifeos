@@ -11,6 +11,29 @@ export const createTaskSchema = z.object({
     .max(180, "La tarea no puede superar los 180 caracteres."),
 })
 
+export const createProjectSchema = z.object({
+  containerId: z.string().uuid("Container inválido."),
+  title: z
+    .string()
+    .trim()
+    .min(1, "Escribí un nombre para el proyecto.")
+    .max(180, "El proyecto no puede superar los 180 caracteres."),
+})
+
+export const updateProjectDetailsSchema = z.object({
+  projectId: z.string().uuid("Proyecto inválido."),
+  title: z
+    .string()
+    .trim()
+    .min(1, "Escribí un nombre para el proyecto.")
+    .max(180, "El proyecto no puede superar los 180 caracteres."),
+  description: z
+    .string()
+    .trim()
+    .max(2000, "La descripción no puede superar los 2000 caracteres.")
+    .optional(),
+})
+
 export const toggleTaskCompletionSchema = z.object({
   taskId: z.string().uuid("Tarea inválida."),
   completed: z.enum(["true", "false"]).transform((value) => value === "true"),
@@ -52,6 +75,8 @@ export const updateTaskPrioritySchema = z.object({
 })
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>
+export type CreateProjectInput = z.infer<typeof createProjectSchema>
+export type UpdateProjectDetailsInput = z.infer<typeof updateProjectDetailsSchema>
 export type ToggleTaskCompletionInput = z.infer<typeof toggleTaskCompletionSchema>
 export type PlanTaskForTodayInput = z.infer<typeof planTaskForTodaySchema>
 export type PlanTaskForTomorrowInput = z.infer<typeof planTaskForTomorrowSchema>
