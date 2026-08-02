@@ -50,7 +50,7 @@ pnpm dev
 Para conectar PostgreSQL:
 
 ```dotenv
-DATABASE_URL="postgresql://user:password@host.neon.tech/lifeos?sslmode=require"
+DATABASE_URL=""
 ```
 
 Luego se puede preparar una base de desarrollo con:
