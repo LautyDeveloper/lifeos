@@ -243,6 +243,7 @@ export async function processInboxItemToNote(input: ProcessInboxToNoteInput) {
       title: input.title,
       content: input.content,
       containerId: null,
+      projectId: null,
     })
     .returning({
       id: notes.id,

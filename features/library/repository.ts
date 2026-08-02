@@ -26,6 +26,10 @@ export type LibraryFilters = {
   note?: string
 }
 
+function getLibraryNoteScope() {
+  return and(isNull(notes.containerId), isNull(notes.projectId))
+}
+
 export async function listActiveLibraryNotes(
   filters: LibraryFilters = {}
 ): Promise<LibraryNoteListItem[]> {
@@ -53,7 +57,7 @@ export async function listActiveLibraryNotes(
     .from(notes)
     .where(
       and(
-        isNull(notes.containerId),
+        getLibraryNoteScope(),
         isNull(notes.archivedAt),
         query ? or(ilike(notes.title, `%${query}%`), ilike(notes.content, `%${query}%`)) : undefined
       )
@@ -76,7 +80,7 @@ export async function listArchivedLibraryNotes(): Promise<LibraryNoteListItem[]>
       archivedAt: notes.archivedAt,
     })
     .from(notes)
-    .where(and(isNull(notes.containerId), isNotNull(notes.archivedAt)))
+    .where(and(getLibraryNoteScope(), isNotNull(notes.archivedAt)))
     .orderBy(desc(notes.archivedAt), desc(notes.updatedAt))
 }
 
@@ -95,7 +99,7 @@ export async function getLibraryNoteById(id: string): Promise<LibraryNote | null
       archivedAt: notes.archivedAt,
     })
     .from(notes)
-    .where(and(eq(notes.id, id), isNull(notes.containerId)))
+    .where(and(eq(notes.id, id), getLibraryNoteScope()))
     .limit(1)
 
   return note ?? null
@@ -110,6 +114,7 @@ export async function createLibraryNote(input: CreateLibraryNoteInput) {
       title: input.title,
       content: input.content,
       containerId: null,
+      projectId: null,
     })
     .returning({
       id: notes.id,
@@ -129,7 +134,7 @@ export async function updateLibraryNote(input: UpdateLibraryNoteInput) {
   const [existingNote] = await database
     .select({ id: notes.id })
     .from(notes)
-    .where(and(eq(notes.id, input.id), isNull(notes.containerId), isNull(notes.archivedAt)))
+    .where(and(eq(notes.id, input.id), getLibraryNoteScope(), isNull(notes.archivedAt)))
     .limit(1)
 
   if (!existingNote) {
@@ -143,7 +148,7 @@ export async function updateLibraryNote(input: UpdateLibraryNoteInput) {
       content: input.content,
       updatedAt: new Date(),
     })
-    .where(and(eq(notes.id, input.id), isNull(notes.containerId), isNull(notes.archivedAt)))
+    .where(and(eq(notes.id, input.id), getLibraryNoteScope(), isNull(notes.archivedAt)))
     .returning({
       id: notes.id,
       title: notes.title,
@@ -162,7 +167,7 @@ export async function archiveLibraryNote(input: ArchiveLibraryNoteInput) {
   const [existingNote] = await database
     .select({ id: notes.id })
     .from(notes)
-    .where(and(eq(notes.id, input.id), isNull(notes.containerId), isNull(notes.archivedAt)))
+    .where(and(eq(notes.id, input.id), getLibraryNoteScope(), isNull(notes.archivedAt)))
     .limit(1)
 
   if (!existingNote) {
@@ -175,7 +180,7 @@ export async function archiveLibraryNote(input: ArchiveLibraryNoteInput) {
       archivedAt: new Date(),
       updatedAt: new Date(),
     })
-    .where(and(eq(notes.id, input.id), isNull(notes.containerId), isNull(notes.archivedAt)))
+    .where(and(eq(notes.id, input.id), getLibraryNoteScope(), isNull(notes.archivedAt)))
     .returning({
       id: notes.id,
       archivedAt: notes.archivedAt,
@@ -190,7 +195,7 @@ export async function restoreLibraryNote(input: RestoreLibraryNoteInput) {
   const [existingNote] = await database
     .select({ id: notes.id })
     .from(notes)
-    .where(and(eq(notes.id, input.id), isNull(notes.containerId), isNotNull(notes.archivedAt)))
+    .where(and(eq(notes.id, input.id), getLibraryNoteScope(), isNotNull(notes.archivedAt)))
     .limit(1)
 
   if (!existingNote) {
@@ -203,7 +208,7 @@ export async function restoreLibraryNote(input: RestoreLibraryNoteInput) {
       archivedAt: null,
       updatedAt: new Date(),
     })
-    .where(and(eq(notes.id, input.id), isNull(notes.containerId), isNotNull(notes.archivedAt)))
+    .where(and(eq(notes.id, input.id), getLibraryNoteScope(), isNotNull(notes.archivedAt)))
     .returning({
       id: notes.id,
       archivedAt: notes.archivedAt,
@@ -218,7 +223,7 @@ export async function deleteLibraryNote(input: DeleteLibraryNoteInput) {
   const [existingNote] = await database
     .select({ id: notes.id })
     .from(notes)
-    .where(and(eq(notes.id, input.id), isNull(notes.containerId), isNotNull(notes.archivedAt)))
+    .where(and(eq(notes.id, input.id), getLibraryNoteScope(), isNotNull(notes.archivedAt)))
     .limit(1)
 
   if (!existingNote) {
@@ -227,7 +232,7 @@ export async function deleteLibraryNote(input: DeleteLibraryNoteInput) {
 
   const [deletedNote] = await database
     .delete(notes)
-    .where(and(eq(notes.id, input.id), isNull(notes.containerId), isNotNull(notes.archivedAt)))
+    .where(and(eq(notes.id, input.id), getLibraryNoteScope(), isNotNull(notes.archivedAt)))
     .returning({
       id: notes.id,
     })

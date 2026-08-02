@@ -142,6 +142,9 @@ export const notes = pgTable(
     containerId: uuid("container_id").references(() => containers.id, {
       onDelete: "set null",
     }),
+    projectId: uuid("project_id").references(() => projects.id, {
+      onDelete: "cascade",
+    }),
     title: varchar("title", { length: 180 }).notNull(),
     content: text("content").notNull(),
     createdAt: timestamp("created_at", {
@@ -163,6 +166,7 @@ export const notes = pgTable(
   },
   (table) => ({
     containerIdx: index("notes_container_id_idx").on(table.containerId),
+    projectIdx: index("notes_project_id_idx").on(table.projectId),
   })
 )
 
@@ -185,6 +189,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
     references: [containers.id],
   }),
   tasks: many(tasks),
+  notes: many(notes),
 }))
 
 export const tasksRelations = relations(tasks, ({ one }) => ({
@@ -198,5 +203,9 @@ export const notesRelations = relations(notes, ({ one }) => ({
   container: one(containers, {
     fields: [notes.containerId],
     references: [containers.id],
+  }),
+  project: one(projects, {
+    fields: [notes.projectId],
+    references: [projects.id],
   }),
 }))
