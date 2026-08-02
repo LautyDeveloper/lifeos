@@ -35,7 +35,11 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
   const [todayTasks, captureRows, projectRows, areaRows, noteRows] = await Promise.all([
     getTodayTasks(),
     db.select({ value: count() }).from(inboxItems).where(isNull(inboxItems.processedAt)),
-    db.select({ value: count() }).from(projects).where(eq(projects.status, "active")),
+    db
+      .select({ value: count() })
+      .from(projects)
+      .innerJoin(containers, eq(containers.id, projects.containerId))
+      .where(and(eq(projects.status, "active"), eq(containers.archived, false))),
     db
       .select({
         id: areas.id,
@@ -43,10 +47,10 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
         projects: sql<number>`count(${projects.id})::int`,
       })
       .from(areas)
-      .leftJoin(containers, eq(containers.areaId, areas.id))
+      .leftJoin(containers, and(eq(containers.areaId, areas.id), eq(containers.archived, false)))
       .leftJoin(projects, eq(projects.containerId, containers.id))
       .groupBy(areas.id, areas.name)
-      .orderBy(areas.name),
+      .orderBy(areas.sortOrder, areas.name),
     db
       .select({
         id: notes.id,

@@ -26,6 +26,7 @@ import {
 export type AreaWorkspace = {
   area: {
     id: string
+    slug: string
     name: string
     icon: string
     color: string
@@ -116,7 +117,7 @@ async function getTaskRecord(taskId: string): Promise<TaskRecord | null> {
   return task ?? null
 }
 
-export async function getAreaWorkspace(areaName: string): Promise<AreaWorkspace | null> {
+export async function getAreaWorkspace(areaSlug: string): Promise<AreaWorkspace | null> {
   if (!db) {
     return null
   }
@@ -124,12 +125,13 @@ export async function getAreaWorkspace(areaName: string): Promise<AreaWorkspace 
   const [area] = await db
     .select({
       id: areas.id,
+      slug: areas.slug,
       name: areas.name,
       icon: areas.icon,
       color: areas.color,
     })
     .from(areas)
-    .where(eq(areas.name, areaName))
+    .where(eq(areas.slug, areaSlug))
     .limit(1)
 
   if (!area) {
@@ -144,7 +146,7 @@ export async function getAreaWorkspace(areaName: string): Promise<AreaWorkspace 
     })
     .from(containers)
     .where(and(eq(containers.areaId, area.id), eq(containers.archived, false)))
-    .orderBy(asc(containers.name))
+    .orderBy(asc(containers.sortOrder), asc(containers.name))
 
   const projectRows = await db
     .select({
@@ -158,7 +160,7 @@ export async function getAreaWorkspace(areaName: string): Promise<AreaWorkspace 
     .from(projects)
     .innerJoin(containers, eq(containers.id, projects.containerId))
     .where(and(eq(containers.areaId, area.id), eq(containers.archived, false)))
-    .orderBy(asc(containers.name), asc(projects.title))
+    .orderBy(asc(containers.sortOrder), asc(projects.title))
 
   const taskRows = await db
     .select({

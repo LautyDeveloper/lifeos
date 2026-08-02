@@ -6,54 +6,70 @@ import {
   FolderKanban,
   HeartPulse,
   Home,
+  House,
   Inbox,
   MonitorCog,
   ParkingSquare,
+  Rocket,
   Settings,
+  Sparkles,
 } from "lucide-react"
 
-import type { NavigationGroup } from "@/types/navigation"
+import { defaultAreaMetadataBySlug } from "@/features/settings/config"
+import type { NavigationGroupData, NavigationIconKey, NavigationItemData } from "@/types/navigation"
 
-export const navigationGroups: NavigationGroup[] = [
-  {
-    id: "core",
-    items: [
-      { href: "/", label: "Inicio", icon: Home },
-      { href: "/today", label: "Hoy", icon: CalendarDays },
-      { href: "/inbox", label: "Capturas", icon: Inbox },
-    ],
-  },
-  {
-    id: "areas",
-    items: [
-      { href: "/work", label: "Trabajo", icon: BriefcaseBusiness },
-      { href: "/dev", label: "Dev", icon: MonitorCog },
-      { href: "/study", label: "Estudio", icon: BookOpen },
-      { href: "/health", label: "Salud", icon: HeartPulse },
-    ],
-  },
-  {
-    id: "system",
-    items: [
-      { href: "/library", label: "Biblioteca", icon: FolderKanban },
-      { href: "/parking", label: "Estacionados", icon: ParkingSquare },
-      { href: "/settings", label: "Configuración", icon: Settings },
-    ],
-  },
-]
+export const navigationIconMap = {
+  Home,
+  CalendarDays,
+  Inbox,
+  BriefcaseBusiness,
+  MonitorCog,
+  BookOpen,
+  HeartPulse,
+  FolderKanban,
+  ParkingSquare,
+  Settings,
+  Ellipsis,
+  House,
+  Rocket,
+  Sparkles,
+} as const
 
-export const mobilePrimaryNavigationItems = [
-  { href: "/", label: "Inicio", icon: Home },
-  { href: "/today", label: "Hoy", icon: CalendarDays },
-  { href: "/inbox", label: "Capturas", icon: Inbox },
+const staticCoreItems: NavigationItemData[] = [
+  { href: "/", label: "Inicio", iconKey: "Home" },
+  { href: "/today", label: "Hoy", iconKey: "CalendarDays" },
+  { href: "/inbox", label: "Capturas", iconKey: "Inbox" },
 ] as const
 
-export const mobileMoreNavigationGroups = navigationGroups.slice(1)
+const staticSystemItems: NavigationItemData[] = [
+  { href: "/library", label: "Biblioteca", iconKey: "FolderKanban" },
+  { href: "/parking", label: "Estacionados", iconKey: "ParkingSquare" },
+  { href: "/settings", label: "Configuración", iconKey: "Settings" },
+] as const
 
-export const mobileMoreItem = { label: "Más", icon: Ellipsis } as const
+export const fallbackAreaNavigationItems: NavigationItemData[] = [
+  { href: "/work", label: defaultAreaMetadataBySlug.work.name, iconKey: defaultAreaMetadataBySlug.work.icon },
+  { href: "/dev", label: defaultAreaMetadataBySlug.dev.name, iconKey: defaultAreaMetadataBySlug.dev.icon },
+  { href: "/study", label: defaultAreaMetadataBySlug.study.name, iconKey: defaultAreaMetadataBySlug.study.icon },
+  { href: "/health", label: defaultAreaMetadataBySlug.health.name, iconKey: defaultAreaMetadataBySlug.health.icon },
+]
 
-export function findNavigationItem(pathname: string) {
-  return navigationGroups
+export const mobileMoreItem = { label: "Más", iconKey: "Ellipsis" } as const
+
+export function buildNavigationGroups(areaItems: NavigationItemData[] = fallbackAreaNavigationItems): NavigationGroupData[] {
+  return [
+    { id: "core", items: [...staticCoreItems] },
+    { id: "areas", items: areaItems },
+    { id: "system", items: [...staticSystemItems] },
+  ]
+}
+
+export function resolveNavigationIcon(iconKey: NavigationIconKey) {
+  return navigationIconMap[iconKey as keyof typeof navigationIconMap] ?? Sparkles
+}
+
+export function findNavigationItem(pathname: string, groups: NavigationGroupData[]) {
+  return groups
     .flatMap((group) => group.items)
     .find((item) => (item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)))
 }

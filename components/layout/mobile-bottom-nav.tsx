@@ -3,13 +3,17 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
-import { mobileMoreItem, mobileMoreNavigationGroups, mobilePrimaryNavigationItems } from "@/features/navigation/navigation.config"
+import { mobileMoreItem } from "@/features/navigation/navigation.config"
+import { NavigationIcon } from "@/features/navigation/navigation-icon"
 import { useSidebarState } from "@/components/layout/sidebar-state-provider"
 import { cn } from "@/lib/utils"
+import type { NavigationGroupData } from "@/types/navigation"
 
-export function MobileBottomNav() {
+export function MobileBottomNav({ navigationGroups }: { navigationGroups: NavigationGroupData[] }) {
   const pathname = usePathname()
   const { mobileOpen, toggleMobile } = useSidebarState()
+  const mobilePrimaryNavigationItems = navigationGroups.find((group) => group.id === "core")?.items ?? []
+  const mobileMoreNavigationGroups = navigationGroups.filter((group) => group.id !== "core")
   const moreItems = mobileMoreNavigationGroups.flatMap((group) => group.items)
   const moreActive = moreItems.some((item) => pathname.startsWith(item.href))
 
@@ -19,7 +23,7 @@ export function MobileBottomNav() {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)
         return (
           <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={cn("flex min-h-12 flex-col items-center justify-center gap-1 rounded-[18px] border-b-2 border-transparent text-muted-foreground transition", active && "border-b-primary/80 bg-white/[0.03] text-foreground")}>
-            <item.icon className="size-4" aria-hidden="true" />
+            <NavigationIcon iconKey={item.iconKey} className="size-4" />
             <span className="text-[10px] font-medium tracking-[0.02em]">{item.label}</span>
           </Link>
         )
@@ -33,7 +37,7 @@ export function MobileBottomNav() {
         onClick={toggleMobile}
         className={cn("flex min-h-12 flex-col items-center justify-center gap-1 rounded-[18px] border-b-2 border-transparent text-muted-foreground transition hover:bg-white/[0.035] hover:text-white", moreActive && "border-b-primary/80 bg-white/[0.04] text-white")}
       >
-        <mobileMoreItem.icon className="size-4" aria-hidden="true" />
+        <NavigationIcon iconKey={mobileMoreItem.iconKey} className="size-4" />
         <span className="text-[10px] font-medium tracking-[0.02em]">{mobileMoreItem.label}</span>
       </button>
     </nav>

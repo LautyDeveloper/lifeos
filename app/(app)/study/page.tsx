@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 }
 
 export default async function StudyPage({ searchParams }: { searchParams?: Promise<{ filter?: string }> }) {
-  const workspace = await getAreaWorkspace("Estudio")
+  const workspace = await getAreaWorkspace("study")
   const rawFilter = (await searchParams)?.filter
   const filter = rawFilter === "today" || rawFilter === "completed" ? rawFilter : "active"
 

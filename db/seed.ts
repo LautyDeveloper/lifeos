@@ -8,20 +8,20 @@ import { getDateDaysFromNow } from "@/lib/dates"
 import type { Priority, ProjectStatus } from "@/types/domain"
 
 const areaSeeds = [
-  { name: "Trabajo", icon: "BriefcaseBusiness", color: "#7dd3fc" },
-  { name: "Dev", icon: "MonitorCog", color: "#60a5fa" },
-  { name: "Estudio", icon: "BookOpen", color: "#a78bfa" },
-  { name: "Salud", icon: "HeartPulse", color: "#34d399" },
+  { slug: "work", name: "Trabajo", icon: "BriefcaseBusiness", color: "#7dd3fc", sortOrder: 0 },
+  { slug: "dev", name: "Dev", icon: "MonitorCog", color: "#60a5fa", sortOrder: 1 },
+  { slug: "study", name: "Estudio", icon: "BookOpen", color: "#a78bfa", sortOrder: 2 },
+  { slug: "health", name: "Salud", icon: "HeartPulse", color: "#34d399", sortOrder: 3 },
 ] as const
 
 const containerSeeds = [
-  { areaName: "Trabajo", name: "Gasti", description: "Contexto operativo de trabajo." },
-  { areaName: "Dev", name: "Life OS", description: "Producto principal en desarrollo." },
-  { areaName: "Dev", name: "AutoPanel", description: "Proyecto técnico paralelo." },
-  { areaName: "Estudio", name: "Física", description: "Materia activa para estudio." },
-  { areaName: "Salud", name: "Gimnasio", description: "Entrenamiento y constancia." },
-  { areaName: "Salud", name: "Alimentación", description: "Hábitos y decisiones diarias." },
-  { areaName: "Salud", name: "Sueño", description: "Descanso como sistema." },
+  { areaSlug: "work", name: "Gasti", description: "Contexto operativo de trabajo.", sortOrder: 0 },
+  { areaSlug: "dev", name: "Life OS", description: "Producto principal en desarrollo.", sortOrder: 0 },
+  { areaSlug: "dev", name: "AutoPanel", description: "Proyecto técnico paralelo.", sortOrder: 1 },
+  { areaSlug: "study", name: "Física", description: "Materia activa para estudio.", sortOrder: 0 },
+  { areaSlug: "health", name: "Gimnasio", description: "Entrenamiento y constancia.", sortOrder: 0 },
+  { areaSlug: "health", name: "Alimentación", description: "Hábitos y decisiones diarias.", sortOrder: 1 },
+  { areaSlug: "health", name: "Sueño", description: "Descanso como sistema.", sortOrder: 2 },
 ] as const
 
 const inboxSeeds = [
@@ -84,29 +84,47 @@ const libraryNoteSeeds = [
 async function seedAreas() {
   const db = getDbOrThrow()
   const existingAreas = await db
-    .select({ name: areas.name })
+    .select({ id: areas.id, slug: areas.slug, name: areas.name })
     .from(areas)
-    .where(inArray(areas.name, areaSeeds.map((area) => area.name)))
+    .where(inArray(areas.slug, areaSeeds.map((area) => area.slug)))
 
-  const existingNames = new Set(existingAreas.map((area) => area.name))
-  const missingAreas = areaSeeds.filter((area) => !existingNames.has(area.name))
+  const existingBySlug = new Map(existingAreas.map((area) => [area.slug, area.id]))
+  const missingAreas = areaSeeds.filter((area) => !existingBySlug.has(area.slug))
 
   if (missingAreas.length > 0) {
     await db.insert(areas).values(missingAreas)
+  }
+
+  for (const area of areaSeeds) {
+    const existingId = existingBySlug.get(area.slug)
+
+    if (!existingId) {
+      continue
+    }
+
+    await db
+      .update(areas)
+      .set({
+        name: area.name,
+        icon: area.icon,
+        color: area.color,
+        sortOrder: area.sortOrder,
+      })
+      .where(eq(areas.id, existingId))
   }
 }
 
 async function seedContainers() {
   const db = getDbOrThrow()
   const availableAreas = await db
-    .select({ id: areas.id, name: areas.name })
+    .select({ id: areas.id, slug: areas.slug })
     .from(areas)
-    .where(inArray(areas.name, containerSeeds.map((container) => container.areaName)))
+    .where(inArray(areas.slug, containerSeeds.map((container) => container.areaSlug)))
 
-  const areaIdByName = new Map(availableAreas.map((area) => [area.name, area.id]))
+  const areaIdBySlug = new Map(availableAreas.map((area) => [area.slug, area.id]))
 
   for (const container of containerSeeds) {
-    const areaId = areaIdByName.get(container.areaName)
+    const areaId = areaIdBySlug.get(container.areaSlug)
 
     if (!areaId) {
       continue
@@ -125,8 +143,18 @@ async function seedContainers() {
         areaId,
         name: container.name,
         description: container.description,
+        sortOrder: container.sortOrder,
       })
+      continue
     }
+
+    await db
+      .update(containers)
+      .set({
+        description: container.description,
+        sortOrder: container.sortOrder,
+      })
+      .where(eq(containers.id, existing[0].id))
   }
 }
 

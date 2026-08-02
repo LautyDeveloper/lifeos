@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 }
 
 export default async function HealthPage({ searchParams }: { searchParams?: Promise<{ filter?: string }> }) {
-  const workspace = await getAreaWorkspace("Salud")
+  const workspace = await getAreaWorkspace("health")
   const rawFilter = (await searchParams)?.filter
   const filter = rawFilter === "today" || rawFilter === "completed" ? rawFilter : "active"
 

@@ -1,12 +1,12 @@
-import type { LucideIcon } from "lucide-react"
+export type NavigationIconKey = string
 
-export type NavigationItem = {
+export type NavigationItemData = {
   href: string
   label: string
-  icon: LucideIcon
+  iconKey: NavigationIconKey
 }
 
-export type NavigationGroup = {
+export type NavigationGroupData = {
   id: string
-  items: NavigationItem[]
+  items: NavigationItemData[]
 }

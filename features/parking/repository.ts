@@ -59,7 +59,7 @@ export async function getParkingProjects(): Promise<ParkingProject[]> {
       containers.id,
       containers.name
     )
-    .orderBy(desc(projects.createdAt))
+    .orderBy(areas.sortOrder, containers.sortOrder, desc(projects.createdAt))
 
   return rows.map((row) => ({
     id: row.id,

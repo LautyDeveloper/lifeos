@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm"
 import {
   boolean,
   index,
+  integer,
   pgEnum,
   pgTable,
   text,
@@ -26,9 +27,11 @@ export const priorityEnum = pgEnum("priority", [
 
 export const areas = pgTable("areas", {
   id: uuid("id").defaultRandom().primaryKey(),
+  slug: varchar("slug", { length: 32 }).notNull(),
   name: varchar("name", { length: 120 }).notNull(),
   icon: varchar("icon", { length: 64 }).notNull(),
   color: varchar("color", { length: 32 }).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
   createdAt: timestamp("created_at", {
     withTimezone: true,
     mode: "date",
@@ -47,6 +50,7 @@ export const containers = pgTable(
     name: varchar("name", { length: 160 }).notNull(),
     description: text("description"),
     archived: boolean("archived").default(false).notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
       mode: "date",

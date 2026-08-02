@@ -45,6 +45,7 @@ export async function getTodayTasks(now: Date = new Date()): Promise<TodayTask[]
       containerId: containers.id,
       containerName: containers.name,
       areaId: areas.id,
+      areaSlug: areas.slug,
       areaName: areas.name,
     })
     .from(tasks)
@@ -56,10 +57,13 @@ export async function getTodayTasks(now: Date = new Date()): Promise<TodayTask[]
         gte(tasks.plannedDate, start),
         lt(tasks.plannedDate, end),
         eq(tasks.completed, false),
-        eq(projects.status, "active")
+        eq(projects.status, "active"),
+        eq(containers.archived, false)
       )
     )
     .orderBy(
+      asc(areas.sortOrder),
+      asc(containers.sortOrder),
       sql`case ${tasks.priority} when 'urgent' then 1 when 'high' then 2 when 'medium' then 3 else 4 end`,
       asc(tasks.createdAt)
     )
@@ -70,7 +74,7 @@ export async function getTodayTasks(now: Date = new Date()): Promise<TodayTask[]
     completed: row.completed,
     plannedDate: row.plannedDate,
     priority: row.priority,
-    originHref: `/${({ Trabajo: "work", Dev: "dev", Estudio: "study", Salud: "health" } as Record<string, string>)[row.areaName] ?? ""}#project-${row.projectId}`,
+    originHref: `/${row.areaSlug}#project-${row.projectId}`,
     project: {
       id: row.projectId,
       title: row.projectTitle,
@@ -93,7 +97,8 @@ export async function getTodayProgress(now: Date = new Date()) {
     .select({ completed: tasks.completed, value: count() })
     .from(tasks)
     .innerJoin(projects, eq(projects.id, tasks.projectId))
-    .where(and(gte(tasks.plannedDate, start), lt(tasks.plannedDate, end), eq(projects.status, "active")))
+    .innerJoin(containers, eq(containers.id, projects.containerId))
+    .where(and(gte(tasks.plannedDate, start), lt(tasks.plannedDate, end), eq(projects.status, "active"), eq(containers.archived, false)))
     .groupBy(tasks.completed)
 
   return {
