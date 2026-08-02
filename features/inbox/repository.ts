@@ -81,12 +81,15 @@ export async function listAreasWithContainers() {
     .select({
       areaId: areas.id,
       areaName: areas.name,
+      areaSortOrder: areas.sortOrder,
       containerId: containers.id,
       containerName: containers.name,
+      containerSortOrder: containers.sortOrder,
     })
     .from(areas)
     .innerJoin(containers, eq(containers.areaId, areas.id))
-    .orderBy(areas.name, containers.name)
+    .where(eq(containers.archived, false))
+    .orderBy(areas.sortOrder, containers.sortOrder, areas.name, containers.name)
 
   const grouped = new Map<
     string,
@@ -134,11 +137,14 @@ export async function listProjectOptions() {
       title: projects.title,
       containerName: containers.name,
       areaName: areas.name,
+      areaSortOrder: areas.sortOrder,
+      containerSortOrder: containers.sortOrder,
     })
     .from(projects)
     .innerJoin(containers, eq(containers.id, projects.containerId))
     .innerJoin(areas, eq(areas.id, containers.areaId))
-    .orderBy(areas.name, containers.name, projects.title)
+    .where(eq(containers.archived, false))
+    .orderBy(areas.sortOrder, containers.sortOrder, projects.title)
 }
 export async function processInboxItemToProject(input: ProcessInboxToProjectInput) {
   const database = getDbOrThrow()

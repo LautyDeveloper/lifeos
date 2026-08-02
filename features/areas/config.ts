@@ -1,27 +1,23 @@
 export const areaPageConfig = {
   work: {
-    areaName: "Trabajo",
     eyebrow: "Trabajo",
     title: "Trabajo con foco, estructura y seguimiento.",
     description:
       "Tus espacios, proyectos y tareas activas en una sola vista, sin ruido.",
   },
   dev: {
-    areaName: "Dev",
     eyebrow: "Dev",
     title: "Proyectos técnicos con contexto operativo real.",
     description:
       "Desde la hoja de ruta hasta la ejecución puntual, mirá el estado vivo de tus productos y tareas.",
   },
   study: {
-    areaName: "Estudio",
     eyebrow: "Estudio",
     title: "Aprendizaje estructurado, convertido en acción.",
     description:
       "Materias, proyectos de estudio y tareas concretas en una sola superficie clara y accionable.",
   },
   health: {
-    areaName: "Salud",
     eyebrow: "Salud",
     title: "Bienestar con estructura simple y consistente.",
     description:

@@ -9,8 +9,17 @@ import {
   SidebarStateProvider,
   useSidebarState,
 } from "@/components/layout/sidebar-state-provider"
+import type { NavigationGroupData } from "@/types/navigation"
 
-function AppShellFrame({ children, databaseReady }: { children: React.ReactNode; databaseReady: boolean }) {
+function AppShellFrame({
+  children,
+  databaseReady,
+  navigationGroups,
+}: {
+  children: React.ReactNode
+  databaseReady: boolean
+  navigationGroups: NavigationGroupData[]
+}) {
   const {
     collapsed,
     mobileOpen,
@@ -24,27 +33,36 @@ function AppShellFrame({ children, databaseReady }: { children: React.ReactNode;
         <div className="hidden md:block">
           <AppSidebar
             collapsed={collapsed}
+            navigationGroups={navigationGroups}
             onToggleCollapsed={toggleCollapsed}
           />
         </div>
 
         <div className="relative flex min-w-0 flex-1 flex-col">
-          <AppTopbar />
+          <AppTopbar navigationGroups={navigationGroups} />
           <main className="flex-1 px-3 py-6 pb-28 sm:px-4 md:pb-8 xl:px-7 xl:py-10">{children}</main>
         </div>
       </div>
 
-      <MobileMoreSheet open={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <MobileMoreSheet navigationGroups={navigationGroups} open={mobileOpen} onClose={() => setMobileOpen(false)} />
       <GlobalCapture databaseReady={databaseReady} />
-      <MobileBottomNav />
+      <MobileBottomNav navigationGroups={navigationGroups} />
     </div>
   )
 }
 
-export function AppShell({ children, databaseReady }: { children: React.ReactNode; databaseReady: boolean }) {
+export function AppShell({
+  children,
+  databaseReady,
+  navigationGroups,
+}: {
+  children: React.ReactNode
+  databaseReady: boolean
+  navigationGroups: NavigationGroupData[]
+}) {
   return (
     <SidebarStateProvider>
-      <AppShellFrame databaseReady={databaseReady}>{children}</AppShellFrame>
+      <AppShellFrame databaseReady={databaseReady} navigationGroups={navigationGroups}>{children}</AppShellFrame>
     </SidebarStateProvider>
   )
 }

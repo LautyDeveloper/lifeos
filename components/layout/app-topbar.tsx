@@ -3,10 +3,11 @@
 import { usePathname } from "next/navigation"
 
 import { findNavigationItem } from "@/features/navigation/navigation.config"
+import type { NavigationGroupData } from "@/types/navigation"
 
-export function AppTopbar() {
+export function AppTopbar({ navigationGroups }: { navigationGroups: NavigationGroupData[] }) {
   const pathname = usePathname()
-  const item = findNavigationItem(pathname)
+  const item = findNavigationItem(pathname, navigationGroups)
 
   return (
     <header className="sticky top-0 z-20 -mx-3 border-b border-white/[0.05] bg-background/78 px-3 py-4 backdrop-blur-xl sm:-mx-4 sm:px-4 xl:-mx-7 xl:px-7">

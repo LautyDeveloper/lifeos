@@ -5,9 +5,11 @@ import { PanelLeftClose, PanelLeftOpen, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SidebarNav } from "@/components/layout/sidebar-nav"
 import { cn } from "@/lib/utils"
+import type { NavigationGroupData } from "@/types/navigation"
 
 type AppSidebarProps = {
   collapsed: boolean
+  navigationGroups: NavigationGroupData[]
   mobile?: boolean
   onCloseMobile?: () => void
   onToggleCollapsed: () => void
@@ -15,6 +17,7 @@ type AppSidebarProps = {
 
 export function AppSidebar({
   collapsed,
+  navigationGroups,
   mobile = false,
   onCloseMobile,
   onToggleCollapsed,
@@ -58,7 +61,11 @@ export function AppSidebar({
       </div>
 
       <div className="mt-6 flex-1 overflow-y-auto">
-        <SidebarNav collapsed={collapsed && !mobile} onNavigate={onCloseMobile} />
+        <SidebarNav
+          navigationGroups={navigationGroups}
+          collapsed={collapsed && !mobile}
+          onNavigate={onCloseMobile}
+        />
       </div>
 
       <div className="surface-2 mt-5 rounded-[22px] border p-4">

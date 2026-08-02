@@ -4,16 +4,18 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ChevronDown } from "lucide-react"
 
-import { navigationGroups } from "@/features/navigation/navigation.config"
+import { NavigationIcon } from "@/features/navigation/navigation-icon"
 import { cn } from "@/lib/utils"
 import { useSidebarState } from "@/components/layout/sidebar-state-provider"
+import type { NavigationGroupData } from "@/types/navigation"
 
 type SidebarNavProps = {
+  navigationGroups: NavigationGroupData[]
   collapsed: boolean
   onNavigate?: () => void
 }
 
-export function SidebarNav({ collapsed, onNavigate }: SidebarNavProps) {
+export function SidebarNav({ navigationGroups, collapsed, onNavigate }: SidebarNavProps) {
   const pathname = usePathname()
   const { areasOpen, setAreasOpen } = useSidebarState()
   const areaGroup = navigationGroups.find((group) => group.id === "areas")
@@ -58,7 +60,8 @@ export function SidebarNav({ collapsed, onNavigate }: SidebarNavProps) {
                       : "text-muted-foreground hover:bg-white/[0.035] hover:text-white"
                   )}
                 >
-                  <item.icon
+                  <NavigationIcon
+                    iconKey={item.iconKey}
                     className={cn(
                       "size-4 shrink-0 transition-transform duration-200 motion-reduce:transition-none",
                       isActive ? "text-primary" : "text-muted-foreground group-hover:text-white",

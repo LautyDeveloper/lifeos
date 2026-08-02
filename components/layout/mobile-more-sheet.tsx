@@ -5,17 +5,27 @@ import { usePathname } from "next/navigation"
 import { useEffect, useRef } from "react"
 import { X } from "lucide-react"
 
-import { mobileMoreNavigationGroups } from "@/features/navigation/navigation.config"
+import { NavigationIcon } from "@/features/navigation/navigation-icon"
 import { cn } from "@/lib/utils"
+import type { NavigationGroupData } from "@/types/navigation"
 
 const groupLabels: Record<string, string> = {
   areas: "Áreas",
   system: "Sistema",
 }
 
-export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function MobileMoreSheet({
+  navigationGroups,
+  open,
+  onClose,
+}: {
+  navigationGroups: NavigationGroupData[]
+  open: boolean
+  onClose: () => void
+}) {
   const pathname = usePathname()
   const dialogRef = useRef<HTMLDivElement>(null)
+  const mobileMoreNavigationGroups = navigationGroups.filter((group) => group.id !== "core")
 
   useEffect(() => {
     if (!open) return
@@ -84,7 +94,7 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
                   const active = pathname.startsWith(item.href)
                   return (
                     <Link key={item.href} href={item.href} onClick={onClose} aria-current={active ? "page" : undefined} className={cn("flex min-h-14 items-center gap-3 rounded-[18px] border border-white/[0.08] px-3 text-sm font-medium text-muted-foreground transition hover:border-white/[0.14] hover:bg-white/[0.04] hover:text-white", active && "border-primary/25 bg-primary/10 text-white")}>
-                      <item.icon className={cn("size-4", active && "text-primary")} aria-hidden="true" />
+                      <NavigationIcon iconKey={item.iconKey} className={cn("size-4", active && "text-primary")} />
                       {item.label}
                     </Link>
                   )
