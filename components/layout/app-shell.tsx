@@ -4,20 +4,18 @@ import { AppSidebar } from "@/components/layout/app-sidebar"
 import { AppTopbar } from "@/components/layout/app-topbar"
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav"
 import { MobileMoreSheet } from "@/components/layout/mobile-more-sheet"
-import { GlobalCapture } from "@/features/inbox/components/global-capture"
 import {
   SidebarStateProvider,
   useSidebarState,
 } from "@/components/layout/sidebar-state-provider"
+import { CommandSurfaceProvider } from "@/features/command/components/command-surface-provider"
 import type { NavigationGroupData } from "@/types/navigation"
 
 function AppShellFrame({
   children,
-  databaseReady,
   navigationGroups,
 }: {
   children: React.ReactNode
-  databaseReady: boolean
   navigationGroups: NavigationGroupData[]
 }) {
   const {
@@ -45,7 +43,6 @@ function AppShellFrame({
       </div>
 
       <MobileMoreSheet navigationGroups={navigationGroups} open={mobileOpen} onClose={() => setMobileOpen(false)} />
-      <GlobalCapture databaseReady={databaseReady} />
       <MobileBottomNav navigationGroups={navigationGroups} />
     </div>
   )
@@ -62,7 +59,11 @@ export function AppShell({
 }) {
   return (
     <SidebarStateProvider>
-      <AppShellFrame databaseReady={databaseReady} navigationGroups={navigationGroups}>{children}</AppShellFrame>
+      <CommandSurfaceProvider databaseReady={databaseReady}>
+        <AppShellFrame navigationGroups={navigationGroups}>
+          {children}
+        </AppShellFrame>
+      </CommandSurfaceProvider>
     </SidebarStateProvider>
   )
 }
