@@ -1,7 +1,12 @@
-import { and, asc, eq } from "drizzle-orm"
+import { and, asc, desc, eq, isNull } from "drizzle-orm"
 
 import { db, getDbOrThrow } from "@/db"
-import { areas, containers, projects, tasks } from "@/db/schema"
+import { areas, containers, notes, projects, tasks } from "@/db/schema"
+import {
+  listArchivedOperationalNotesByArea,
+  listAreaOperationalNotes,
+  type AreaOperationalNoteListItem,
+} from "@/features/operational-notes/repository"
 import type {
   ClearTaskPlannedDateInput,
   CreateProjectInput,
@@ -31,22 +36,42 @@ export type AreaWorkspace = {
     icon: string
     color: string
   }
+  activeNotes: AreaOperationalNoteListItem[]
+  archivedNotes: AreaOperationalNoteListItem[]
   containers: Array<{
     id: string
     name: string
     description: string | null
+    notes: Array<{
+      id: string
+      title: string
+      content: string
+      updatedAt: Date
+    }>
     projects: Array<{
       id: string
       title: string
       description: string | null
       status: ProjectStatus
       priority: Priority
+      notes: Array<{
+        id: string
+        title: string
+        content: string
+        updatedAt: Date
+      }>
       tasks: Array<{
         id: string
         title: string
         completed: boolean
         priority: Priority
         plannedDate: Date | null
+        notes: Array<{
+          id: string
+          title: string
+          content: string
+          updatedAt: Date
+        }>
       }>
     }>
   }>
@@ -138,56 +163,150 @@ export async function getAreaWorkspace(areaSlug: string): Promise<AreaWorkspace 
     return null
   }
 
-  const containerRows = await db
-    .select({
-      id: containers.id,
-      name: containers.name,
-      description: containers.description,
-    })
-    .from(containers)
-    .where(and(eq(containers.areaId, area.id), eq(containers.archived, false)))
-    .orderBy(asc(containers.sortOrder), asc(containers.name))
+  const [containerRows, projectRows, taskRows, noteRows, activeNotes, archivedNotes] =
+    await Promise.all([
+      db
+        .select({
+          id: containers.id,
+          name: containers.name,
+          description: containers.description,
+        })
+        .from(containers)
+        .where(and(eq(containers.areaId, area.id), eq(containers.archived, false)))
+        .orderBy(asc(containers.sortOrder), asc(containers.name)),
+      db
+        .select({
+          id: projects.id,
+          containerId: projects.containerId,
+          title: projects.title,
+          description: projects.description,
+          status: projects.status,
+          priority: projects.priority,
+        })
+        .from(projects)
+        .innerJoin(containers, eq(containers.id, projects.containerId))
+        .where(and(eq(containers.areaId, area.id), eq(containers.archived, false)))
+        .orderBy(asc(containers.sortOrder), asc(projects.title)),
+      db
+        .select({
+          id: tasks.id,
+          projectId: tasks.projectId,
+          title: tasks.title,
+          completed: tasks.completed,
+          priority: tasks.priority,
+          plannedDate: tasks.plannedDate,
+        })
+        .from(tasks)
+        .innerJoin(projects, eq(projects.id, tasks.projectId))
+        .innerJoin(containers, eq(containers.id, projects.containerId))
+        .where(and(eq(containers.areaId, area.id), eq(containers.archived, false)))
+        .orderBy(asc(tasks.completed), asc(tasks.createdAt)),
+      db
+        .select({
+          id: notes.id,
+          title: notes.title,
+          content: notes.content,
+          updatedAt: notes.updatedAt,
+          containerId: notes.containerId,
+          projectId: notes.projectId,
+          taskId: notes.taskId,
+        })
+        .from(notes)
+        .innerJoin(containers, eq(containers.id, notes.containerId))
+        .where(
+          and(
+            eq(containers.areaId, area.id),
+            eq(containers.archived, false),
+            isNull(notes.archivedAt)
+          )
+        )
+        .orderBy(desc(notes.updatedAt), asc(notes.title)),
+      listAreaOperationalNotes(area.slug),
+      listArchivedOperationalNotesByArea(area.slug),
+    ])
 
-  const projectRows = await db
-    .select({
-      id: projects.id,
-      containerId: projects.containerId,
-      title: projects.title,
-      description: projects.description,
-      status: projects.status,
-      priority: projects.priority,
-    })
-    .from(projects)
-    .innerJoin(containers, eq(containers.id, projects.containerId))
-    .where(and(eq(containers.areaId, area.id), eq(containers.archived, false)))
-    .orderBy(asc(containers.sortOrder), asc(projects.title))
+  const visibleProjectIds = new Set(
+    projectRows.filter((project) => project.status !== "paused").map((project) => project.id)
+  )
+  const tasksByProjectId = new Map<
+    string,
+    AreaWorkspace["containers"][number]["projects"][number]["tasks"]
+  >()
+  const taskModelsById = new Map<
+    string,
+    AreaWorkspace["containers"][number]["projects"][number]["tasks"][number]
+  >()
 
-  const taskRows = await db
-    .select({
-      id: tasks.id,
-      projectId: tasks.projectId,
-      title: tasks.title,
-      completed: tasks.completed,
-      priority: tasks.priority,
-      plannedDate: tasks.plannedDate,
-    })
-    .from(tasks)
-    .innerJoin(projects, eq(projects.id, tasks.projectId))
-    .innerJoin(containers, eq(containers.id, projects.containerId))
-    .where(and(eq(containers.areaId, area.id), eq(containers.archived, false)))
-    .orderBy(asc(tasks.completed), asc(tasks.createdAt))
-
-  const tasksByProjectId = new Map<string, AreaWorkspace["containers"][number]["projects"][number]["tasks"]>()
   for (const task of taskRows) {
+    if (!visibleProjectIds.has(task.projectId)) {
+      continue
+    }
+
     const current = tasksByProjectId.get(task.projectId) ?? []
-    current.push({
+    const taskModel = {
       id: task.id,
       title: task.title,
       completed: task.completed,
       priority: task.priority,
       plannedDate: task.plannedDate,
-    })
+      notes: [],
+    }
+    current.push(taskModel)
+    taskModelsById.set(task.id, taskModel)
     tasksByProjectId.set(task.projectId, current)
+  }
+
+  const containerNotesByContainerId = new Map<
+    string,
+    AreaWorkspace["containers"][number]["notes"]
+  >()
+  const projectNotesByProjectId = new Map<
+    string,
+    AreaWorkspace["containers"][number]["projects"][number]["notes"]
+  >()
+  const taskNotesByTaskId = new Map<
+    string,
+    AreaWorkspace["containers"][number]["projects"][number]["tasks"][number]["notes"]
+  >()
+
+  for (const note of noteRows) {
+    if (note.projectId && !visibleProjectIds.has(note.projectId)) {
+      continue
+    }
+
+    const normalizedNote = {
+      id: note.id,
+      title: note.title,
+      content: note.content,
+      updatedAt: note.updatedAt,
+    }
+
+    if (note.taskId) {
+      const currentTaskNotes = taskNotesByTaskId.get(note.taskId) ?? []
+      currentTaskNotes.push(normalizedNote)
+      taskNotesByTaskId.set(note.taskId, currentTaskNotes)
+
+      const taskModel = taskModelsById.get(note.taskId)
+      if (taskModel) {
+        taskModel.notes.push(normalizedNote)
+      }
+      continue
+    }
+
+    if (note.projectId) {
+      const currentProjectNotes = projectNotesByProjectId.get(note.projectId) ?? []
+      currentProjectNotes.push(normalizedNote)
+      projectNotesByProjectId.set(note.projectId, currentProjectNotes)
+      continue
+    }
+
+    if (!note.containerId) {
+      continue
+    }
+
+    const currentContainerNotes = containerNotesByContainerId.get(note.containerId) ?? []
+    currentContainerNotes.push(normalizedNote)
+    containerNotesByContainerId.set(note.containerId, currentContainerNotes)
   }
 
   const projectsByContainerId = new Map<
@@ -206,6 +325,7 @@ export async function getAreaWorkspace(areaSlug: string): Promise<AreaWorkspace 
       description: project.description,
       status: project.status,
       priority: project.priority,
+      notes: projectNotesByProjectId.get(project.id) ?? [],
       tasks: tasksByProjectId.get(project.id) ?? [],
     })
     projectsByContainerId.set(project.containerId, current)
@@ -213,10 +333,13 @@ export async function getAreaWorkspace(areaSlug: string): Promise<AreaWorkspace 
 
   return {
     area,
+    activeNotes,
+    archivedNotes,
     containers: containerRows.map((container) => ({
       id: container.id,
       name: container.name,
       description: container.description,
+      notes: containerNotesByContainerId.get(container.id) ?? [],
       projects: projectsByContainerId.get(container.id) ?? [],
     })),
   }

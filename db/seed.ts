@@ -1,6 +1,6 @@
 import "dotenv/config"
 
-import { and, eq, inArray } from "drizzle-orm"
+import { and, eq, inArray, isNull } from "drizzle-orm"
 
 import { getDbOrThrow } from "@/db"
 import { areas, containers, inboxItems, notes, projects, tasks } from "@/db/schema"
@@ -78,6 +78,53 @@ const libraryNoteSeeds = [
     title: "Criterio de Today",
     content:
       "Today no es para organizar. Solo reúne lo que ya fue planificado para ejecutar con foco durante el día.",
+  },
+] as const
+
+const containerNoteSeeds = [
+  {
+    containerName: "Life OS",
+    title: "Dirección del producto",
+    content:
+      "Mantener el sistema opinado: capturar, organizar, planificar y ejecutar sin convertir cada pantalla en una consola genérica.",
+  },
+  {
+    containerName: "Gasti",
+    title: "Contexto del cliente",
+    content:
+      "La prioridad de este espacio es sostener claridad semanal y evitar que los pendientes operativos se mezclen con decisiones de producto.",
+  },
+] as const
+
+const projectNoteSeeds = [
+  {
+    projectTitle: "MVP",
+    title: "Criterio de MVP",
+    content:
+      "Cada PR tiene que cerrar un loop claro del sistema. Si una feature no mejora captura, organización, planning o ejecución, puede esperar.",
+  },
+  {
+    projectTitle: "Operación semanal",
+    title: "Ritmo de trabajo",
+    content:
+      "Conviene dejar por escrito lo que cambió en la semana para no rearmar el contexto de cero en cada revisión.",
+  },
+] as const
+
+const taskNoteSeeds = [
+  {
+    taskTitle: "Definir el siguiente PR del producto.",
+    title: "Qué tiene que resolver",
+    content:
+      "El próximo paso tiene que cerrar un loop real, no solo sumar UI. Si una pieza no conecta captura, organización o ejecución, todavía no entra.",
+    archived: false,
+  },
+  {
+    taskTitle: "Preparar prioridades del cliente.",
+    title: "Contexto de la reunión",
+    content:
+      "Llegar con tres prioridades claras y un resumen breve de bloqueos evita volver a pensar el contexto en el momento.",
+    archived: true,
   },
 ] as const
 
@@ -276,7 +323,14 @@ async function seedLibraryNotes() {
   const existingNotes = await db
     .select({ title: notes.title })
     .from(notes)
-    .where(inArray(notes.title, libraryNoteSeeds.map((note) => note.title)))
+    .where(
+      and(
+        inArray(notes.title, libraryNoteSeeds.map((note) => note.title)),
+        isNull(notes.containerId),
+        isNull(notes.projectId),
+        isNull(notes.taskId)
+      )
+    )
 
   const existingTitles = new Set(existingNotes.map((note) => note.title))
   const missingNotes = libraryNoteSeeds
@@ -285,10 +339,164 @@ async function seedLibraryNotes() {
       title: note.title,
       content: note.content,
       containerId: null,
+      projectId: null,
+      taskId: null,
     }))
 
   if (missingNotes.length > 0) {
     await db.insert(notes).values(missingNotes)
+  }
+}
+
+async function seedContainerNotes() {
+  const db = getDbOrThrow()
+  const availableContainers = await db
+    .select({ id: containers.id, name: containers.name, archived: containers.archived })
+    .from(containers)
+    .where(inArray(containers.name, containerNoteSeeds.map((note) => note.containerName)))
+
+  const containerByName = new Map(availableContainers.map((container) => [container.name, container]))
+
+  for (const note of containerNoteSeeds) {
+    const container = containerByName.get(note.containerName)
+
+    if (!container || container.archived) {
+      continue
+    }
+
+    const existing = await db
+      .select({ id: notes.id })
+      .from(notes)
+      .where(
+        and(
+          eq(notes.containerId, container.id),
+          eq(notes.title, note.title),
+          isNull(notes.projectId)
+        )
+      )
+      .limit(1)
+
+    if (existing.length === 0) {
+      await db.insert(notes).values({
+        containerId: container.id,
+        projectId: null,
+        taskId: null,
+        title: note.title,
+        content: note.content,
+      })
+      continue
+    }
+
+    await db
+      .update(notes)
+      .set({
+        content: note.content,
+        updatedAt: new Date(),
+      })
+      .where(eq(notes.id, existing[0].id))
+  }
+}
+
+async function seedProjectNotes() {
+  const db = getDbOrThrow()
+  const availableProjects = await db
+    .select({
+      id: projects.id,
+      title: projects.title,
+      containerId: projects.containerId,
+    })
+    .from(projects)
+    .where(inArray(projects.title, projectNoteSeeds.map((note) => note.projectTitle)))
+
+  const projectByTitle = new Map(availableProjects.map((project) => [project.title, project]))
+
+  for (const note of projectNoteSeeds) {
+    const project = projectByTitle.get(note.projectTitle)
+
+    if (!project) {
+      continue
+    }
+
+    const existing = await db
+      .select({ id: notes.id })
+      .from(notes)
+      .where(and(eq(notes.projectId, project.id), isNull(notes.taskId), eq(notes.title, note.title)))
+      .limit(1)
+
+    if (existing.length === 0) {
+      await db.insert(notes).values({
+        containerId: project.containerId,
+        projectId: project.id,
+        taskId: null,
+        title: note.title,
+        content: note.content,
+      })
+      continue
+    }
+
+    await db
+      .update(notes)
+      .set({
+        containerId: project.containerId,
+        content: note.content,
+        updatedAt: new Date(),
+      })
+      .where(eq(notes.id, existing[0].id))
+  }
+}
+
+async function seedTaskNotes() {
+  const db = getDbOrThrow()
+  const availableTasks = await db
+    .select({
+      id: tasks.id,
+      title: tasks.title,
+      projectId: tasks.projectId,
+      containerId: projects.containerId,
+    })
+    .from(tasks)
+    .innerJoin(projects, eq(projects.id, tasks.projectId))
+    .where(inArray(tasks.title, taskNoteSeeds.map((note) => note.taskTitle)))
+
+  const taskByTitle = new Map(availableTasks.map((task) => [task.title, task]))
+
+  for (const note of taskNoteSeeds) {
+    const task = taskByTitle.get(note.taskTitle)
+
+    if (!task) {
+      continue
+    }
+
+    const existing = await db
+      .select({ id: notes.id })
+      .from(notes)
+      .where(and(eq(notes.taskId, task.id), eq(notes.title, note.title)))
+      .limit(1)
+
+    const archivedAt = note.archived ? new Date() : null
+
+    if (existing.length === 0) {
+      await db.insert(notes).values({
+        containerId: task.containerId,
+        projectId: task.projectId,
+        taskId: task.id,
+        title: note.title,
+        content: note.content,
+        archivedAt,
+      })
+      continue
+    }
+
+    await db
+      .update(notes)
+      .set({
+        containerId: task.containerId,
+        projectId: task.projectId,
+        content: note.content,
+        archivedAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(notes.id, existing[0].id))
   }
 }
 
@@ -299,6 +507,9 @@ async function main() {
   await seedTasks()
   await seedInboxItems()
   await seedLibraryNotes()
+  await seedContainerNotes()
+  await seedProjectNotes()
+  await seedTaskNotes()
 
   console.log("Life OS seeds completed.")
 }

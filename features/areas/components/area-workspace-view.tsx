@@ -24,6 +24,12 @@ import {
   projectStatusSectionLabels,
   type VisibleAreaProjectStatus,
 } from "@/types/domain"
+import {
+  AreaOperationalNotesOverview,
+  ContainerNotesSection,
+  ProjectNotesSection,
+  TaskNotesSection,
+} from "@/features/operational-notes/components/operational-notes-section"
 
 const projectSections: VisibleAreaProjectStatus[] = ["active", "backlog", "done"]
 
@@ -112,6 +118,8 @@ function ProjectSection({
           <PauseProjectForm projectId={project.id} path={path} />
         </div>
 
+        <ProjectNotesSection projectId={project.id} notes={project.notes} path={path} />
+
         {visibleTasks.length ? (
           <div className="divide-y divide-white/[0.08]">
             {visibleTasks.map((task) => (
@@ -126,10 +134,12 @@ function ProjectSection({
                   >
                     {task.title}
                   </p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <PriorityBadge priority={task.priority} />
+                  <div className="meta-row">
+                    <span className="meta-item">
+                      <PriorityBadge priority={task.priority} />
+                    </span>
                     {task.plannedDate ? (
-                      <span className="chip-subtle min-h-7 px-2.5 text-[11px]">
+                      <span className="meta-item">
                         {new Intl.DateTimeFormat("es-AR", {
                           day: "2-digit",
                           month: "short",
@@ -151,6 +161,7 @@ function ProjectSection({
                       plannedDate={task.plannedDate}
                     />
                   ) : null}
+                  <TaskNotesSection taskId={task.id} notes={task.notes} path={path} />
                 </div>
               </article>
             ))}
@@ -258,6 +269,12 @@ export function AreaWorkspaceView({
         </section>
       ) : (
         <div className="space-y-6">
+          <AreaOperationalNotesOverview
+            notes={workspace.activeNotes}
+            archivedNotes={workspace.archivedNotes}
+            path={path}
+          />
+
           <nav aria-label="Filtrar tareas" className="flex flex-wrap gap-2">
             {([
               ["active", "Activas"],
@@ -313,6 +330,14 @@ export function AreaWorkspaceView({
 
                 <div className="mt-6 border-t border-white/[0.08] pt-6">
                   <CreateProjectForm containerId={container.id} path={path} />
+                </div>
+
+                <div className="mt-6">
+                  <ContainerNotesSection
+                    containerId={container.id}
+                    notes={container.notes}
+                    path={path}
+                  />
                 </div>
 
                 <div className="mt-7 space-y-7">
