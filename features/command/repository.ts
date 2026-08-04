@@ -98,8 +98,8 @@ export async function searchCommandSurface(query: string): Promise<CommandResult
     db
       .select({
         id: projects.id,
-        title: projects.title,
-        status: projects.status,
+      title: projects.title,
+      status: projects.status,
         containerName: containers.name,
         areaSlug: areas.slug,
         areaName: areas.name,
@@ -120,10 +120,11 @@ export async function searchCommandSurface(query: string): Promise<CommandResult
       .limit(10),
     db
       .select({
-        id: tasks.id,
-        title: tasks.title,
-        completed: tasks.completed,
-        projectId: projects.id,
+      id: tasks.id,
+      title: tasks.title,
+      completed: tasks.completed,
+      plannedDate: tasks.plannedDate,
+      projectId: projects.id,
         projectTitle: projects.title,
         containerName: containers.name,
         areaSlug: areas.slug,
@@ -196,7 +197,7 @@ export async function searchCommandSurface(query: string): Promise<CommandResult
     db
       .select({
         id: inboxItems.id,
-        content: inboxItems.content,
+      content: inboxItems.content,
         capturedAt: inboxItems.capturedAt,
       })
       .from(inboxItems)
@@ -209,6 +210,8 @@ export async function searchCommandSurface(query: string): Promise<CommandResult
     ...projectRows.map((project) => ({
       id: project.id,
       type: "project" as const,
+      entityId: project.id,
+      projectStatus: project.status,
       title: project.title,
       subtitle: `${project.areaName} · ${project.containerName}`,
       href: `/${project.areaSlug}#project-${project.id}`,
@@ -218,6 +221,9 @@ export async function searchCommandSurface(query: string): Promise<CommandResult
     ...taskRows.map((task) => ({
       id: task.id,
       type: "task" as const,
+      entityId: task.id,
+      projectId: task.projectId,
+      plannedDate: task.plannedDate ? task.plannedDate.toISOString() : null,
       title: task.title,
       subtitle: `${task.areaName} · ${task.projectTitle}${task.completed ? " · Completada" : ""}`,
       href: `/${task.areaSlug}#project-${task.projectId}`,
@@ -245,6 +251,7 @@ export async function searchCommandSurface(query: string): Promise<CommandResult
         return {
           id: note.id,
           type: "operational-note" as const,
+          entityId: note.id,
           title: note.title,
           subtitle: `${kindLabel} · ${getTextPreview(note.content, 68)}`,
           href: `/${note.areaSlug}#note-${note.id}`,
@@ -255,6 +262,8 @@ export async function searchCommandSurface(query: string): Promise<CommandResult
     ...inboxRows.map((item) => ({
       id: item.id,
       type: "inbox-item" as const,
+      entityId: item.id,
+      rawContent: item.content,
       title: getTextPreview(item.content, 90),
       subtitle: `Inbox · ${new Intl.DateTimeFormat("es-AR", {
         day: "2-digit",

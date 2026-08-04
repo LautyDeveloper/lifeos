@@ -60,6 +60,16 @@ export function isDateTomorrow(value: Date | null, now: Date = new Date()) {
   return value >= start && value < end
 }
 
+export function isDateOverdue(value: Date | null, now: Date = new Date()) {
+  if (!value) {
+    return false
+  }
+
+  const { start } = getTodayRange(now)
+
+  return value < start
+}
+
 export function parseDateInput(value: string) {
   const trimmed = value.trim()
 
@@ -103,6 +113,10 @@ export function formatPlanningDateLabel(value: Date | null, now: Date = new Date
 
   if (isDateTomorrow(value, now)) {
     return "Mañana"
+  }
+
+  if (isDateOverdue(value, now)) {
+    return "Vencida"
   }
 
   return new Intl.DateTimeFormat("es-AR", {

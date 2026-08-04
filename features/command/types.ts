@@ -4,6 +4,13 @@ export type CommandActionKey =
   | "go-today"
   | "go-inbox"
   | "go-review"
+  | "task-plan-today"
+  | "task-plan-tomorrow"
+  | "task-clear-date"
+  | "project-move-active"
+  | "project-move-parking"
+  | "note-archive"
+  | "process-inbox"
 
 export type CommandResult = {
   id: string
@@ -12,4 +19,9 @@ export type CommandResult = {
   subtitle?: string
   href?: string
   actionKey?: CommandActionKey
+  entityId?: string
+  projectStatus?: "backlog" | "active" | "done" | "paused"
+  rawContent?: string
+  projectId?: string
+  plannedDate?: string | null
 }

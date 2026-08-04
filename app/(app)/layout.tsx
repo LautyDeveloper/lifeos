@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/layout/app-shell"
 import { db } from "@/db"
 import { ToastProvider } from "@/components/ui/toast-provider"
+import { listAreasWithContainers, listProjectOptions } from "@/features/inbox/repository"
 import { buildNavigationGroups } from "@/features/navigation/navigation.config"
 import { getAreaNavigationItems } from "@/features/navigation/repository"
 
@@ -9,7 +10,23 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode
 }) {
-  const navigationGroups = buildNavigationGroups(await getAreaNavigationItems())
+  const [navigationItems, areasWithContainers, projectOptions] = await Promise.all([
+    getAreaNavigationItems(),
+    listAreasWithContainers(),
+    listProjectOptions(),
+  ])
+  const navigationGroups = buildNavigationGroups(navigationItems)
 
-  return <ToastProvider><AppShell databaseReady={Boolean(db)} navigationGroups={navigationGroups}>{children}</AppShell></ToastProvider>
+  return (
+    <ToastProvider>
+      <AppShell
+        databaseReady={Boolean(db)}
+        navigationGroups={navigationGroups}
+        areasWithContainers={areasWithContainers}
+        projectOptions={projectOptions}
+      >
+        {children}
+      </AppShell>
+    </ToastProvider>
+  )
 }

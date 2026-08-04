@@ -9,16 +9,20 @@ import {
   useMemo,
   useRef,
   useState,
+  useTransition,
 } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useActionState } from "react"
 import {
   ArrowLeft,
+  Archive,
   BookOpenText,
   CalendarDays,
   Inbox,
   Layers3,
   Plus,
+  PauseCircle,
+  PlayCircle,
   Search,
   Sparkles,
   X,
@@ -36,9 +40,28 @@ import {
   searchCommandSurfaceAction,
 } from "@/features/command/actions"
 import type { CommandResult } from "@/features/command/types"
+import { updateProjectStatusAction, planTaskForTodayAction, planTaskForTomorrowAction, setTaskPlannedDateAction, clearTaskPlannedDateAction } from "@/features/areas/actions"
+import { archiveOperationalNoteAction } from "@/features/operational-notes/actions"
+import { processInboxItemAction } from "@/features/inbox/actions"
+import { initialProcessInboxActionState } from "@/features/inbox/action-state"
+import type { ProcessInboxTarget } from "@/features/inbox/schemas"
+import { deriveInboxTitle } from "@/features/inbox/utils"
+import { InboxSubmitButton } from "@/features/inbox/components/inbox-submit-button"
+import { formatDateInputValue, parseDateInput } from "@/lib/dates"
 import { cn } from "@/lib/utils"
 
-type CommandMode = "search" | "capture" | "library-note"
+type CommandMode = "search" | "capture" | "library-note" | "process-inbox"
+type AreaWithContainers = {
+  id: string
+  name: string
+  containers: { id: string; name: string }[]
+}
+type ProjectOption = {
+  id: string
+  title: string
+  containerName: string
+  areaName: string
+}
 
 const CommandSurfaceContext = createContext<{
   open: () => void
@@ -304,21 +327,452 @@ function QuickLibraryNoteForm({
   )
 }
 
+const targetLabels: Record<ProcessInboxTarget, string> = {
+  project: "Proyecto",
+  task: "Tarea",
+  note: "Nota",
+}
+
+function buildInitialInboxProcessState(
+  content: string,
+  areasWithContainers: AreaWithContainers[],
+  projectOptions: ProjectOption[]
+) {
+  return {
+    target: "project" as ProcessInboxTarget,
+    title: deriveInboxTitle(content),
+    description: "",
+    noteContent: content,
+    selectedAreaId: areasWithContainers[0]?.id ?? "",
+    selectedContainerId: areasWithContainers[0]?.containers[0]?.id ?? "",
+    selectedProjectId: projectOptions[0]?.id ?? "",
+  }
+}
+
+function CommandInboxProcessForm({
+  item,
+  areasWithContainers,
+  projectOptions,
+  onBack,
+  onClose,
+}: {
+  item: { id: string; content: string }
+  areasWithContainers: AreaWithContainers[]
+  projectOptions: ProjectOption[]
+  onBack: () => void
+  onClose: () => void
+}) {
+  const [actionState, formAction] = useActionState(
+    processInboxItemAction,
+    initialProcessInboxActionState
+  )
+  const [formState, setFormState] = useState(() =>
+    buildInitialInboxProcessState(item.content, areasWithContainers, projectOptions)
+  )
+  const { notify } = useToast()
+
+  useEffect(() => {
+    if (actionState.status !== "success") {
+      return
+    }
+
+    notify({ message: actionState.message ?? "Captura procesada.", tone: "success" })
+    onClose()
+  }, [actionState.message, actionState.status, notify, onClose])
+
+  const selectedArea = useMemo(
+    () => areasWithContainers.find((area) => area.id === formState.selectedAreaId) ?? null,
+    [areasWithContainers, formState.selectedAreaId]
+  )
+
+  const availableContainers = selectedArea?.containers ?? []
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex size-10 items-center justify-center rounded-[16px] text-muted-foreground transition hover:bg-white/[0.05] hover:text-white"
+          aria-label="Volver a buscar"
+        >
+          <ArrowLeft className="size-4" />
+        </button>
+        <div className="space-y-1">
+          <p className="text-base font-medium text-white">Procesar captura</p>
+          <p className="text-sm text-muted-foreground">
+            Elegí el destino final sin salir de la paleta.
+          </p>
+        </div>
+      </div>
+
+      <div className="surface-2 rounded-[22px] border p-4">
+        <p className="text-sm font-medium text-white">Captura original</p>
+        <p className="mt-2 text-sm leading-7 text-muted-foreground">{item.content}</p>
+      </div>
+
+      <form action={formAction} className="space-y-5">
+        <input type="hidden" name="inboxItemId" value={item.id} />
+        <input type="hidden" name="target" value={formState.target} />
+
+        <div className="grid gap-3 md:grid-cols-3">
+          {(["project", "task", "note"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setFormState((current) => ({ ...current, target: value }))}
+              className={cn(
+                "rounded-[22px] border px-4 py-4 text-left transition",
+                formState.target === value
+                  ? "border-white/[0.08] bg-white/[0.045] text-white"
+                  : "border-white/[0.06] bg-white/[0.02] text-muted-foreground hover:bg-white/[0.03] hover:text-white"
+              )}
+            >
+              <p className="text-sm font-medium">{targetLabels[value]}</p>
+            </button>
+          ))}
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-white">Título</label>
+          <input
+            name="title"
+            value={formState.title}
+            onChange={(event) =>
+              setFormState((current) => ({
+                ...current,
+                title: event.target.value,
+              }))
+            }
+            className={cn(
+              "field-base h-11 w-full rounded-2xl px-4 text-sm",
+              actionState.fieldErrors?.title ? "border-destructive/50" : "border-white/8"
+            )}
+          />
+        </div>
+
+        {formState.target === "project" ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            <select
+              value={formState.selectedAreaId}
+              onChange={(event) => {
+                const nextArea = areasWithContainers.find((area) => area.id === event.target.value)
+                setFormState((current) => ({
+                  ...current,
+                  selectedAreaId: event.target.value,
+                  selectedContainerId: nextArea?.containers[0]?.id ?? "",
+                }))
+              }}
+              className="field-base h-11 rounded-2xl px-4 text-sm"
+            >
+              {areasWithContainers.map((area) => (
+                <option key={area.id} value={area.id} className="bg-neutral-950">
+                  {area.name}
+                </option>
+              ))}
+            </select>
+            <select
+              name="containerId"
+              value={formState.selectedContainerId}
+              onChange={(event) =>
+                setFormState((current) => ({
+                  ...current,
+                  selectedContainerId: event.target.value,
+                }))
+              }
+              className="field-base h-11 rounded-2xl px-4 text-sm"
+            >
+              {availableContainers.map((container) => (
+                <option key={container.id} value={container.id} className="bg-neutral-950">
+                  {container.name}
+                </option>
+              ))}
+            </select>
+            <textarea
+              name="description"
+              value={formState.description}
+              onChange={(event) =>
+                setFormState((current) => ({
+                  ...current,
+                  description: event.target.value,
+                }))
+              }
+              placeholder="Descripción opcional"
+              rows={4}
+              className="field-base min-h-28 md:col-span-2 rounded-[20px] px-4 py-3 text-sm leading-6"
+            />
+          </div>
+        ) : null}
+
+        {formState.target === "task" ? (
+          <select
+            name="projectId"
+            value={formState.selectedProjectId}
+            onChange={(event) =>
+              setFormState((current) => ({
+                ...current,
+                selectedProjectId: event.target.value,
+              }))
+            }
+            className="field-base h-11 w-full rounded-2xl px-4 text-sm"
+          >
+            {projectOptions.map((project) => (
+              <option key={project.id} value={project.id} className="bg-neutral-950">
+                {project.areaName} / {project.containerName} / {project.title}
+              </option>
+            ))}
+          </select>
+        ) : null}
+
+        {formState.target === "note" ? (
+          <textarea
+            name="content"
+            value={formState.noteContent}
+            onChange={(event) =>
+              setFormState((current) => ({
+                ...current,
+                noteContent: event.target.value,
+              }))
+            }
+            rows={6}
+            className="field-base min-h-36 w-full rounded-[20px] px-4 py-3 text-sm leading-6"
+          />
+        ) : null}
+
+        <div className="flex flex-col gap-3 border-t border-white/[0.08] pt-4 md:flex-row md:items-end md:justify-between">
+          <div className="min-h-10" aria-live="polite">
+            {actionState.message ? (
+              <p
+                className={cn(
+                  "text-sm",
+                  actionState.status === "error" ? "text-destructive" : "text-muted-foreground"
+                )}
+              >
+                {actionState.message}
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                La captura sale del inbox activo cuando se procesa.
+              </p>
+            )}
+          </div>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-white/[0.08] px-4 text-sm text-muted-foreground transition hover:bg-white/[0.03] hover:text-white"
+            >
+              Cancelar
+            </button>
+            <InboxSubmitButton
+              disabled={formState.target === "task" && projectOptions.length === 0}
+              label={`Crear ${targetLabels[formState.target]}`}
+              pendingLabel="Procesando..."
+            />
+          </div>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+function CommandResultActions({
+  result,
+  path,
+  onResolved,
+}: {
+  result: CommandResult
+  path: string
+  onResolved: () => void
+}) {
+  const [pending, startTransition] = useTransition()
+  const [dateInputValue, setDateInputValue] = useState(
+    result.plannedDate ? formatDateInputValue(new Date(result.plannedDate)) : ""
+  )
+  const { notify } = useToast()
+
+  function runAction(callback: () => Promise<{ status: "success" | "error"; message: string }>) {
+    startTransition(async () => {
+      const actionResult = await callback()
+      notify({
+        message: actionResult.message,
+        tone: actionResult.status === "success" ? "success" : "error",
+      })
+      if (actionResult.status === "success") {
+        onResolved()
+      }
+    })
+  }
+
+  if (result.type === "task" && result.entityId) {
+    return (
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() =>
+            runAction(async () => {
+              const formData = new FormData()
+              formData.set("taskId", result.entityId!)
+              formData.set("path", path)
+              return planTaskForTodayAction(formData)
+            })
+          }
+          className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/[0.08] px-3 text-[11px] text-muted-foreground transition hover:bg-white/[0.04] hover:text-white disabled:opacity-60"
+        >
+          Hoy
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() =>
+            runAction(async () => {
+              const formData = new FormData()
+              formData.set("taskId", result.entityId!)
+              formData.set("path", path)
+              return planTaskForTomorrowAction(formData)
+            })
+          }
+          className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/[0.08] px-3 text-[11px] text-muted-foreground transition hover:bg-white/[0.04] hover:text-white disabled:opacity-60"
+        >
+          Mañana
+        </button>
+        <label className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/[0.08] px-3 text-[11px] text-muted-foreground">
+          Otra fecha
+          <input
+            type="date"
+            value={dateInputValue}
+            disabled={pending}
+            onChange={(event) => {
+              const nextValue = event.target.value
+              setDateInputValue(nextValue)
+              const parsed = parseDateInput(nextValue)
+              if (!parsed) {
+                return
+              }
+              runAction(async () => {
+                const formData = new FormData()
+                formData.set("taskId", result.entityId!)
+                formData.set("plannedDate", nextValue)
+                formData.set("path", path)
+                return setTaskPlannedDateAction(formData)
+              })
+            }}
+            className="w-32 bg-transparent text-xs text-white outline-none [color-scheme:dark]"
+          />
+        </label>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() =>
+            runAction(async () => {
+              const formData = new FormData()
+              formData.set("taskId", result.entityId!)
+              formData.set("path", path)
+              return clearTaskPlannedDateAction(formData)
+            })
+          }
+          className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/[0.08] px-3 text-[11px] text-muted-foreground transition hover:bg-white/[0.04] hover:text-white disabled:opacity-60"
+        >
+          Quitar
+        </button>
+      </div>
+    )
+  }
+
+  if (result.type === "project" && result.entityId) {
+    return (
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {result.projectStatus !== "active" ? (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() =>
+              runAction(async () => {
+                const formData = new FormData()
+                formData.set("projectId", result.entityId!)
+                formData.set("status", "active")
+                formData.set("path", path)
+                return updateProjectStatusAction(formData)
+              })
+            }
+            className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/[0.08] px-3 text-[11px] text-white transition hover:bg-white/[0.04] disabled:opacity-60"
+          >
+            <PlayCircle className="size-3.5" />
+            Activo
+          </button>
+        ) : null}
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() =>
+            runAction(async () => {
+              const formData = new FormData()
+              formData.set("projectId", result.entityId!)
+              formData.set("status", "paused")
+              formData.set("path", path)
+              return updateProjectStatusAction(formData)
+            })
+          }
+          className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/[0.08] px-3 text-[11px] text-muted-foreground transition hover:bg-white/[0.04] hover:text-white disabled:opacity-60"
+        >
+          <PauseCircle className="size-3.5" />
+          Parking
+        </button>
+      </div>
+    )
+  }
+
+  if (result.type === "operational-note" && result.entityId) {
+    return (
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() =>
+            runAction(async () => {
+              const formData = new FormData()
+              formData.set("id", result.entityId!)
+              formData.set("path", path)
+              return archiveOperationalNoteAction(formData)
+            })
+          }
+          className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/[0.08] px-3 text-[11px] text-muted-foreground transition hover:bg-white/[0.04] hover:text-white disabled:opacity-60"
+        >
+          <Archive className="size-3.5" />
+          Archivar
+        </button>
+      </div>
+    )
+  }
+
+  return null
+}
+
 function CommandSurface({
   open,
   onClose,
   databaseReady,
+  areasWithContainers,
+  projectOptions,
 }: {
   open: boolean
   onClose: () => void
   databaseReady: boolean
+  areasWithContainers: AreaWithContainers[]
+  projectOptions: ProjectOption[]
 }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<CommandResult[]>([])
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [pending, setPending] = useState(false)
   const [mode, setMode] = useState<CommandMode>("search")
+  const [processingInboxItem, setProcessingInboxItem] = useState<{
+    id: string
+    content: string
+  } | null>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const searchRequestId = useRef(0)
@@ -396,12 +850,28 @@ function CommandSurface({
         }
       }
 
+      if (
+        result.type === "inbox-item" &&
+        result.entityId &&
+        result.rawContent &&
+        areasWithContainers.length > 0 &&
+        projectOptions.length > 0
+      ) {
+        setProcessingInboxItem({
+          id: result.entityId,
+          content: result.rawContent,
+        })
+        setSelectedIndex(0)
+        setMode("process-inbox")
+        return
+      }
+
       if (result.href) {
         router.push(result.href)
         onClose()
       }
     },
-    [onClose, router]
+    [areasWithContainers.length, onClose, projectOptions.length, router]
   )
 
   useEffect(() => {
@@ -506,12 +976,18 @@ function CommandSurface({
             <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
               <div className="space-y-1">
                 <p className="text-sm font-medium text-white">
-                  {mode === "capture" ? "Nueva captura" : "Nueva nota en Biblioteca"}
+                  {mode === "capture"
+                    ? "Nueva captura"
+                    : mode === "library-note"
+                      ? "Nueva nota en Biblioteca"
+                      : "Procesar captura"}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {mode === "capture"
                     ? "Guardá algo rápido en Inbox."
-                    : "Creá una nota de referencia sin salir de contexto."}
+                    : mode === "library-note"
+                      ? "Creá una nota de referencia sin salir de contexto."
+                      : "Convertí esta captura en proyecto, tarea o nota sin salir de la paleta."}
                 </p>
               </div>
               <button
@@ -552,6 +1028,17 @@ function CommandSurface({
             <QuickCaptureForm onBack={() => setMode("search")} onClose={onClose} />
           ) : mode === "library-note" ? (
             <QuickLibraryNoteForm onBack={() => setMode("search")} onClose={onClose} />
+          ) : mode === "process-inbox" && processingInboxItem ? (
+            <CommandInboxProcessForm
+              item={processingInboxItem}
+              areasWithContainers={areasWithContainers}
+              projectOptions={projectOptions}
+              onBack={() => {
+                setProcessingInboxItem(null)
+                setMode("search")
+              }}
+              onClose={onClose}
+            />
           ) : displayResults.length ? (
             <div className="space-y-5">
               {actionResults.length ? (
@@ -602,40 +1089,69 @@ function CommandSurface({
                       const Icon = getResultIcon(result)
                       const active = selectedIndex === absoluteIndex
                       return (
-                        <button
+                        <article
                           key={`${result.type}-${result.id}`}
-                          type="button"
-                          onClick={() => void executeResult(result)}
                           className={cn(
-                            "flex w-full items-center gap-3 rounded-[20px] border px-3 py-3 text-left transition",
+                            "rounded-[22px] border px-3 py-3 transition",
                             active
                               ? "border-primary/24 bg-primary/10"
                               : "border-transparent hover:bg-white/[0.03]"
                           )}
                         >
-                          <div className="flex size-10 shrink-0 items-center justify-center rounded-[16px] border border-white/[0.08] bg-white/[0.03]">
-                            <Icon className="size-4 text-primary/90" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="truncate text-sm font-medium text-white">{result.title}</p>
-                              <span className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                                {result.type === "library-note"
-                                  ? "Biblioteca"
-                                  : result.type === "operational-note"
-                                    ? "Nota"
-                                    : result.type === "project"
-                                      ? "Proyecto"
-                                      : result.type === "task"
-                                        ? "Tarea"
-                                        : "Inbox"}
-                              </span>
+                          <button
+                            type="button"
+                            onClick={() => void executeResult(result)}
+                            className="flex w-full items-center gap-3 text-left"
+                          >
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-[16px] border border-white/[0.08] bg-white/[0.03]">
+                              <Icon className="size-4 text-primary/90" />
                             </div>
-                            {result.subtitle ? (
-                              <p className="truncate text-xs text-muted-foreground">{result.subtitle}</p>
-                            ) : null}
-                          </div>
-                        </button>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="truncate text-sm font-medium text-white">{result.title}</p>
+                                <span className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                                  {result.type === "library-note"
+                                    ? "Biblioteca"
+                                    : result.type === "operational-note"
+                                      ? "Nota"
+                                      : result.type === "project"
+                                        ? "Proyecto"
+                                        : result.type === "task"
+                                          ? "Tarea"
+                                          : "Inbox"}
+                                </span>
+                              </div>
+                              {result.subtitle ? (
+                                <p className="truncate text-xs text-muted-foreground">{result.subtitle}</p>
+                              ) : null}
+                            </div>
+                          </button>
+                          {result.type === "inbox-item" &&
+                          result.entityId &&
+                          result.rawContent &&
+                          areasWithContainers.length > 0 &&
+                          projectOptions.length > 0 ? (
+                            <div className="mt-3 border-t border-white/[0.06] pt-3">
+                              <button
+                                type="button"
+                                onClick={() => void executeResult(result)}
+                                className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/[0.08] px-3 text-[11px] text-muted-foreground transition hover:bg-white/[0.04] hover:text-white"
+                              >
+                                Procesar captura
+                              </button>
+                            </div>
+                          ) : null}
+                          {result.type !== "inbox-item" ? (
+                            <CommandResultActions
+                              result={result}
+                              path={pathname}
+                              onResolved={() => {
+                                onClose()
+                                router.refresh()
+                              }}
+                            />
+                          ) : null}
+                        </article>
                       )
                     })}
                   </div>
@@ -746,9 +1262,13 @@ function CommandFloatingTrigger() {
 export function CommandSurfaceProvider({
   children,
   databaseReady,
+  areasWithContainers,
+  projectOptions,
 }: {
   children: React.ReactNode
   databaseReady: boolean
+  areasWithContainers: AreaWithContainers[]
+  projectOptions: ProjectOption[]
 }) {
   const [open, setOpen] = useState(false)
 
@@ -780,6 +1300,8 @@ export function CommandSurfaceProvider({
           open={open}
           onClose={() => setOpen(false)}
           databaseReady={databaseReady}
+          areasWithContainers={areasWithContainers}
+          projectOptions={projectOptions}
         />
       ) : null}
       <CommandFloatingTrigger />
