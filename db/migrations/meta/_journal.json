@@ -57,6 +57,13 @@
       "when": 1785644957156,
       "tag": "0007_light_selene",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785808476830,
+      "tag": "0008_low_onslaught",
+      "breakpoints": true
     }
   ]
 }

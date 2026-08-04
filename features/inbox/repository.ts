@@ -148,6 +148,7 @@ export async function listProjectOptions() {
     .where(
       and(
         eq(containers.archived, false),
+        isNull(projects.archivedAt),
         inArray(projects.status, ["active", "backlog"])
       )
     )
@@ -232,6 +233,7 @@ export async function processInboxItemToTask(input: ProcessInboxToTaskInput) {
       .select({
         id: projects.id,
         status: projects.status,
+        archivedAt: projects.archivedAt,
         containerArchived: containers.archived,
       })
       .from(projects)
@@ -245,6 +247,10 @@ export async function processInboxItemToTask(input: ProcessInboxToTaskInput) {
 
     if (project.containerArchived) {
       throw new DomainError("archived_context", "Container archived.")
+    }
+
+    if (project.archivedAt) {
+      throw new DomainError("archived_context", "Project archived.")
     }
 
     if (!canCreateTasksInProject(project.status)) {

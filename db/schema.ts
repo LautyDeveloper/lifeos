@@ -90,6 +90,10 @@ export const projects = pgTable(
     description: text("description"),
     status: projectStatusEnum("status").default("backlog").notNull(),
     priority: priorityEnum("priority").default("medium").notNull(),
+    archivedAt: timestamp("archived_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
     createdAt: timestamp("created_at", {
       withTimezone: true,
       mode: "date",
@@ -100,6 +104,7 @@ export const projects = pgTable(
   (table) => ({
     containerIdx: index("projects_container_id_idx").on(table.containerId),
     statusIdx: index("projects_status_idx").on(table.status),
+    archivedIdx: index("projects_archived_at_idx").on(table.archivedAt),
     titleNotBlank: check(
       "projects_title_not_blank",
       sql`char_length(trim(${table.title})) > 0`

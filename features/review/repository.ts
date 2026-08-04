@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, isNotNull, isNull, lt, sql } from "drizzle-orm"
+import { and, asc, count, desc, eq, isNotNull, isNull, lt, or, sql } from "drizzle-orm"
 
 import { db } from "@/db"
 import { areas, containers, inboxItems, notes, projects, tasks } from "@/db/schema"
@@ -148,6 +148,7 @@ export async function getReviewSummary(now: Date = new Date()): Promise<ReviewSu
           eq(tasks.completed, false),
           isNull(tasks.plannedDate),
           eq(projects.status, "active"),
+          isNull(projects.archivedAt),
           eq(containers.archived, false)
         )
       )
@@ -171,7 +172,7 @@ export async function getReviewSummary(now: Date = new Date()): Promise<ReviewSu
       .innerJoin(containers, eq(containers.id, projects.containerId))
       .innerJoin(areas, eq(areas.id, containers.areaId))
       .leftJoin(tasks, eq(tasks.projectId, projects.id))
-      .where(and(eq(projects.status, "backlog"), eq(containers.archived, false)))
+      .where(and(eq(projects.status, "backlog"), isNull(projects.archivedAt), eq(containers.archived, false)))
       .groupBy(
         projects.id,
         projects.title,
@@ -207,6 +208,7 @@ export async function getReviewSummary(now: Date = new Date()): Promise<ReviewSu
           eq(containers.archived, false),
           isNull(notes.archivedAt),
           isNotNull(notes.containerId),
+          or(isNull(notes.projectId), isNull(projects.archivedAt)),
           lt(notes.updatedAt, staleThreshold)
         )
       )
@@ -230,7 +232,14 @@ export async function getReviewSummary(now: Date = new Date()): Promise<ReviewSu
       .innerJoin(areas, eq(areas.id, containers.areaId))
       .leftJoin(projects, eq(projects.id, notes.projectId))
       .leftJoin(tasks, eq(tasks.id, notes.taskId))
-      .where(and(eq(containers.archived, false), isNotNull(notes.archivedAt), isNotNull(notes.containerId)))
+      .where(
+        and(
+          eq(containers.archived, false),
+          isNotNull(notes.archivedAt),
+          isNotNull(notes.containerId),
+          or(isNull(notes.projectId), isNull(projects.archivedAt))
+        )
+      )
       .orderBy(desc(notes.archivedAt), asc(areas.sortOrder), asc(containers.sortOrder), asc(notes.title)),
   ])
 

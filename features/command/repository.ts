@@ -111,6 +111,7 @@ export async function searchCommandSurface(query: string): Promise<CommandResult
       .where(
         and(
           ne(projects.status, "paused"),
+          isNull(projects.archivedAt),
           eq(containers.archived, false),
           or(ilike(projects.title, pattern), ilike(projects.description, pattern))
         )
@@ -136,6 +137,7 @@ export async function searchCommandSurface(query: string): Promise<CommandResult
       .where(
         and(
           ne(projects.status, "paused"),
+          isNull(projects.archivedAt),
           eq(containers.archived, false),
           ilike(tasks.title, pattern)
         )
@@ -185,6 +187,7 @@ export async function searchCommandSurface(query: string): Promise<CommandResult
         and(
           eq(containers.archived, false),
           isNull(notes.archivedAt),
+          or(isNull(notes.projectId), isNull(projects.archivedAt)),
           or(ilike(notes.title, pattern), ilike(notes.content, pattern))
         )
       )

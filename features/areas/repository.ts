@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull } from "drizzle-orm"
+import { and, asc, desc, eq, isNotNull, isNull, or } from "drizzle-orm"
 
 import { db, getDbOrThrow } from "@/db"
 import { areas, containers, notes, projects, tasks } from "@/db/schema"
@@ -8,15 +8,20 @@ import {
   type AreaOperationalNoteListItem,
 } from "@/features/operational-notes/repository"
 import type {
+  ArchiveProjectInput,
   ClearTaskPlannedDateInput,
   CreateProjectInput,
   CreateTaskInput,
+  DeleteProjectInput,
+  DeleteTaskInput,
   PlanTaskForTomorrowInput,
   PlanTaskForTodayInput,
+  RestoreProjectInput,
   SetTaskPlannedDateInput,
   ToggleTaskCompletionInput,
   UpdateProjectDetailsInput,
   UpdateProjectPriorityInput,
+  UpdateTaskDetailsInput,
   UpdateProjectStatusInput,
   UpdateTaskPriorityInput,
 } from "@/features/areas/schemas"
@@ -75,6 +80,16 @@ export type AreaWorkspace = {
         }>
       }>
     }>
+    archivedProjects: Array<{
+      id: string
+      title: string
+      description: string | null
+      status: ProjectStatus
+      priority: Priority
+      archivedAt: Date
+      taskCount: number
+      completedTaskCount: number
+    }>
   }>
 }
 
@@ -83,6 +98,8 @@ export type AreaTaskFilter = "active" | "today" | "completed"
 type ProjectRecord = {
   id: string
   status: ProjectStatus
+  archivedAt: Date | null
+  containerId?: string
 }
 
 type ContainerRecord = {
@@ -94,6 +111,7 @@ type TaskRecord = {
   id: string
   projectId: string
   projectStatus: ProjectStatus
+  projectArchivedAt: Date | null
 }
 
 async function getContainerRecord(containerId: string): Promise<ContainerRecord | null> {
@@ -118,6 +136,7 @@ async function getProjectRecord(projectId: string): Promise<ProjectRecord | null
     .select({
       id: projects.id,
       status: projects.status,
+      archivedAt: projects.archivedAt,
     })
     .from(projects)
     .where(eq(projects.id, projectId))
@@ -134,6 +153,7 @@ async function getTaskRecord(taskId: string): Promise<TaskRecord | null> {
       id: tasks.id,
       projectId: tasks.projectId,
       projectStatus: projects.status,
+      projectArchivedAt: projects.archivedAt,
     })
     .from(tasks)
     .innerJoin(projects, eq(projects.id, tasks.projectId))
@@ -183,6 +203,7 @@ export async function getAreaWorkspace(areaSlug: string): Promise<AreaWorkspace 
           description: projects.description,
           status: projects.status,
           priority: projects.priority,
+          archivedAt: projects.archivedAt,
         })
         .from(projects)
         .innerJoin(containers, eq(containers.id, projects.containerId))
@@ -196,6 +217,7 @@ export async function getAreaWorkspace(areaSlug: string): Promise<AreaWorkspace 
           completed: tasks.completed,
           priority: tasks.priority,
           plannedDate: tasks.plannedDate,
+          projectArchivedAt: projects.archivedAt,
         })
         .from(tasks)
         .innerJoin(projects, eq(projects.id, tasks.projectId))
@@ -211,14 +233,17 @@ export async function getAreaWorkspace(areaSlug: string): Promise<AreaWorkspace 
           containerId: notes.containerId,
           projectId: notes.projectId,
           taskId: notes.taskId,
+          projectArchivedAt: projects.archivedAt,
         })
         .from(notes)
         .innerJoin(containers, eq(containers.id, notes.containerId))
+        .leftJoin(projects, eq(projects.id, notes.projectId))
         .where(
           and(
             eq(containers.areaId, area.id),
             eq(containers.archived, false),
-            isNull(notes.archivedAt)
+            isNull(notes.archivedAt),
+            or(isNull(notes.projectId), isNull(projects.archivedAt))
           )
         )
         .orderBy(desc(notes.updatedAt), asc(notes.title)),
@@ -227,8 +252,14 @@ export async function getAreaWorkspace(areaSlug: string): Promise<AreaWorkspace 
     ])
 
   const visibleProjectIds = new Set(
-    projectRows.filter((project) => project.status !== "paused").map((project) => project.id)
+    projectRows
+      .filter((project) => project.status !== "paused" && !project.archivedAt)
+      .map((project) => project.id)
   )
+  const archivedProjectSummaries = new Map<
+    string,
+    { taskCount: number; completedTaskCount: number }
+  >()
   const tasksByProjectId = new Map<
     string,
     AreaWorkspace["containers"][number]["projects"][number]["tasks"]
@@ -239,6 +270,18 @@ export async function getAreaWorkspace(areaSlug: string): Promise<AreaWorkspace 
   >()
 
   for (const task of taskRows) {
+    if (task.projectArchivedAt) {
+      const currentSummary = archivedProjectSummaries.get(task.projectId) ?? {
+        taskCount: 0,
+        completedTaskCount: 0,
+      }
+      currentSummary.taskCount += 1
+      if (task.completed) {
+        currentSummary.completedTaskCount += 1
+      }
+      archivedProjectSummaries.set(task.projectId, currentSummary)
+    }
+
     if (!visibleProjectIds.has(task.projectId)) {
       continue
     }
@@ -271,7 +314,7 @@ export async function getAreaWorkspace(areaSlug: string): Promise<AreaWorkspace 
   >()
 
   for (const note of noteRows) {
-    if (note.projectId && !visibleProjectIds.has(note.projectId)) {
+    if (note.projectId && (!visibleProjectIds.has(note.projectId) || note.projectArchivedAt)) {
       continue
     }
 
@@ -314,7 +357,33 @@ export async function getAreaWorkspace(areaSlug: string): Promise<AreaWorkspace 
     string,
     AreaWorkspace["containers"][number]["projects"]
   >()
+  const archivedProjectsByContainerId = new Map<
+    string,
+    AreaWorkspace["containers"][number]["archivedProjects"]
+  >()
   for (const project of projectRows) {
+    if (project.archivedAt) {
+      const currentArchivedProjects = archivedProjectsByContainerId.get(project.containerId) ?? []
+      const summary = archivedProjectSummaries.get(project.id) ?? {
+        taskCount: 0,
+        completedTaskCount: 0,
+      }
+
+      currentArchivedProjects.push({
+        id: project.id,
+        title: project.title,
+        description: project.description,
+        status: project.status,
+        priority: project.priority,
+        archivedAt: project.archivedAt,
+        taskCount: summary.taskCount,
+        completedTaskCount: summary.completedTaskCount,
+      })
+
+      archivedProjectsByContainerId.set(project.containerId, currentArchivedProjects)
+      continue
+    }
+
     if (project.status === "paused") {
       continue
     }
@@ -342,6 +411,7 @@ export async function getAreaWorkspace(areaSlug: string): Promise<AreaWorkspace 
       description: container.description,
       notes: containerNotesByContainerId.get(container.id) ?? [],
       projects: projectsByContainerId.get(container.id) ?? [],
+      archivedProjects: archivedProjectsByContainerId.get(container.id) ?? [],
     })),
   }
 }
@@ -352,6 +422,10 @@ export async function createTask(input: CreateTaskInput) {
 
   if (!project) {
     throw new DomainError("not_found", "Project not found.")
+  }
+
+  if (project.archivedAt) {
+    throw new DomainError("archived_context", "Project archived.")
   }
 
   if (!canCreateTasksInProject(project.status)) {
@@ -411,6 +485,10 @@ export async function updateProjectDetails(input: UpdateProjectDetailsInput) {
     throw new DomainError("not_found", "Project not found.")
   }
 
+  if (project.archivedAt) {
+    throw new DomainError("archived_context", "Project archived.")
+  }
+
   const description = input.description?.trim() ? input.description.trim() : null
 
   const [updatedProject] = await database
@@ -435,6 +513,10 @@ export async function toggleTaskCompletion(input: ToggleTaskCompletionInput) {
 
   if (!task) {
     throw new DomainError("not_found", "Task not found.")
+  }
+
+  if (task.projectArchivedAt) {
+    throw new DomainError("archived_context", "Project archived.")
   }
 
   if (task.projectStatus === "paused") {
@@ -463,6 +545,10 @@ export async function planTaskForToday(input: PlanTaskForTodayInput) {
     throw new DomainError("not_found", "Task not found.")
   }
 
+  if (task.projectArchivedAt) {
+    throw new DomainError("archived_context", "Project archived.")
+  }
+
   if (!canPlanTasksInProject(task.projectStatus)) {
     throw new DomainError("invalid_state", "Project does not allow planning.")
   }
@@ -489,6 +575,10 @@ export async function planTaskForTomorrow(input: PlanTaskForTomorrowInput) {
     throw new DomainError("not_found", "Task not found.")
   }
 
+  if (task.projectArchivedAt) {
+    throw new DomainError("archived_context", "Project archived.")
+  }
+
   if (!canPlanTasksInProject(task.projectStatus)) {
     throw new DomainError("invalid_state", "Project does not allow planning.")
   }
@@ -513,6 +603,10 @@ export async function setTaskPlannedDate(input: SetTaskPlannedDateInput) {
 
   if (!task) {
     throw new DomainError("not_found", "Task not found.")
+  }
+
+  if (task.projectArchivedAt) {
+    throw new DomainError("archived_context", "Project archived.")
   }
 
   if (!canPlanTasksInProject(task.projectStatus)) {
@@ -547,6 +641,10 @@ export async function clearTaskPlannedDate(input: ClearTaskPlannedDateInput) {
     throw new DomainError("not_found", "Task not found.")
   }
 
+  if (task.projectArchivedAt) {
+    throw new DomainError("archived_context", "Project archived.")
+  }
+
   if (!canPlanTasksInProject(task.projectStatus)) {
     throw new DomainError("invalid_state", "Project does not allow planning.")
   }
@@ -573,6 +671,10 @@ export async function updateProjectStatus(input: UpdateProjectStatusInput) {
     throw new DomainError("not_found", "Project not found.")
   }
 
+  if (project.archivedAt) {
+    throw new DomainError("archived_context", "Project archived.")
+  }
+
   const [updatedProject] = await database
     .update(projects)
     .set({
@@ -593,6 +695,10 @@ export async function updateProjectPriority(input: UpdateProjectPriorityInput) {
 
   if (!project) {
     throw new DomainError("not_found", "Project not found.")
+  }
+
+  if (project.archivedAt) {
+    throw new DomainError("archived_context", "Project archived.")
   }
 
   const [updatedProject] = await database
@@ -617,6 +723,10 @@ export async function updateTaskPriority(input: UpdateTaskPriorityInput) {
     throw new DomainError("not_found", "Task not found.")
   }
 
+  if (task.projectArchivedAt) {
+    throw new DomainError("archived_context", "Project archived.")
+  }
+
   if (task.projectStatus === "paused") {
     throw new DomainError("invalid_state", "Paused project task cannot be updated here.")
   }
@@ -633,4 +743,136 @@ export async function updateTaskPriority(input: UpdateTaskPriorityInput) {
     })
 
   return updatedTask
+}
+
+export async function updateTaskDetails(input: UpdateTaskDetailsInput) {
+  const database = getDbOrThrow()
+  const task = await getTaskRecord(input.taskId)
+
+  if (!task) {
+    throw new DomainError("not_found", "Task not found.")
+  }
+
+  if (task.projectArchivedAt) {
+    throw new DomainError("archived_context", "Project archived.")
+  }
+
+  if (task.projectStatus === "paused") {
+    throw new DomainError("invalid_state", "Paused project task cannot be updated here.")
+  }
+
+  const [updatedTask] = await database
+    .update(tasks)
+    .set({
+      title: input.title,
+    })
+    .where(eq(tasks.id, input.taskId))
+    .returning({
+      id: tasks.id,
+      title: tasks.title,
+    })
+
+  return updatedTask
+}
+
+export async function deleteTask(input: DeleteTaskInput) {
+  const database = getDbOrThrow()
+  const task = await getTaskRecord(input.taskId)
+
+  if (!task) {
+    throw new DomainError("not_found", "Task not found.")
+  }
+
+  if (task.projectArchivedAt) {
+    throw new DomainError("archived_context", "Project archived.")
+  }
+
+  if (task.projectStatus === "paused") {
+    throw new DomainError("invalid_state", "Paused project task cannot be deleted here.")
+  }
+
+  const [deletedTask] = await database
+    .delete(tasks)
+    .where(eq(tasks.id, input.taskId))
+    .returning({
+      id: tasks.id,
+    })
+
+  return deletedTask
+}
+
+export async function archiveProject(input: ArchiveProjectInput) {
+  const database = getDbOrThrow()
+  const project = await getProjectRecord(input.projectId)
+
+  if (!project) {
+    throw new DomainError("not_found", "Project not found.")
+  }
+
+  if (project.archivedAt) {
+    throw new DomainError("invalid_state", "Project already archived.")
+  }
+
+  const [archivedProject] = await database
+    .update(projects)
+    .set({
+      archivedAt: new Date(),
+    })
+    .where(and(eq(projects.id, input.projectId), isNull(projects.archivedAt)))
+    .returning({
+      id: projects.id,
+      archivedAt: projects.archivedAt,
+      status: projects.status,
+    })
+
+  return archivedProject
+}
+
+export async function restoreProject(input: RestoreProjectInput) {
+  const database = getDbOrThrow()
+  const project = await getProjectRecord(input.projectId)
+
+  if (!project) {
+    throw new DomainError("not_found", "Project not found.")
+  }
+
+  if (!project.archivedAt) {
+    throw new DomainError("invalid_state", "Project is not archived.")
+  }
+
+  const [restoredProject] = await database
+    .update(projects)
+    .set({
+      archivedAt: null,
+    })
+    .where(eq(projects.id, input.projectId))
+    .returning({
+      id: projects.id,
+      archivedAt: projects.archivedAt,
+      status: projects.status,
+    })
+
+  return restoredProject
+}
+
+export async function deleteProject(input: DeleteProjectInput) {
+  const database = getDbOrThrow()
+  const project = await getProjectRecord(input.projectId)
+
+  if (!project) {
+    throw new DomainError("not_found", "Project not found.")
+  }
+
+  if (!project.archivedAt) {
+    throw new DomainError("invalid_state", "Project must be archived before deletion.")
+  }
+
+  const [deletedProject] = await database
+    .delete(projects)
+    .where(and(eq(projects.id, input.projectId), isNotNull(projects.archivedAt)))
+    .returning({
+      id: projects.id,
+    })
+
+  return deletedProject
 }

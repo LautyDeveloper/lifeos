@@ -2,6 +2,7 @@ import Link from "next/link"
 import { CalendarCheck2, Sparkles } from "lucide-react"
 
 import { PageShell } from "@/components/shared/page-shell"
+import { TaskDetailsEditor } from "@/features/areas/components/task-details-editor"
 import { TaskPlanningControls } from "@/features/areas/components/task-planning-controls"
 import { TaskToggleForm } from "@/features/areas/components/task-toggle-form"
 import type { TodayTask } from "@/features/today/repository"
@@ -36,6 +37,7 @@ export function TodayView({ tasks, progress }: { tasks: TodayTask[]; progress: {
                     <div className="meta-row">
                       <span className="meta-item">{priorityLabels[task.priority]}</span>
                     </div>
+                    <TaskDetailsEditor taskId={task.id} path="/today" title={task.title} />
                     <TaskPlanningControls
                       key={`${task.id}-${task.plannedDate?.toISOString() ?? "none"}`}
                       taskId={task.id}
