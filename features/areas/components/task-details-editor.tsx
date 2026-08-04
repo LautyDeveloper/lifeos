@@ -1,9 +1,10 @@
 "use client"
 
-import { useActionState, useEffect, useRef, useState, useTransition } from "react"
+import { useActionState, useEffect, useRef, useState } from "react"
 import { PencilLine, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { InlineConfirmAction } from "@/components/ui/inline-confirm-action"
 import { useToast } from "@/components/ui/toast-provider"
 import { initialUpdateTaskDetailsActionState } from "@/features/areas/action-state"
 import { deleteTaskAction, updateTaskDetailsAction } from "@/features/areas/actions"
@@ -23,7 +24,6 @@ export function TaskDetailsEditor({
     updateTaskDetailsAction,
     initialUpdateTaskDetailsActionState
   )
-  const [deletePending, startDeleteTransition] = useTransition()
   const titleRef = useRef<HTMLInputElement>(null)
   const { notify } = useToast()
 
@@ -48,27 +48,26 @@ export function TaskDetailsEditor({
           {open ? "Cerrar edición" : "Editar"}
         </button>
 
-        <button
-          type="button"
-          disabled={deletePending}
-          onClick={() => {
-            startDeleteTransition(async () => {
-              const data = new FormData()
-              data.set("taskId", taskId)
-              data.set("path", path)
+        <InlineConfirmAction
+          triggerLabel="Eliminar"
+          triggerIcon={<Trash2 className="size-3.5" />}
+          panelTitle="Eliminar tarea"
+          panelDescription="Esta tarea se borra de forma definitiva."
+          confirmLabel="Sí, eliminar"
+          pendingLabel="Eliminando..."
+          onConfirm={async () => {
+            const data = new FormData()
+            data.set("taskId", taskId)
+            data.set("path", path)
 
-              const result = await deleteTaskAction(data)
-              notify({
-                message: result.message,
-                tone: result.status === "success" ? "success" : "error",
-              })
+            const result = await deleteTaskAction(data)
+            notify({
+              message: result.message,
+              tone: result.status === "success" ? "success" : "error",
             })
+            return result
           }}
-          className="inline-flex min-h-8 items-center gap-2 rounded-[16px] border border-transparent px-3 text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive disabled:opacity-60"
-        >
-          <Trash2 className="size-3.5" />
-          {deletePending ? "Eliminando..." : "Eliminar"}
-        </button>
+        />
       </div>
 
       {open ? (
