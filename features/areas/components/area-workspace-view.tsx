@@ -9,7 +9,9 @@ import { PriorityBadge, StatusBadge } from "@/components/ui/badges"
 import { CreateProjectForm } from "@/features/areas/components/create-project-form"
 import { CreateTaskForm } from "@/features/areas/components/create-task-form"
 import { PauseProjectForm } from "@/features/areas/components/pause-project-form"
+import { ProjectArchiveActions } from "@/features/areas/components/project-archive-actions"
 import { ProjectDetailsEditor } from "@/features/areas/components/project-details-editor"
+import { TaskDetailsEditor } from "@/features/areas/components/task-details-editor"
 import { TaskPlanningControls } from "@/features/areas/components/task-planning-controls"
 import { TaskPriorityForm } from "@/features/areas/components/task-priority-form"
 import { TaskToggleForm } from "@/features/areas/components/task-toggle-form"
@@ -115,7 +117,10 @@ function ProjectSection({
             status={project.status as VisibleAreaProjectStatus}
             priority={project.priority}
           />
-          <PauseProjectForm projectId={project.id} path={path} />
+          <div className="flex flex-wrap items-center gap-2">
+            <PauseProjectForm projectId={project.id} path={path} />
+            <ProjectArchiveActions projectId={project.id} path={path} />
+          </div>
         </div>
 
         <ProjectNotesSection projectId={project.id} notes={project.notes} path={path} />
@@ -147,6 +152,7 @@ function ProjectSection({
                       </span>
                     ) : null}
                   </div>
+                  <TaskDetailsEditor taskId={task.id} path={path} title={task.title} />
                   <TaskPriorityForm
                     key={`${task.id}-${task.priority}`}
                     taskId={task.id}
@@ -181,6 +187,58 @@ function ProjectSection({
         )}
       </div>
     </details>
+  )
+}
+
+function ArchivedProjectSection({
+  projects,
+  path,
+}: {
+  projects: AreaWorkspace["containers"][number]["archivedProjects"]
+  path: string
+}) {
+  return (
+    <section aria-labelledby="status-archived">
+      <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+        <h4 id="status-archived" className="text-sm font-semibold text-white">
+          Archivados
+        </h4>
+        <span className="chip-subtle min-h-7 px-2.5 text-[11px]">{projects.length}</span>
+      </div>
+      <div>
+        {projects.length ? (
+          projects.map((project) => (
+            <article
+              key={project.id}
+              className="flex flex-col gap-4 border-t border-white/[0.08] py-5 first:border-t-0"
+            >
+              <div className="space-y-2">
+                <p className="content-title text-[1.02rem]">{project.title}</p>
+                {project.description ? (
+                  <p className="context-line max-w-2xl">{project.description}</p>
+                ) : null}
+                <div className="meta-row">
+                  <span className="meta-item">
+                    <StatusBadge status={project.status} />
+                  </span>
+                  <span className="meta-item">
+                    <PriorityBadge priority={project.priority} />
+                  </span>
+                  <span className="meta-item">
+                    {project.completedTaskCount}/{project.taskCount} tareas completadas
+                  </span>
+                </div>
+              </div>
+              <ProjectArchiveActions projectId={project.id} path={path} archived />
+            </article>
+          ))
+        ) : (
+          <p className="py-5 text-sm text-muted-foreground">
+            No hay proyectos archivados en este espacio.
+          </p>
+        )}
+      </div>
+    </section>
   )
 }
 
@@ -230,7 +288,10 @@ export function AreaWorkspaceView({
   const config = areaPageConfig[slug]
   const path = `/${slug}`
   const projects =
-    workspace?.containers.reduce((sum, container) => sum + container.projects.length, 0) ?? 0
+    workspace?.containers.reduce(
+      (sum, container) => sum + container.projects.length + container.archivedProjects.length,
+      0
+    ) ?? 0
   const tasks =
     workspace?.containers.reduce(
       (sum, container) =>
@@ -321,7 +382,7 @@ export function AreaWorkspaceView({
                     <div className="meta-row">
                       <span className="meta-item">
                         <FolderOpenDot className="size-4 text-primary" />{" "}
-                        {container.projects.length} proyectos
+                        {container.projects.length + container.archivedProjects.length} proyectos
                       </span>
                       <span className="meta-item">{pending} pendientes</span>
                     </div>
@@ -350,6 +411,7 @@ export function AreaWorkspaceView({
                       filter={filter}
                     />
                   ))}
+                  <ArchivedProjectSection projects={container.archivedProjects} path={path} />
                 </div>
               </section>
             )

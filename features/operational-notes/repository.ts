@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, isNull } from "drizzle-orm"
+import { and, desc, eq, isNotNull, isNull, or } from "drizzle-orm"
 
 import { db, getDbOrThrow } from "@/db"
 import { areas, containers, notes, projects, tasks } from "@/db/schema"
@@ -50,6 +50,7 @@ type ProjectRecord = {
   containerId: string
   containerArchived: boolean
   status: ProjectStatus
+  archivedAt: Date | null
 }
 
 type TaskRecord = {
@@ -58,6 +59,7 @@ type TaskRecord = {
   containerId: string
   containerArchived: boolean
   projectStatus: ProjectStatus
+  projectArchivedAt: Date | null
 }
 
 type OperationalNoteRecord = {
@@ -67,6 +69,7 @@ type OperationalNoteRecord = {
   taskId: string | null
   archivedAt: Date | null
   projectStatus: ProjectStatus | null
+  projectArchivedAt: Date | null
   containerArchived: boolean | null
 }
 
@@ -83,8 +86,9 @@ function normalizeAreaOperationalNote(row: {
   taskId: string | null
   taskTitle: string | null
   projectStatus: ProjectStatus | null
+  projectArchivedAt: Date | null
 }) {
-  if (row.projectStatus === "paused") {
+  if (row.projectStatus === "paused" || row.projectArchivedAt) {
     return null
   }
 
@@ -130,6 +134,7 @@ async function getProjectRecord(projectId: string): Promise<ProjectRecord | null
       containerId: projects.containerId,
       containerArchived: containers.archived,
       status: projects.status,
+      archivedAt: projects.archivedAt,
     })
     .from(projects)
     .innerJoin(containers, eq(containers.id, projects.containerId))
@@ -149,6 +154,7 @@ async function getTaskRecord(taskId: string): Promise<TaskRecord | null> {
       containerId: projects.containerId,
       containerArchived: containers.archived,
       projectStatus: projects.status,
+      projectArchivedAt: projects.archivedAt,
     })
     .from(tasks)
     .innerJoin(projects, eq(projects.id, tasks.projectId))
@@ -170,6 +176,7 @@ async function getOperationalNoteRecord(id: string): Promise<OperationalNoteReco
       taskId: notes.taskId,
       archivedAt: notes.archivedAt,
       projectStatus: projects.status,
+      projectArchivedAt: projects.archivedAt,
       containerArchived: containers.archived,
     })
     .from(notes)
@@ -209,7 +216,8 @@ export async function listActiveContainerNotes(containerId: string): Promise<Ope
         isNull(notes.projectId),
         isNull(notes.taskId),
         isNull(notes.archivedAt),
-        eq(containers.archived, false)
+        eq(containers.archived, false),
+        isNull(projects.archivedAt)
       )
     )
     .orderBy(desc(notes.updatedAt), notes.title)
@@ -269,7 +277,8 @@ export async function listActiveTaskNotes(taskId: string): Promise<OperationalNo
       and(
         eq(notes.taskId, taskId),
         isNull(notes.archivedAt),
-        eq(containers.archived, false)
+        eq(containers.archived, false),
+        isNull(projects.archivedAt)
       )
     )
     .orderBy(desc(notes.updatedAt), notes.title)
@@ -296,6 +305,7 @@ export async function listAreaOperationalNotes(
       taskId: tasks.id,
       taskTitle: tasks.title,
       projectStatus: projects.status,
+      projectArchivedAt: projects.archivedAt,
     })
     .from(notes)
     .innerJoin(containers, eq(containers.id, notes.containerId))
@@ -306,7 +316,8 @@ export async function listAreaOperationalNotes(
       and(
         eq(areas.slug, areaSlug),
         eq(containers.archived, false),
-        isNull(notes.archivedAt)
+        isNull(notes.archivedAt),
+        or(isNull(notes.projectId), isNull(projects.archivedAt))
       )
     )
     .orderBy(desc(notes.updatedAt), notes.title)
@@ -335,6 +346,7 @@ export async function listArchivedOperationalNotesByArea(
       taskId: tasks.id,
       taskTitle: tasks.title,
       projectStatus: projects.status,
+      projectArchivedAt: projects.archivedAt,
     })
     .from(notes)
     .innerJoin(containers, eq(containers.id, notes.containerId))
@@ -345,7 +357,8 @@ export async function listArchivedOperationalNotesByArea(
       and(
         eq(areas.slug, areaSlug),
         eq(containers.archived, false),
-        isNotNull(notes.archivedAt)
+        isNotNull(notes.archivedAt),
+        or(isNull(notes.projectId), isNull(projects.archivedAt))
       )
     )
     .orderBy(desc(notes.archivedAt), desc(notes.updatedAt), notes.title)
@@ -418,9 +431,13 @@ export async function createProjectNote(input: CreateProjectNoteInput) {
   const database = getDbOrThrow()
   const project = await getProjectRecord(input.projectId)
 
-  if (!project || project.containerArchived || project.status === "paused") {
+  if (!project || project.containerArchived || project.archivedAt || project.status === "paused") {
     throw new DomainError(
-      !project ? "not_found" : project.containerArchived ? "archived_context" : "invalid_state",
+      !project
+        ? "not_found"
+        : project.containerArchived || project.archivedAt
+          ? "archived_context"
+          : "invalid_state",
       "Project not available."
     )
   }
@@ -452,9 +469,13 @@ export async function createTaskNote(input: CreateTaskNoteInput) {
   const database = getDbOrThrow()
   const task = await getTaskRecord(input.taskId)
 
-  if (!task || task.containerArchived || task.projectStatus === "paused") {
+  if (!task || task.containerArchived || task.projectArchivedAt || task.projectStatus === "paused") {
     throw new DomainError(
-      !task ? "not_found" : task.containerArchived ? "archived_context" : "invalid_state",
+      !task
+        ? "not_found"
+        : task.containerArchived || task.projectArchivedAt
+          ? "archived_context"
+          : "invalid_state",
       "Task not available."
     )
   }
@@ -499,6 +520,10 @@ export async function updateOperationalNote(input: UpdateOperationalNoteInput) {
         "Container not available."
       )
     }
+  }
+
+  if (existingNote.projectArchivedAt) {
+    throw new DomainError("archived_context", "Project not available.")
   }
 
   if (existingNote.projectStatus === "paused") {
@@ -567,6 +592,10 @@ export async function restoreOperationalNote(input: RestoreOperationalNoteInput)
         "Container not available."
       )
     }
+  }
+
+  if (existingNote.projectArchivedAt) {
+    throw new DomainError("archived_context", "Project not available.")
   }
 
   if (existingNote.projectStatus === "paused") {

@@ -1,4 +1,4 @@
-import { and, count, eq, isNull, sql } from "drizzle-orm"
+import { and, count, eq, isNull, ne, sql } from "drizzle-orm"
 
 import { db } from "@/db"
 import { areas, containers, inboxItems, notes, projects } from "@/db/schema"
@@ -39,7 +39,7 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
       .select({ value: count() })
       .from(projects)
       .innerJoin(containers, eq(containers.id, projects.containerId))
-      .where(and(eq(projects.status, "active"), eq(containers.archived, false))),
+      .where(and(eq(projects.status, "active"), isNull(projects.archivedAt), eq(containers.archived, false))),
     db
       .select({
         id: areas.id,
@@ -48,7 +48,14 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
       })
       .from(areas)
       .leftJoin(containers, and(eq(containers.areaId, areas.id), eq(containers.archived, false)))
-      .leftJoin(projects, eq(projects.containerId, containers.id))
+      .leftJoin(
+        projects,
+        and(
+          eq(projects.containerId, containers.id),
+          isNull(projects.archivedAt),
+          ne(projects.status, "paused")
+        )
+      )
       .groupBy(areas.id, areas.name)
       .orderBy(areas.sortOrder, areas.name),
     db

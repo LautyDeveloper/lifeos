@@ -1,4 +1,4 @@
-import { and, count, desc, eq, sql } from "drizzle-orm"
+import { and, count, desc, eq, isNull, sql } from "drizzle-orm"
 
 import { db } from "@/db"
 import { areas, containers, projects, tasks } from "@/db/schema"
@@ -47,7 +47,7 @@ export async function getParkingProjects(): Promise<ParkingProject[]> {
     .innerJoin(containers, eq(containers.id, projects.containerId))
     .innerJoin(areas, eq(areas.id, containers.areaId))
     .leftJoin(tasks, eq(tasks.projectId, projects.id))
-    .where(and(eq(projects.status, "paused"), eq(containers.archived, false)))
+    .where(and(eq(projects.status, "paused"), isNull(projects.archivedAt), eq(containers.archived, false)))
     .groupBy(
       projects.id,
       projects.title,

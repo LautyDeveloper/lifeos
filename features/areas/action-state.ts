@@ -18,6 +18,16 @@ export type CreateProjectActionState = {
   resetKey: number
 }
 
+export type UpdateTaskDetailsActionState = {
+  status: "idle" | "success" | "error"
+  message?: string
+  fieldErrors?: {
+    title?: string[]
+    taskId?: string[]
+  }
+  resetKey: number
+}
+
 export type UpdateProjectDetailsActionState = {
   status: "idle" | "success" | "error"
   message?: string
@@ -34,6 +44,11 @@ export const initialCreateTaskActionState: CreateTaskActionState = {
 }
 
 export const initialCreateProjectActionState: CreateProjectActionState = {
+  status: "idle",
+  resetKey: 0,
+}
+
+export const initialUpdateTaskDetailsActionState: UpdateTaskDetailsActionState = {
   status: "idle",
   resetKey: 0,
 }

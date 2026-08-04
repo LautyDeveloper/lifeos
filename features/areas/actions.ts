@@ -7,28 +7,39 @@ import type {
   CreateProjectActionState,
   CreateTaskActionState,
   UpdateProjectDetailsActionState,
+  UpdateTaskDetailsActionState,
 } from "@/features/areas/action-state"
 import {
+  archiveProject,
   clearTaskPlannedDate,
   createProject,
   createTask,
+  deleteProject,
+  deleteTask,
   planTaskForTomorrow,
   planTaskForToday,
+  restoreProject,
   setTaskPlannedDate,
   toggleTaskCompletion,
+  updateTaskDetails,
   updateProjectDetails,
   updateProjectPriority,
   updateProjectStatus,
   updateTaskPriority,
 } from "@/features/areas/repository"
 import {
+  archiveProjectSchema,
   clearTaskPlannedDateSchema,
   createProjectSchema,
   createTaskSchema,
+  deleteProjectSchema,
+  deleteTaskSchema,
   planTaskForTomorrowSchema,
   planTaskForTodaySchema,
+  restoreProjectSchema,
   setTaskPlannedDateSchema,
   toggleTaskCompletionSchema,
+  updateTaskDetailsSchema,
   updateProjectDetailsSchema,
   updateProjectPrioritySchema,
   updateProjectStatusSchema,
@@ -43,6 +54,7 @@ function revalidateOperationalPaths(path: string, options?: { parking?: boolean 
 
   revalidatePath("/")
   revalidatePath("/today")
+  revalidatePath("/review")
 
   if (options?.parking) {
     revalidatePath("/parking")
@@ -116,6 +128,7 @@ export async function createTaskAction(
       message: getAreaActionErrorMessage(error, "No pudimos crear la tarea.", {
         notFound: "Ese proyecto ya no existe.",
         invalidState: "Ese proyecto no acepta tareas en este estado.",
+        archivedContext: "Ese proyecto está archivado y ya no admite tareas.",
       }),
       resetKey: previousState.resetKey,
     }
@@ -214,6 +227,7 @@ export async function updateProjectDetailsAction(
       status: "error",
       message: getAreaActionErrorMessage(error, "No pudimos guardar los cambios del proyecto.", {
         notFound: "Ese proyecto ya no existe.",
+        archivedContext: "Ese proyecto está archivado y ya no se puede editar.",
       }),
       resetKey: previousState.resetKey,
     }
@@ -226,6 +240,55 @@ export async function updateProjectDetailsAction(
   return {
     status: "success",
     message: "Proyecto actualizado.",
+    resetKey: previousState.resetKey + 1,
+  }
+}
+
+export async function updateTaskDetailsAction(
+  previousState: UpdateTaskDetailsActionState,
+  formData: FormData
+): Promise<UpdateTaskDetailsActionState> {
+  const parsed = updateTaskDetailsSchema.safeParse({
+    taskId: formData.get("taskId"),
+    title: formData.get("title"),
+  })
+
+  if (!parsed.success) {
+    const fieldErrors = parsed.error.flatten().fieldErrors
+
+    return {
+      status: "error",
+      message: "No pudimos guardar esa tarea.",
+      fieldErrors: {
+        title: fieldErrors.title,
+        taskId: fieldErrors.taskId,
+      },
+      resetKey: previousState.resetKey,
+    }
+  }
+
+  const path = String(formData.get("path") ?? "")
+
+  try {
+    await updateTaskDetails(parsed.data)
+  } catch (error) {
+    console.error("Failed to update task details", error)
+    return {
+      status: "error",
+      message: getAreaActionErrorMessage(error, "No pudimos guardar esa tarea.", {
+        notFound: "Esa tarea ya no existe.",
+        invalidState: "Esa tarea ya no se puede editar desde este contexto.",
+        archivedContext: "El proyecto de esa tarea está archivado.",
+      }),
+      resetKey: previousState.resetKey,
+    }
+  }
+
+  revalidateOperationalPaths(path)
+
+  return {
+    status: "success",
+    message: "Tarea actualizada.",
     resetKey: previousState.resetKey + 1,
   }
 }
@@ -252,6 +315,7 @@ export async function toggleTaskCompletionAction(formData: FormData): Promise<Ac
       message: getAreaActionErrorMessage(error, "No pudimos actualizar la tarea.", {
         notFound: "Esa tarea ya no existe.",
         invalidState: "Esa tarea ya no está disponible en este contexto.",
+        archivedContext: "El proyecto de esa tarea está archivado.",
       }),
     }
   }
@@ -286,6 +350,7 @@ export async function planTaskForTodayAction(formData: FormData): Promise<Action
       message: getAreaActionErrorMessage(error, "No pudimos sumar la tarea a Hoy.", {
         notFound: "Esa tarea ya no existe.",
         invalidState: "Solo podés planificar tareas de proyectos activos.",
+        archivedContext: "El proyecto de esa tarea está archivado.",
       }),
     }
   }
@@ -316,6 +381,7 @@ export async function planTaskForTomorrowAction(formData: FormData): Promise<Act
       message: getAreaActionErrorMessage(error, "No pudimos mover la tarea a Mañana.", {
         notFound: "Esa tarea ya no existe.",
         invalidState: "Solo podés planificar tareas de proyectos activos.",
+        archivedContext: "El proyecto de esa tarea está archivado.",
       }),
     }
   }
@@ -348,6 +414,7 @@ export async function setTaskPlannedDateAction(formData: FormData): Promise<Acti
         notFound: "Esa tarea ya no existe.",
         invalidState: "Solo podés planificar tareas de proyectos activos.",
         constraintViolation: "Elegí una fecha válida.",
+        archivedContext: "El proyecto de esa tarea está archivado.",
       }),
     }
   }
@@ -378,6 +445,7 @@ export async function clearTaskPlannedDateAction(formData: FormData): Promise<Ac
       message: getAreaActionErrorMessage(error, "No pudimos quitar la fecha.", {
         notFound: "Esa tarea ya no existe.",
         invalidState: "Solo podés quitar la fecha en tareas de proyectos activos.",
+        archivedContext: "El proyecto de esa tarea está archivado.",
       }),
     }
   }
@@ -407,6 +475,7 @@ export async function updateProjectStatusAction(formData: FormData): Promise<Act
       status: "error",
       message: getAreaActionErrorMessage(error, "No pudimos actualizar el estado del proyecto.", {
         notFound: "Ese proyecto ya no existe.",
+        archivedContext: "Ese proyecto está archivado y ya no se puede mover desde acá.",
       }),
     }
   }
@@ -447,6 +516,7 @@ export async function updateProjectPriorityAction(formData: FormData): Promise<A
       status: "error",
       message: getAreaActionErrorMessage(error, "No pudimos actualizar la prioridad del proyecto.", {
         notFound: "Ese proyecto ya no existe.",
+        archivedContext: "Ese proyecto está archivado y ya no se puede editar.",
       }),
     }
   }
@@ -481,6 +551,7 @@ export async function updateTaskPriorityAction(formData: FormData): Promise<Acti
       message: getAreaActionErrorMessage(error, "No pudimos actualizar la prioridad de la tarea.", {
         notFound: "Esa tarea ya no existe.",
         invalidState: "Esa tarea ya no está disponible en este contexto.",
+        archivedContext: "El proyecto de esa tarea está archivado.",
       }),
     }
   }
@@ -491,5 +562,138 @@ export async function updateTaskPriorityAction(formData: FormData): Promise<Acti
     status: "success",
     message: "Prioridad de la tarea actualizada.",
     entityId: parsed.data.taskId,
+  }
+}
+
+export async function deleteTaskAction(formData: FormData): Promise<ActionResult> {
+  const parsed = deleteTaskSchema.safeParse({
+    taskId: formData.get("taskId"),
+  })
+
+  if (!parsed.success) {
+    return { status: "error", message: "La tarea no es válida." }
+  }
+
+  const path = String(formData.get("path") ?? "")
+
+  try {
+    await deleteTask(parsed.data)
+  } catch (error) {
+    console.error("Failed to delete task", error)
+    return {
+      status: "error",
+      message: getAreaActionErrorMessage(error, "No pudimos eliminar la tarea.", {
+        notFound: "Esa tarea ya no existe.",
+        invalidState: "Esa tarea ya no se puede borrar desde este contexto.",
+        archivedContext: "El proyecto de esa tarea está archivado.",
+      }),
+    }
+  }
+
+  revalidateOperationalPaths(path)
+
+  return {
+    status: "success",
+    message: "Tarea eliminada.",
+    entityId: parsed.data.taskId,
+  }
+}
+
+export async function archiveProjectAction(formData: FormData): Promise<ActionResult> {
+  const parsed = archiveProjectSchema.safeParse({
+    projectId: formData.get("projectId"),
+  })
+
+  if (!parsed.success) {
+    return { status: "error", message: "El proyecto no es válido." }
+  }
+
+  const path = String(formData.get("path") ?? "")
+
+  try {
+    await archiveProject(parsed.data)
+  } catch (error) {
+    console.error("Failed to archive project", error)
+    return {
+      status: "error",
+      message: getAreaActionErrorMessage(error, "No pudimos archivar el proyecto.", {
+        notFound: "Ese proyecto ya no existe.",
+        invalidState: "Ese proyecto ya estaba archivado.",
+      }),
+    }
+  }
+
+  revalidateOperationalPaths(path, { parking: true })
+
+  return {
+    status: "success",
+    message: "Proyecto archivado.",
+    entityId: parsed.data.projectId,
+  }
+}
+
+export async function restoreProjectAction(formData: FormData): Promise<ActionResult> {
+  const parsed = restoreProjectSchema.safeParse({
+    projectId: formData.get("projectId"),
+  })
+
+  if (!parsed.success) {
+    return { status: "error", message: "El proyecto no es válido." }
+  }
+
+  const path = String(formData.get("path") ?? "")
+
+  try {
+    await restoreProject(parsed.data)
+  } catch (error) {
+    console.error("Failed to restore project", error)
+    return {
+      status: "error",
+      message: getAreaActionErrorMessage(error, "No pudimos restaurar el proyecto.", {
+        notFound: "Ese proyecto ya no existe.",
+        invalidState: "Ese proyecto no estaba archivado.",
+      }),
+    }
+  }
+
+  revalidateOperationalPaths(path, { parking: true })
+
+  return {
+    status: "success",
+    message: "Proyecto restaurado.",
+    entityId: parsed.data.projectId,
+  }
+}
+
+export async function deleteProjectAction(formData: FormData): Promise<ActionResult> {
+  const parsed = deleteProjectSchema.safeParse({
+    projectId: formData.get("projectId"),
+  })
+
+  if (!parsed.success) {
+    return { status: "error", message: "El proyecto no es válido." }
+  }
+
+  const path = String(formData.get("path") ?? "")
+
+  try {
+    await deleteProject(parsed.data)
+  } catch (error) {
+    console.error("Failed to delete project", error)
+    return {
+      status: "error",
+      message: getAreaActionErrorMessage(error, "No pudimos eliminar el proyecto.", {
+        notFound: "Ese proyecto ya no existe.",
+        invalidState: "Primero archivá el proyecto antes de eliminarlo.",
+      }),
+    }
+  }
+
+  revalidateOperationalPaths(path, { parking: true })
+
+  return {
+    status: "success",
+    message: "Proyecto eliminado con todo su contexto operativo.",
+    entityId: parsed.data.projectId,
   }
 }
