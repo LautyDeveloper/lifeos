@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import type {
   InboxActionState,
   ProcessInboxActionState,
+  SuggestInboxProcessingActionState,
 } from "@/features/inbox/action-state"
 import {
   createInboxItem,
@@ -12,12 +13,14 @@ import {
   processInboxItemToProject,
   processInboxItemToTask,
 } from "@/features/inbox/repository"
+import { suggestInboxProcessing } from "@/features/inbox-ai/service"
 import {
   createInboxItemSchema,
   processInboxTargetSchema,
   processInboxToNoteSchema,
   processInboxToProjectSchema,
   processInboxToTaskSchema,
+  suggestInboxProcessingInputSchema,
 } from "@/features/inbox/schemas"
 import { isDomainError } from "@/lib/domain-errors"
 
@@ -203,5 +206,42 @@ export async function processInboxItemAction(
     message: "Captura procesada y movida al sistema.",
     processedTarget: target,
     resetKey: previousState.resetKey + 1,
+  }
+}
+
+export async function suggestInboxProcessingAction(input: {
+  content: string
+}): Promise<SuggestInboxProcessingActionState> {
+  const parsed = suggestInboxProcessingInputSchema.safeParse(input)
+
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message: "Capturá algo válido antes de pedir una sugerencia.",
+    }
+  }
+
+  try {
+    const suggestion = await suggestInboxProcessing(parsed.data)
+
+    return {
+      status: "success",
+      message: "Sugerencia lista para revisar.",
+      suggestion,
+    }
+  } catch (error) {
+    console.error("Failed to suggest inbox processing", error)
+
+    if (isDomainError(error) && error.code === "service_unavailable") {
+      return {
+        status: "error",
+        message: "Configurá OPENAI_API_KEY para habilitar sugerencias inteligentes.",
+      }
+    }
+
+    return {
+      status: "error",
+      message: "No pudimos sugerir un destino ahora. Probá de nuevo o seguí en manual.",
+    }
   }
 }

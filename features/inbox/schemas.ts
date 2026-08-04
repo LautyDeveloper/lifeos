@@ -10,6 +10,9 @@ export const createInboxItemSchema = z.object({
 
 export type CreateInboxItemInput = z.infer<typeof createInboxItemSchema>
 
+export const suggestInboxProcessingInputSchema = createInboxItemSchema
+export type SuggestInboxProcessingInput = z.infer<typeof suggestInboxProcessingInputSchema>
+
 const inboxEntityTitle = z
   .string()
   .trim()

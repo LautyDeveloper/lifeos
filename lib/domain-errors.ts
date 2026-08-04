@@ -4,6 +4,7 @@ export type DomainErrorCode =
   | "archived_context"
   | "constraint_violation"
   | "database_unavailable"
+  | "service_unavailable"
 
 export class DomainError extends Error {
   constructor(

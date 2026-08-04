@@ -34,11 +34,13 @@ export function InboxList({
   areasWithContainers,
   projectOptions,
   databaseReady,
+  aiEnabled,
 }: {
   items: InboxItem[]
   areasWithContainers: AreaWithContainers[]
   projectOptions: ProjectOption[]
   databaseReady: boolean
+  aiEnabled: boolean
 }) {
   if (items.length === 0) {
     return (
@@ -89,6 +91,7 @@ export function InboxList({
                 areasWithContainers={areasWithContainers}
                 projectOptions={projectOptions}
                 databaseReady={databaseReady}
+                aiEnabled={aiEnabled}
               />
             </div>
           </article>

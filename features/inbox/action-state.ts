@@ -1,3 +1,5 @@
+import type { SuggestInboxProcessingResult } from "@/features/inbox-ai/schemas"
+
 export type InboxActionState = {
   status: "idle" | "success" | "error"
   message?: string
@@ -29,4 +31,10 @@ export type ProcessInboxActionState = {
 export const initialProcessInboxActionState: ProcessInboxActionState = {
   status: "idle",
   resetKey: 0,
+}
+
+export type SuggestInboxProcessingActionState = {
+  status: "success" | "error"
+  message: string
+  suggestion?: SuggestInboxProcessingResult
 }

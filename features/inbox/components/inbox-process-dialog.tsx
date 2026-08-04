@@ -1,15 +1,17 @@
 "use client"
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react"
-import { ChevronDown, X } from "lucide-react"
+import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from "react"
+import { Brain, ChevronDown, Sparkles, X } from "lucide-react"
 
 import { initialProcessInboxActionState } from "@/features/inbox/action-state"
 import {
   processInboxItemAction,
+  suggestInboxProcessingAction,
 } from "@/features/inbox/actions"
 import type { ProcessInboxTarget } from "@/features/inbox/schemas"
 import { deriveInboxTitle } from "@/features/inbox/utils"
 import { InboxSubmitButton } from "@/features/inbox/components/inbox-submit-button"
+import type { SuggestInboxProcessingResult } from "@/features/inbox-ai/schemas"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/toast-provider"
 
@@ -34,6 +36,7 @@ type InboxProcessDialogProps = {
   areasWithContainers: AreaWithContainers[]
   projectOptions: ProjectOption[]
   databaseReady: boolean
+  aiEnabled: boolean
 }
 
 type DialogSessionProps = {
@@ -43,7 +46,13 @@ type DialogSessionProps = {
   }
   areasWithContainers: AreaWithContainers[]
   projectOptions: ProjectOption[]
+  initialSuggestion?: SuggestInboxProcessingResult
   onCancel: () => void
+}
+
+type DialogSessionState = {
+  id: number
+  suggestion?: SuggestInboxProcessingResult
 }
 
 const targetLabels: Record<ProcessInboxTarget, string> = {
@@ -52,16 +61,23 @@ const targetLabels: Record<ProcessInboxTarget, string> = {
   note: "Nota",
 }
 
+const confidenceLabels = {
+  low: "Confianza baja",
+  medium: "Confianza media",
+  high: "Confianza alta",
+} as const
+
 function buildInitialFormState(
   content: string,
   areasWithContainers: AreaWithContainers[],
-  projectOptions: ProjectOption[]
+  projectOptions: ProjectOption[],
+  suggestion?: SuggestInboxProcessingResult
 ) {
   return {
-    target: "project" as ProcessInboxTarget,
-    title: deriveInboxTitle(content),
-    description: "",
-    noteContent: content,
+    target: suggestion?.suggestedTarget ?? ("project" as ProcessInboxTarget),
+    title: suggestion?.suggestedTitle ?? deriveInboxTitle(content),
+    description: suggestion?.suggestedDescription ?? "",
+    noteContent: suggestion?.suggestedContent ?? content,
     selectedAreaId: areasWithContainers[0]?.id ?? "",
     selectedContainerId: areasWithContainers[0]?.containers[0]?.id ?? "",
     selectedProjectId: projectOptions[0]?.id ?? "",
@@ -72,6 +88,7 @@ function DialogSession({
   item,
   areasWithContainers,
   projectOptions,
+  initialSuggestion,
   onCancel,
 }: DialogSessionProps) {
   const [actionState, formAction] = useActionState(
@@ -79,7 +96,7 @@ function DialogSession({
     initialProcessInboxActionState
   )
   const [formState, setFormState] = useState(() =>
-    buildInitialFormState(item.content, areasWithContainers, projectOptions)
+    buildInitialFormState(item.content, areasWithContainers, projectOptions, initialSuggestion)
   )
   const { notify } = useToast()
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -88,10 +105,15 @@ function DialogSession({
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
     dialogRef.current?.focus()
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCancel()
+      if (event.key === "Escape") {
+        onCancel()
+      }
     }
+
     window.addEventListener("keydown", handleKeyDown)
+
     return () => {
       document.body.style.overflow = previousOverflow
       window.removeEventListener("keydown", handleKeyDown)
@@ -99,7 +121,10 @@ function DialogSession({
   }, [onCancel])
 
   useEffect(() => {
-    if (actionState.status !== "success") return
+    if (actionState.status !== "success") {
+      return
+    }
+
     notify({ message: actionState.message ?? "Captura procesada.", tone: "success" })
     onCancel()
   }, [actionState.message, actionState.status, notify, onCancel])
@@ -125,13 +150,21 @@ function DialogSession({
         onClick={onCancel}
       />
 
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={`process-title-${item.id}`} tabIndex={-1} className="surface-1 relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-5 outline-none transition-all duration-200 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-[0.98] motion-reduce:transition-none md:p-6">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`process-title-${item.id}`}
+        tabIndex={-1}
+        className="surface-1 relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-5 outline-none transition-all duration-200 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-[0.98] motion-reduce:transition-none md:p-6"
+      >
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
-            <p className="eyebrow">
-              Procesar inbox
-            </p>
-            <h3 id={`process-title-${item.id}`} className="text-2xl font-semibold tracking-[-0.04em] text-white">
+            <p className="eyebrow">Procesar inbox</p>
+            <h3
+              id={`process-title-${item.id}`}
+              className="text-2xl font-semibold tracking-[-0.04em] text-white"
+            >
               Elegí dónde guardar esta captura
             </h3>
             <p className="context-line max-w-xl">
@@ -150,11 +183,33 @@ function DialogSession({
         </div>
 
         <div className="surface-2 mt-5 rounded-[24px] border p-4">
-          <p className="eyebrow">
-            Captura original
-          </p>
+          <p className="eyebrow">Captura original</p>
           <p className="mt-2 text-base leading-8 text-white">{item.content}</p>
         </div>
+
+        {initialSuggestion ? (
+          <div className="surface-2 mt-4 rounded-[24px] border border-primary/10 bg-primary/[0.04] p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex min-h-8 items-center gap-2 rounded-full border border-primary/15 bg-primary/[0.08] px-3 text-[11px] font-medium text-primary/90">
+                <Sparkles className="size-3.5" />
+                Sugerencia con IA
+              </span>
+              <span className="meta-item">{targetLabels[initialSuggestion.suggestedTarget]}</span>
+              {initialSuggestion.confidence ? (
+                <span className="meta-item">{confidenceLabels[initialSuggestion.confidence]}</span>
+              ) : null}
+            </div>
+            {initialSuggestion.reason ? (
+              <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                {initialSuggestion.reason}
+              </p>
+            ) : (
+              <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                La IA dejó una primera propuesta para que la revises antes de confirmar.
+              </p>
+            )}
+          </div>
+        ) : null}
 
         <form action={formAction} className="mt-5 space-y-5">
           <input type="hidden" name="inboxItemId" value={item.id} />
@@ -246,10 +301,7 @@ function DialogSession({
                 </div>
 
                 <div className="space-y-2">
-                  <label
-                    htmlFor={`container-${item.id}`}
-                    className="text-sm font-medium text-white"
-                  >
+                  <label htmlFor={`container-${item.id}`} className="text-sm font-medium text-white">
                     Container
                   </label>
                   <select
@@ -284,10 +336,7 @@ function DialogSession({
               </div>
 
               <div className="space-y-2">
-                <label
-                  htmlFor={`description-${item.id}`}
-                  className="text-sm font-medium text-white"
-                >
+                <label htmlFor={`description-${item.id}`} className="text-sm font-medium text-white">
                   Descripción opcional
                 </label>
                 <textarea
@@ -312,10 +361,7 @@ function DialogSession({
             <div className="space-y-4">
               {projectOptions.length > 0 ? (
                 <div className="space-y-2">
-                  <label
-                    htmlFor={`project-${item.id}`}
-                    className="text-sm font-medium text-white"
-                  >
+                  <label htmlFor={`project-${item.id}`} className="text-sm font-medium text-white">
                     Proyecto
                   </label>
                   <select
@@ -342,13 +388,11 @@ function DialogSession({
                     ))}
                   </select>
                   {actionState.fieldErrors?.projectId?.[0] ? (
-                    <p className="text-sm text-destructive">
-                      {actionState.fieldErrors.projectId[0]}
-                    </p>
+                    <p className="text-sm text-destructive">{actionState.fieldErrors.projectId[0]}</p>
                   ) : null}
                 </div>
               ) : (
-              <div className="rounded-[24px] border border-dashed border-white/10 px-5 py-8 text-center">
+                <div className="rounded-[24px] border border-dashed border-white/10 px-5 py-8 text-center">
                   <p className="text-sm font-medium text-white">
                     Todavía no hay proyectos disponibles.
                   </p>
@@ -366,10 +410,7 @@ function DialogSession({
                 Esta nota se guardará en Biblioteca.
               </div>
               <div className="space-y-2">
-                <label
-                  htmlFor={`note-content-${item.id}`}
-                  className="text-sm font-medium text-white"
-                >
+                <label htmlFor={`note-content-${item.id}`} className="text-sm font-medium text-white">
                   Contenido
                 </label>
                 <textarea
@@ -385,9 +426,7 @@ function DialogSession({
                   }
                   className={cn(
                     "field-base min-h-40 w-full resize-none rounded-[20px] px-4 py-3 text-sm leading-6",
-                    actionState.fieldErrors?.content
-                      ? "border-destructive/50"
-                      : "border-white/8"
+                    actionState.fieldErrors?.content ? "border-destructive/50" : "border-white/8"
                   )}
                 />
                 {actionState.fieldErrors?.content?.[0] ? (
@@ -409,6 +448,10 @@ function DialogSession({
                   )}
                 >
                   {actionState.message}
+                </p>
+              ) : initialSuggestion ? (
+                <p className="text-sm text-muted-foreground">
+                  La propuesta ya está cargada. Ajustala antes de confirmar si hace falta.
                 </p>
               ) : (
                 <p className="text-sm text-muted-foreground">
@@ -443,33 +486,115 @@ export function InboxProcessDialog({
   areasWithContainers,
   projectOptions,
   databaseReady,
+  aiEnabled,
 }: InboxProcessDialogProps) {
-  const [sessionId, setSessionId] = useState<number | null>(null)
+  const [session, setSession] = useState<DialogSessionState | null>(null)
+  const [suggestionMessage, setSuggestionMessage] = useState<{
+    tone: "error" | "success" | "muted"
+    message: string
+  } | null>(null)
+  const [pendingSuggestion, startSuggestion] = useTransition()
   const triggerRef = useRef<HTMLButtonElement>(null)
+
   const closeDialog = () => {
-    setSessionId(null)
+    setSession(null)
     window.requestAnimationFrame(() => triggerRef.current?.focus())
+  }
+
+  const openManual = () => {
+    setSuggestionMessage(null)
+    setSession({ id: Date.now() })
+  }
+
+  const requestSuggestion = () => {
+    if (!aiEnabled || !databaseReady) {
+      return
+    }
+
+    setSuggestionMessage(null)
+
+    startSuggestion(async () => {
+      const result = await suggestInboxProcessingAction({ content: item.content })
+
+      if (result.status === "error" || !result.suggestion) {
+        setSuggestionMessage({
+          tone: "error",
+          message: result.message,
+        })
+        return
+      }
+
+      setSuggestionMessage({
+        tone: "success",
+        message: result.message,
+      })
+      setSession({
+        id: Date.now(),
+        suggestion: result.suggestion,
+      })
+    })
   }
 
   return (
     <>
-      <button
-        ref={triggerRef}
-        type="button"
-        disabled={!databaseReady}
-        onClick={() => setSessionId(Date.now())}
-        className="inline-flex min-h-11 items-center gap-2 rounded-[18px] border border-white/[0.07] bg-white/[0.03] px-3 text-xs font-medium text-white transition hover:bg-white/[0.05] disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        Procesar
-        <ChevronDown className="size-3.5" />
-      </button>
+      <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            disabled={!databaseReady || !aiEnabled || pendingSuggestion}
+            onClick={requestSuggestion}
+            className="inline-flex min-h-11 items-center gap-2 rounded-[18px] border border-primary/14 bg-primary/[0.06] px-3 text-xs font-medium text-primary/90 transition hover:bg-primary/[0.1] disabled:cursor-not-allowed disabled:opacity-50"
+            title={
+              aiEnabled
+                ? "Sugerir destino y título con IA"
+                : "Configurá OPENAI_API_KEY para habilitar sugerencias inteligentes."
+            }
+          >
+            <Brain className="size-3.5" />
+            {pendingSuggestion ? "Analizando..." : "Sugerir con IA"}
+          </button>
 
-      {sessionId !== null ? (
+          <button
+            ref={triggerRef}
+            type="button"
+            disabled={!databaseReady}
+            onClick={openManual}
+            className="inline-flex min-h-11 items-center gap-2 rounded-[18px] border border-white/[0.07] bg-white/[0.03] px-3 text-xs font-medium text-white transition hover:bg-white/[0.05] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Procesar
+            <ChevronDown className="size-3.5" />
+          </button>
+        </div>
+
+        <p
+          className={cn(
+            "min-h-5 text-right text-[11px]",
+            pendingSuggestion
+              ? "text-muted-foreground"
+              : suggestionMessage?.tone === "error"
+                ? "text-destructive"
+                : suggestionMessage?.tone === "success"
+                  ? "text-primary/90"
+                  : "text-muted-foreground"
+          )}
+          aria-live="polite"
+        >
+          {pendingSuggestion
+            ? "Analizando captura..."
+            : suggestionMessage?.message ??
+              (!aiEnabled
+                ? "Configurá OPENAI_API_KEY para habilitar sugerencias inteligentes."
+                : "")}
+        </p>
+      </div>
+
+      {session !== null ? (
         <DialogSession
-          key={sessionId}
+          key={session.id}
           item={item}
           areasWithContainers={areasWithContainers}
           projectOptions={projectOptions}
+          initialSuggestion={session.suggestion}
           onCancel={closeDialog}
         />
       ) : null}
