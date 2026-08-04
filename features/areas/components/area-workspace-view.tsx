@@ -197,15 +197,28 @@ function ArchivedProjectSection({
   projects: AreaWorkspace["containers"][number]["archivedProjects"]
   path: string
 }) {
+  const formatter = new Intl.DateTimeFormat("es-AR", {
+    day: "2-digit",
+    month: "short",
+  })
+
   return (
-    <section aria-labelledby="status-archived">
-      <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
-        <h4 id="status-archived" className="text-sm font-semibold text-white">
-          Archivados
-        </h4>
+    <section
+      aria-labelledby="status-archived"
+      className="rounded-[24px] border border-dashed border-white/[0.09] bg-white/[0.015] px-4 py-5 sm:px-5"
+    >
+      <div className="flex items-start justify-between gap-3 border-b border-white/[0.08] pb-3">
+        <div className="space-y-1">
+          <h4 id="status-archived" className="text-sm font-semibold text-white">
+            Archivados
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Trabajo fuera del flujo principal, pero listo para volver cuando haga falta.
+          </p>
+        </div>
         <span className="chip-subtle min-h-7 px-2.5 text-[11px]">{projects.length}</span>
       </div>
-      <div>
+      <div className="mt-2">
         {projects.length ? (
           projects.map((project) => (
             <article
@@ -226,6 +239,9 @@ function ArchivedProjectSection({
                   </span>
                   <span className="meta-item">
                     {project.completedTaskCount}/{project.taskCount} tareas completadas
+                  </span>
+                  <span className="meta-item">
+                    Archivado el {formatter.format(project.archivedAt)}
                   </span>
                 </div>
               </div>

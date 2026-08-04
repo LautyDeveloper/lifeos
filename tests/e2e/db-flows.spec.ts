@@ -72,4 +72,69 @@ test.describe("flujos con base de datos", () => {
     await expect(page.getByText("Nota restaurada.")).toBeVisible()
     await expect(page.getByRole("link", { name: title })).toBeVisible()
   })
+
+  test("crea, archiva, restaura y elimina un proyecto con su tarea", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-chromium", "Solo escritorio")
+
+    const uniqueId = Date.now().toString()
+    const projectTitle = `Proyecto lifecycle ${uniqueId}`
+    const taskTitle = `Tarea lifecycle ${uniqueId}`
+
+    await page.goto("/dev")
+
+    const containerSection = page.locator("section").filter({
+      has: page.getByRole("heading", { name: "Life OS" }),
+    }).first()
+
+    await containerSection.getByRole("button", { name: "Nuevo proyecto" }).click()
+    await containerSection.getByPlaceholder("Nombre del nuevo proyecto...").fill(projectTitle)
+    await containerSection.getByRole("button", { name: "Crear proyecto" }).click()
+
+    await expect(containerSection.getByText("Proyecto creado en Backlog.")).toBeVisible()
+
+    const projectDetails = page.locator("details").filter({ hasText: projectTitle }).first()
+    await expect(projectDetails).toBeVisible()
+
+    await projectDetails.getByRole("button", { name: "Agregar tarea" }).click()
+    await projectDetails
+      .getByPlaceholder("Nueva tarea dentro de este proyecto...")
+      .fill(taskTitle)
+    await projectDetails.getByRole("button", { name: "Agregar tarea" }).click()
+
+    await expect(projectDetails.getByText(taskTitle)).toBeVisible()
+
+    await projectDetails.getByRole("button", { name: "Archivar" }).click()
+    await expect(containerSection.getByText("Proyecto archivado.")).toBeVisible()
+    await expect(page.locator("details").filter({ hasText: projectTitle })).toHaveCount(0)
+
+    const archivedSection = containerSection.locator("section").filter({
+      hasText: "Archivados",
+    })
+    await expect(archivedSection.getByText(projectTitle)).toBeVisible()
+    await expect(archivedSection.getByText(/Archivado el/i)).toBeVisible()
+
+    await archivedSection.getByRole("button", { name: "Restaurar" }).click()
+    await expect(containerSection.getByText("Proyecto restaurado.")).toBeVisible()
+    await expect(page.locator("details").filter({ hasText: projectTitle })).toBeVisible()
+
+    const restoredProjectDetails = page.locator("details").filter({ hasText: projectTitle }).first()
+    await restoredProjectDetails.getByRole("button", { name: "Archivar" }).click()
+    await expect(containerSection.getByText("Proyecto archivado.")).toBeVisible()
+
+    await expect(archivedSection.getByText(projectTitle)).toBeVisible()
+    await archivedSection.getByRole("button", { name: "Eliminar" }).click()
+    await expect(archivedSection.getByText("Eliminar proyecto")).toBeVisible()
+    await expect(
+      archivedSection.getByText(
+        "Se borra de forma definitiva junto con sus tareas y notas operativas."
+      )
+    ).toBeVisible()
+    await archivedSection.getByRole("button", { name: "Sí, eliminar" }).click()
+
+    await expect(page.getByText("Proyecto eliminado con todo su contexto operativo.")).toBeVisible()
+    await expect(page.getByText(projectTitle)).toHaveCount(0)
+    await expect(page.getByText(taskTitle)).toHaveCount(0)
+  })
 })
