@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 }
 
 export default async function ReviewPage() {
+  const aiEnabled = Boolean(process.env.OPENAI_API_KEY?.trim())
   const [summary, areasWithContainers, projectOptions] = await Promise.all([
     getReviewSummary(),
     listAreasWithContainers(),
@@ -22,6 +23,7 @@ export default async function ReviewPage() {
       areasWithContainers={areasWithContainers}
       projectOptions={projectOptions}
       databaseReady={Boolean(db)}
+      aiEnabled={aiEnabled}
     />
   )
 }

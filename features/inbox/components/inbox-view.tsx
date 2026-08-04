@@ -9,6 +9,7 @@ import {
 } from "@/features/inbox/repository"
 
 export async function InboxView() {
+  const aiEnabled = Boolean(process.env.OPENAI_API_KEY?.trim())
   const [items, areasWithContainers, projectOptions] = await Promise.all([
     listActiveInboxItems(),
     listAreasWithContainers(),
@@ -35,6 +36,7 @@ export async function InboxView() {
           areasWithContainers={areasWithContainers}
           projectOptions={projectOptions}
           databaseReady={Boolean(db)}
+          aiEnabled={aiEnabled}
         />
       </div>
     </PageShell>

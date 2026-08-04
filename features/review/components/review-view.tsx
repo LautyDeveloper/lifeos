@@ -88,6 +88,7 @@ export function ReviewView({
   areasWithContainers,
   projectOptions,
   databaseReady,
+  aiEnabled,
 }: {
   summary: ReviewSummary
   areasWithContainers: {
@@ -102,6 +103,7 @@ export function ReviewView({
     areaName: string
   }[]
   databaseReady: boolean
+  aiEnabled: boolean
 }) {
   const fullyHealthy =
     summary.pendingInboxItems.length === 0 &&
@@ -174,6 +176,7 @@ export function ReviewView({
                           areasWithContainers={areasWithContainers}
                           projectOptions={projectOptions}
                           databaseReady={databaseReady}
+                          aiEnabled={aiEnabled}
                         />
                         <Link href={item.href} className="text-sm text-muted-foreground transition hover:text-white">
                           Abrir Inbox
