@@ -7,6 +7,7 @@ import { createInboxItemSchema } from "@/features/inbox/schemas"
 import { createLibraryNote } from "@/features/library/repository"
 import { createLibraryNoteSchema } from "@/features/library/schemas"
 import { searchCommandSurface } from "@/features/command/repository"
+import { isDomainError } from "@/lib/domain-errors"
 import type {
   QuickCaptureActionState,
   QuickLibraryNoteActionState,
@@ -53,7 +54,9 @@ export async function quickCaptureAction(
 
     return {
       status: "error",
-      message: "No pudimos guardar la captura. Probá de nuevo.",
+      message: isDomainError(error)
+        ? "Configurá DATABASE_URL para usar la captura global."
+        : "No pudimos guardar la captura.",
       resetKey: previousState.resetKey,
     }
   }
@@ -98,7 +101,9 @@ export async function quickCreateLibraryNoteAction(
 
     return {
       status: "error",
-      message: "No pudimos guardar la nota. Probá de nuevo.",
+      message: isDomainError(error)
+        ? "Configurá DATABASE_URL para guardar notas desde la command surface."
+        : "No pudimos guardar la nota.",
       resetKey: previousState.resetKey,
     }
   }

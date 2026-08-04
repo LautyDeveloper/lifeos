@@ -27,6 +27,7 @@ import {
   type Priority,
   type ProjectStatus,
 } from "@/types/domain"
+import { DomainError } from "@/lib/domain-errors"
 
 export type AreaWorkspace = {
   area: {
@@ -350,11 +351,11 @@ export async function createTask(input: CreateTaskInput) {
   const project = await getProjectRecord(input.projectId)
 
   if (!project) {
-    throw new Error("Project not found.")
+    throw new DomainError("not_found", "Project not found.")
   }
 
   if (!canCreateTasksInProject(project.status)) {
-    throw new Error("Project does not allow new tasks.")
+    throw new DomainError("invalid_state", "Project does not allow new tasks.")
   }
 
   const [task] = await database
@@ -378,7 +379,10 @@ export async function createProject(input: CreateProjectInput) {
   const container = await getContainerRecord(input.containerId)
 
   if (!container || container.archived) {
-    throw new Error("Container not found.")
+    throw new DomainError(
+      !container ? "not_found" : "archived_context",
+      "Container not found."
+    )
   }
 
   const [project] = await database
@@ -404,7 +408,7 @@ export async function updateProjectDetails(input: UpdateProjectDetailsInput) {
   const project = await getProjectRecord(input.projectId)
 
   if (!project) {
-    throw new Error("Project not found.")
+    throw new DomainError("not_found", "Project not found.")
   }
 
   const description = input.description?.trim() ? input.description.trim() : null
@@ -430,11 +434,11 @@ export async function toggleTaskCompletion(input: ToggleTaskCompletionInput) {
   const task = await getTaskRecord(input.taskId)
 
   if (!task) {
-    throw new Error("Task not found.")
+    throw new DomainError("not_found", "Task not found.")
   }
 
   if (task.projectStatus === "paused") {
-    throw new Error("Paused project task cannot be toggled here.")
+    throw new DomainError("invalid_state", "Paused project task cannot be toggled here.")
   }
 
   const [updatedTask] = await database
@@ -456,11 +460,11 @@ export async function planTaskForToday(input: PlanTaskForTodayInput) {
   const task = await getTaskRecord(input.taskId)
 
   if (!task) {
-    throw new Error("Task not found.")
+    throw new DomainError("not_found", "Task not found.")
   }
 
   if (!canPlanTasksInProject(task.projectStatus)) {
-    throw new Error("Project does not allow planning.")
+    throw new DomainError("invalid_state", "Project does not allow planning.")
   }
 
   const [updatedTask] = await database
@@ -482,11 +486,11 @@ export async function planTaskForTomorrow(input: PlanTaskForTomorrowInput) {
   const task = await getTaskRecord(input.taskId)
 
   if (!task) {
-    throw new Error("Task not found.")
+    throw new DomainError("not_found", "Task not found.")
   }
 
   if (!canPlanTasksInProject(task.projectStatus)) {
-    throw new Error("Project does not allow planning.")
+    throw new DomainError("invalid_state", "Project does not allow planning.")
   }
 
   const [updatedTask] = await database
@@ -508,17 +512,17 @@ export async function setTaskPlannedDate(input: SetTaskPlannedDateInput) {
   const task = await getTaskRecord(input.taskId)
 
   if (!task) {
-    throw new Error("Task not found.")
+    throw new DomainError("not_found", "Task not found.")
   }
 
   if (!canPlanTasksInProject(task.projectStatus)) {
-    throw new Error("Project does not allow planning.")
+    throw new DomainError("invalid_state", "Project does not allow planning.")
   }
 
   const plannedDate = parseDateInput(input.plannedDate)
 
   if (!plannedDate) {
-    throw new Error("Invalid planning date.")
+    throw new DomainError("constraint_violation", "Invalid planning date.")
   }
 
   const [updatedTask] = await database
@@ -540,11 +544,11 @@ export async function clearTaskPlannedDate(input: ClearTaskPlannedDateInput) {
   const task = await getTaskRecord(input.taskId)
 
   if (!task) {
-    throw new Error("Task not found.")
+    throw new DomainError("not_found", "Task not found.")
   }
 
   if (!canPlanTasksInProject(task.projectStatus)) {
-    throw new Error("Project does not allow planning.")
+    throw new DomainError("invalid_state", "Project does not allow planning.")
   }
 
   const [updatedTask] = await database
@@ -566,7 +570,7 @@ export async function updateProjectStatus(input: UpdateProjectStatusInput) {
   const project = await getProjectRecord(input.projectId)
 
   if (!project) {
-    throw new Error("Project not found.")
+    throw new DomainError("not_found", "Project not found.")
   }
 
   const [updatedProject] = await database
@@ -588,7 +592,7 @@ export async function updateProjectPriority(input: UpdateProjectPriorityInput) {
   const project = await getProjectRecord(input.projectId)
 
   if (!project) {
-    throw new Error("Project not found.")
+    throw new DomainError("not_found", "Project not found.")
   }
 
   const [updatedProject] = await database
@@ -610,11 +614,11 @@ export async function updateTaskPriority(input: UpdateTaskPriorityInput) {
   const task = await getTaskRecord(input.taskId)
 
   if (!task) {
-    throw new Error("Task not found.")
+    throw new DomainError("not_found", "Task not found.")
   }
 
   if (task.projectStatus === "paused") {
-    throw new Error("Paused project task cannot be updated here.")
+    throw new DomainError("invalid_state", "Paused project task cannot be updated here.")
   }
 
   const [updatedTask] = await database

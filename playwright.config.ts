@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test"
 
+const databaseUrl = process.env.DATABASE_URL ?? ""
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: true,
@@ -14,7 +16,7 @@ export default defineConfig({
     command: "corepack pnpm@8.15.9 dev --hostname 127.0.0.1 --port 3100",
     url: "http://127.0.0.1:3100",
     reuseExistingServer: !process.env.CI,
-    env: { DATABASE_URL: "" },
+    env: { DATABASE_URL: databaseUrl },
   },
   projects: [
     { name: "desktop-chromium", use: { ...devices["Desktop Chrome"], browserName: "chromium" } },

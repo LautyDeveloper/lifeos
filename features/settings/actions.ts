@@ -26,6 +26,7 @@ import {
   updateAreaDetailsSchema,
   updateContainerDetailsSchema,
 } from "@/features/settings/schemas"
+import { isDomainError } from "@/lib/domain-errors"
 
 function revalidateSetupPaths() {
   revalidatePath("/settings")
@@ -37,6 +38,22 @@ function revalidateSetupPaths() {
   revalidatePath("/dev")
   revalidatePath("/study")
   revalidatePath("/health")
+}
+
+function getSettingsErrorMessage(
+  error: unknown,
+  fallback: string,
+  options?: { notFound?: string }
+) {
+  if (!isDomainError(error)) {
+    return fallback
+  }
+
+  if (error.code === "not_found") {
+    return options?.notFound ?? fallback
+  }
+
+  return fallback
 }
 
 export async function updateAreaDetailsAction(
@@ -72,7 +89,9 @@ export async function updateAreaDetailsAction(
     console.error("Failed to update area", error)
     return {
       status: "error",
-      message: "No pudimos actualizar esa área.",
+      message: getSettingsErrorMessage(error, "No pudimos actualizar el área.", {
+        notFound: "Esa área ya no existe.",
+      }),
       resetKey: previousState.resetKey,
     }
   }
@@ -100,7 +119,12 @@ export async function moveAreaAction(formData: FormData): Promise<ActionResult> 
     await moveArea(parsed.data)
   } catch (error) {
     console.error("Failed to move area", error)
-    return { status: "error", message: "No pudimos mover esa área." }
+    return {
+      status: "error",
+      message: getSettingsErrorMessage(error, "No pudimos mover el área.", {
+        notFound: "Esa área ya no existe.",
+      }),
+    }
   }
 
   revalidateSetupPaths()
@@ -138,7 +162,9 @@ export async function createContainerAction(
     console.error("Failed to create container", error)
     return {
       status: "error",
-      message: "No pudimos crear ese container.",
+      message: getSettingsErrorMessage(error, "No pudimos crear el container.", {
+        notFound: "Esa área ya no existe.",
+      }),
       resetKey: previousState.resetKey,
     }
   }
@@ -183,7 +209,9 @@ export async function updateContainerDetailsAction(
     console.error("Failed to update container", error)
     return {
       status: "error",
-      message: "No pudimos actualizar ese container.",
+      message: getSettingsErrorMessage(error, "No pudimos actualizar el container.", {
+        notFound: "Ese container ya no existe.",
+      }),
       resetKey: previousState.resetKey,
     }
   }
@@ -210,7 +238,12 @@ export async function archiveContainerAction(formData: FormData): Promise<Action
     await archiveContainer(parsed.data)
   } catch (error) {
     console.error("Failed to archive container", error)
-    return { status: "error", message: "No pudimos archivar ese container." }
+    return {
+      status: "error",
+      message: getSettingsErrorMessage(error, "No pudimos archivar el container.", {
+        notFound: "Ese container ya no existe.",
+      }),
+    }
   }
 
   revalidateSetupPaths()
@@ -230,7 +263,12 @@ export async function restoreContainerAction(formData: FormData): Promise<Action
     await restoreContainer(parsed.data)
   } catch (error) {
     console.error("Failed to restore container", error)
-    return { status: "error", message: "No pudimos restaurar ese container." }
+    return {
+      status: "error",
+      message: getSettingsErrorMessage(error, "No pudimos restaurar el container.", {
+        notFound: "Ese container ya no existe.",
+      }),
+    }
   }
 
   revalidateSetupPaths()
@@ -251,7 +289,12 @@ export async function moveContainerAction(formData: FormData): Promise<ActionRes
     await moveContainer(parsed.data)
   } catch (error) {
     console.error("Failed to move container", error)
-    return { status: "error", message: "No pudimos mover ese container." }
+    return {
+      status: "error",
+      message: getSettingsErrorMessage(error, "No pudimos mover el container.", {
+        notFound: "Ese container ya no existe.",
+      }),
+    }
   }
 
   revalidateSetupPaths()

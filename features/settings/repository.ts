@@ -11,6 +11,7 @@ import type {
   UpdateAreaDetailsInput,
   UpdateContainerDetailsInput,
 } from "@/features/settings/schemas"
+import { DomainError } from "@/lib/domain-errors"
 
 export type SystemSetup = {
   areas: Array<{
@@ -160,7 +161,7 @@ export async function updateAreaDetails(input: UpdateAreaDetailsInput) {
   const area = await getAreaRecord(input.areaId)
 
   if (!area) {
-    throw new Error("Area not found.")
+    throw new DomainError("not_found", "Area not found.")
   }
 
   const [updatedArea] = await database
@@ -192,7 +193,7 @@ export async function moveArea(input: MoveAreaInput) {
   const index = siblings.findIndex((area) => area.id === input.areaId)
 
   if (index === -1) {
-    throw new Error("Area not found.")
+    throw new DomainError("not_found", "Area not found.")
   }
 
   const swapIndex = input.direction === "up" ? index - 1 : index + 1
@@ -224,7 +225,7 @@ export async function createContainer(input: CreateContainerInput) {
   const area = await getAreaRecord(input.areaId)
 
   if (!area) {
-    throw new Error("Area not found.")
+    throw new DomainError("not_found", "Area not found.")
   }
 
   const [maxRow] = await database
@@ -256,7 +257,7 @@ export async function updateContainerDetails(input: UpdateContainerDetailsInput)
   const container = await getContainerRecord(input.containerId)
 
   if (!container) {
-    throw new Error("Container not found.")
+    throw new DomainError("not_found", "Container not found.")
   }
 
   const [updatedContainer] = await database
@@ -279,7 +280,7 @@ export async function archiveContainer(input: ArchiveContainerInput) {
   const container = await getContainerRecord(input.containerId)
 
   if (!container) {
-    throw new Error("Container not found.")
+    throw new DomainError("not_found", "Container not found.")
   }
 
   const [updatedContainer] = await database
@@ -301,7 +302,7 @@ export async function restoreContainer(input: RestoreContainerInput) {
   const container = await getContainerRecord(input.containerId)
 
   if (!container) {
-    throw new Error("Container not found.")
+    throw new DomainError("not_found", "Container not found.")
   }
 
   const [updatedContainer] = await database
@@ -323,7 +324,7 @@ export async function moveContainer(input: MoveContainerInput) {
   const container = await getContainerRecord(input.containerId)
 
   if (!container) {
-    throw new Error("Container not found.")
+    throw new DomainError("not_found", "Container not found.")
   }
 
   const siblings = await database
@@ -340,7 +341,7 @@ export async function moveContainer(input: MoveContainerInput) {
   const index = siblings.findIndex((item) => item.id === input.containerId)
 
   if (index === -1) {
-    throw new Error("Container not found.")
+    throw new DomainError("not_found", "Container not found.")
   }
 
   const swapIndex = input.direction === "up" ? index - 1 : index + 1

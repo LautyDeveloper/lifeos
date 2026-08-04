@@ -20,7 +20,31 @@ import {
   restoreLibraryNoteSchema,
   updateLibraryNoteSchema,
 } from "@/features/library/schemas"
+import { isDomainError } from "@/lib/domain-errors"
 import type { ActionResult } from "@/types/action-result"
+
+function getLibraryErrorMessage(
+  error: unknown,
+  fallback: string,
+  options?: {
+    notFound?: string
+    invalidState?: string
+  }
+) {
+  if (!isDomainError(error)) {
+    return fallback
+  }
+
+  if (error.code === "not_found") {
+    return options?.notFound ?? fallback
+  }
+
+  if (error.code === "invalid_state") {
+    return options?.invalidState ?? fallback
+  }
+
+  return fallback
+}
 
 export async function createLibraryNoteAction(
   previousState: CreateLibraryNoteActionState,
@@ -61,7 +85,7 @@ export async function createLibraryNoteAction(
 
     return {
       status: "error",
-      message: "No pudimos crear la nota. Probá de nuevo.",
+      message: "No pudimos crear la nota.",
       resetKey: previousState.resetKey,
     }
   }
@@ -78,8 +102,18 @@ export async function saveLibraryNoteAction(formData: FormData): Promise<ActionR
     const note = await updateLibraryNote(parsed.data)
     revalidatePath("/library")
     return { status: "success", message: "Cambios guardados.", entityId: note.id }
-  } catch {
-    return { status: "error", message: "No pudimos guardar. Tus cambios siguen en el editor." }
+  } catch (error) {
+    return {
+      status: "error",
+      message: getLibraryErrorMessage(
+        error,
+        "No pudimos guardar. Tus cambios siguen en el editor.",
+        {
+          notFound: "La nota ya no existe.",
+          invalidState: "La nota ya no se puede editar.",
+        }
+      ),
+    }
   }
 }
 
@@ -96,8 +130,13 @@ export async function archiveLibraryNoteAction(formData: FormData): Promise<Acti
     const note = await archiveLibraryNote(parsed.data)
     revalidatePath("/library")
     return { status: "success", message: "Nota archivada.", entityId: note.id }
-  } catch {
-    return { status: "error", message: "No pudimos archivar la nota. Probá de nuevo." }
+  } catch (error) {
+    return {
+      status: "error",
+      message: getLibraryErrorMessage(error, "No pudimos archivar la nota.", {
+        invalidState: "La nota ya no está activa.",
+      }),
+    }
   }
 }
 
@@ -114,8 +153,13 @@ export async function restoreLibraryNoteAction(formData: FormData): Promise<Acti
     const note = await restoreLibraryNote(parsed.data)
     revalidatePath("/library")
     return { status: "success", message: "Nota restaurada.", entityId: note.id }
-  } catch {
-    return { status: "error", message: "No pudimos restaurar la nota. Probá de nuevo." }
+  } catch (error) {
+    return {
+      status: "error",
+      message: getLibraryErrorMessage(error, "No pudimos restaurar la nota.", {
+        invalidState: "La nota ya no está archivada.",
+      }),
+    }
   }
 }
 
@@ -132,8 +176,13 @@ export async function deleteLibraryNoteAction(formData: FormData): Promise<Actio
     const note = await deleteLibraryNote(parsed.data)
     revalidatePath("/library")
     return { status: "success", message: "Nota eliminada.", entityId: note.id }
-  } catch {
-    return { status: "error", message: "No pudimos eliminar la nota. Probá de nuevo." }
+  } catch (error) {
+    return {
+      status: "error",
+      message: getLibraryErrorMessage(error, "No pudimos eliminar la nota.", {
+        invalidState: "Solo podés eliminar notas archivadas.",
+      }),
+    }
   }
 }
 
@@ -169,7 +218,10 @@ export async function updateLibraryNoteAction(
 
     return {
       status: "error",
-      message: "No pudimos guardar los cambios. Probá de nuevo.",
+      message: getLibraryErrorMessage(error, "No pudimos guardar los cambios.", {
+        notFound: "La nota ya no existe.",
+        invalidState: "La nota ya no se puede editar.",
+      }),
       resetKey: previousState.resetKey,
     }
   }

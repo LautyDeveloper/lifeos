@@ -34,6 +34,7 @@ import {
   updateProjectStatusSchema,
   updateTaskPrioritySchema,
 } from "@/features/areas/schemas"
+import { isDomainError } from "@/lib/domain-errors"
 
 function revalidateOperationalPaths(path: string, options?: { parking?: boolean }) {
   if (path) {
@@ -46,6 +47,39 @@ function revalidateOperationalPaths(path: string, options?: { parking?: boolean 
   if (options?.parking) {
     revalidatePath("/parking")
   }
+}
+
+function getAreaActionErrorMessage(
+  error: unknown,
+  fallback: string,
+  options?: {
+    notFound?: string
+    invalidState?: string
+    archivedContext?: string
+    constraintViolation?: string
+  }
+) {
+  if (!isDomainError(error)) {
+    return fallback
+  }
+
+  if (error.code === "not_found") {
+    return options?.notFound ?? fallback
+  }
+
+  if (error.code === "archived_context") {
+    return options?.archivedContext ?? fallback
+  }
+
+  if (error.code === "constraint_violation") {
+    return options?.constraintViolation ?? fallback
+  }
+
+  if (error.code === "invalid_state") {
+    return options?.invalidState ?? fallback
+  }
+
+  return fallback
 }
 
 export async function createTaskAction(
@@ -79,7 +113,10 @@ export async function createTaskAction(
     console.error("Failed to create task", error)
     return {
       status: "error",
-      message: "Ese proyecto no permite nuevas tareas en este estado.",
+      message: getAreaActionErrorMessage(error, "No pudimos crear la tarea.", {
+        notFound: "Ese proyecto ya no existe.",
+        invalidState: "Ese proyecto no acepta tareas en este estado.",
+      }),
       resetKey: previousState.resetKey,
     }
   }
@@ -124,7 +161,10 @@ export async function createProjectAction(
     console.error("Failed to create project", error)
     return {
       status: "error",
-      message: "No pudimos crear ese proyecto en este espacio.",
+      message: getAreaActionErrorMessage(error, "No pudimos crear el proyecto.", {
+        notFound: "Ese espacio ya no existe.",
+        archivedContext: "Ese container está archivado y ya no admite proyectos.",
+      }),
       resetKey: previousState.resetKey,
     }
   }
@@ -172,7 +212,9 @@ export async function updateProjectDetailsAction(
     console.error("Failed to update project details", error)
     return {
       status: "error",
-      message: "No pudimos actualizar ese proyecto.",
+      message: getAreaActionErrorMessage(error, "No pudimos guardar los cambios del proyecto.", {
+        notFound: "Ese proyecto ya no existe.",
+      }),
       resetKey: previousState.resetKey,
     }
   }
@@ -205,7 +247,13 @@ export async function toggleTaskCompletionAction(formData: FormData): Promise<Ac
     await toggleTaskCompletion(parsed.data)
   } catch (error) {
     console.error("Failed to toggle task completion", error)
-    return { status: "error", message: "No pudimos actualizar la tarea." }
+    return {
+      status: "error",
+      message: getAreaActionErrorMessage(error, "No pudimos actualizar la tarea.", {
+        notFound: "Esa tarea ya no existe.",
+        invalidState: "Esa tarea ya no está disponible en este contexto.",
+      }),
+    }
   }
 
   revalidateOperationalPaths(path)
@@ -233,7 +281,13 @@ export async function planTaskForTodayAction(formData: FormData): Promise<Action
     await planTaskForToday(parsed.data)
   } catch (error) {
     console.error("Failed to plan task for today", error)
-    return { status: "error", message: "Solo podés planificar tareas de proyectos activos." }
+    return {
+      status: "error",
+      message: getAreaActionErrorMessage(error, "No pudimos sumar la tarea a Hoy.", {
+        notFound: "Esa tarea ya no existe.",
+        invalidState: "Solo podés planificar tareas de proyectos activos.",
+      }),
+    }
   }
 
   revalidateOperationalPaths(path)
@@ -257,7 +311,13 @@ export async function planTaskForTomorrowAction(formData: FormData): Promise<Act
     await planTaskForTomorrow(parsed.data)
   } catch (error) {
     console.error("Failed to plan task for tomorrow", error)
-    return { status: "error", message: "Solo podés planificar tareas de proyectos activos." }
+    return {
+      status: "error",
+      message: getAreaActionErrorMessage(error, "No pudimos mover la tarea a Mañana.", {
+        notFound: "Esa tarea ya no existe.",
+        invalidState: "Solo podés planificar tareas de proyectos activos.",
+      }),
+    }
   }
 
   revalidateOperationalPaths(path)
@@ -282,7 +342,14 @@ export async function setTaskPlannedDateAction(formData: FormData): Promise<Acti
     await setTaskPlannedDate(parsed.data)
   } catch (error) {
     console.error("Failed to set task planning date", error)
-    return { status: "error", message: "Solo podés planificar tareas de proyectos activos." }
+    return {
+      status: "error",
+      message: getAreaActionErrorMessage(error, "No pudimos actualizar la fecha.", {
+        notFound: "Esa tarea ya no existe.",
+        invalidState: "Solo podés planificar tareas de proyectos activos.",
+        constraintViolation: "Elegí una fecha válida.",
+      }),
+    }
   }
 
   revalidateOperationalPaths(path)
@@ -306,7 +373,13 @@ export async function clearTaskPlannedDateAction(formData: FormData): Promise<Ac
     await clearTaskPlannedDate(parsed.data)
   } catch (error) {
     console.error("Failed to clear task planning date", error)
-    return { status: "error", message: "No pudimos quitar la fecha." }
+    return {
+      status: "error",
+      message: getAreaActionErrorMessage(error, "No pudimos quitar la fecha.", {
+        notFound: "Esa tarea ya no existe.",
+        invalidState: "Solo podés quitar la fecha en tareas de proyectos activos.",
+      }),
+    }
   }
 
   revalidateOperationalPaths(path)
@@ -330,7 +403,12 @@ export async function updateProjectStatusAction(formData: FormData): Promise<Act
     await updateProjectStatus(parsed.data)
   } catch (error) {
     console.error("Failed to update project status", error)
-    return { status: "error", message: "No pudimos actualizar el estado del proyecto." }
+    return {
+      status: "error",
+      message: getAreaActionErrorMessage(error, "No pudimos actualizar el estado del proyecto.", {
+        notFound: "Ese proyecto ya no existe.",
+      }),
+    }
   }
 
   revalidateOperationalPaths(path, { parking: parsed.data.status === "paused" || path === "/parking" })
@@ -365,7 +443,12 @@ export async function updateProjectPriorityAction(formData: FormData): Promise<A
     await updateProjectPriority(parsed.data)
   } catch (error) {
     console.error("Failed to update project priority", error)
-    return { status: "error", message: "No pudimos actualizar la prioridad del proyecto." }
+    return {
+      status: "error",
+      message: getAreaActionErrorMessage(error, "No pudimos actualizar la prioridad del proyecto.", {
+        notFound: "Ese proyecto ya no existe.",
+      }),
+    }
   }
 
   revalidateOperationalPaths(path, { parking: path === "/parking" })
@@ -393,7 +476,13 @@ export async function updateTaskPriorityAction(formData: FormData): Promise<Acti
     await updateTaskPriority(parsed.data)
   } catch (error) {
     console.error("Failed to update task priority", error)
-    return { status: "error", message: "No pudimos actualizar la prioridad de la tarea." }
+    return {
+      status: "error",
+      message: getAreaActionErrorMessage(error, "No pudimos actualizar la prioridad de la tarea.", {
+        notFound: "Esa tarea ya no existe.",
+        invalidState: "Esa tarea ya no está disponible en este contexto.",
+      }),
+    }
   }
 
   revalidateOperationalPaths(path)

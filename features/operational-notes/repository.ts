@@ -11,6 +11,7 @@ import type {
   RestoreOperationalNoteInput,
   UpdateOperationalNoteInput,
 } from "@/features/operational-notes/schemas"
+import { DomainError } from "@/lib/domain-errors"
 import type { ProjectStatus } from "@/types/domain"
 
 export type OperationalNote = {
@@ -384,7 +385,10 @@ export async function createContainerNote(input: CreateContainerNoteInput) {
   const container = await getContainerRecord(input.containerId)
 
   if (!container || container.archived) {
-    throw new Error("Container not available.")
+    throw new DomainError(
+      container ? "archived_context" : "not_found",
+      "Container not available."
+    )
   }
 
   const [note] = await database
@@ -415,7 +419,10 @@ export async function createProjectNote(input: CreateProjectNoteInput) {
   const project = await getProjectRecord(input.projectId)
 
   if (!project || project.containerArchived || project.status === "paused") {
-    throw new Error("Project not available.")
+    throw new DomainError(
+      !project ? "not_found" : project.containerArchived ? "archived_context" : "invalid_state",
+      "Project not available."
+    )
   }
 
   const [note] = await database
@@ -446,7 +453,10 @@ export async function createTaskNote(input: CreateTaskNoteInput) {
   const task = await getTaskRecord(input.taskId)
 
   if (!task || task.containerArchived || task.projectStatus === "paused") {
-    throw new Error("Task not available.")
+    throw new DomainError(
+      !task ? "not_found" : task.containerArchived ? "archived_context" : "invalid_state",
+      "Task not available."
+    )
   }
 
   const [note] = await database
@@ -477,19 +487,22 @@ export async function updateOperationalNote(input: UpdateOperationalNoteInput) {
   const existingNote = await getOperationalNoteRecord(input.id)
 
   if (!existingNote || existingNote.archivedAt) {
-    throw new Error("Operational note not found.")
+    throw new DomainError("invalid_state", "Operational note not found.")
   }
 
   if (existingNote.containerId) {
     const container = await getContainerRecord(existingNote.containerId)
 
     if (!container || container.archived) {
-      throw new Error("Container not available.")
+      throw new DomainError(
+        container ? "archived_context" : "not_found",
+        "Container not available."
+      )
     }
   }
 
   if (existingNote.projectStatus === "paused") {
-    throw new Error("Project not available.")
+    throw new DomainError("invalid_state", "Project not available.")
   }
 
   const [updatedNote] = await database
@@ -519,7 +532,7 @@ export async function archiveOperationalNote(input: ArchiveOperationalNoteInput)
   const existingNote = await getOperationalNoteRecord(input.id)
 
   if (!existingNote || existingNote.archivedAt) {
-    throw new Error("Active operational note not found.")
+    throw new DomainError("invalid_state", "Active operational note not found.")
   }
 
   const [archivedNote] = await database
@@ -542,19 +555,22 @@ export async function restoreOperationalNote(input: RestoreOperationalNoteInput)
   const existingNote = await getOperationalNoteRecord(input.id)
 
   if (!existingNote || !existingNote.archivedAt) {
-    throw new Error("Archived operational note not found.")
+    throw new DomainError("invalid_state", "Archived operational note not found.")
   }
 
   if (existingNote.containerId) {
     const container = await getContainerRecord(existingNote.containerId)
 
     if (!container || container.archived) {
-      throw new Error("Container not available.")
+      throw new DomainError(
+        container ? "archived_context" : "not_found",
+        "Container not available."
+      )
     }
   }
 
   if (existingNote.projectStatus === "paused") {
-    throw new Error("Project not available.")
+    throw new DomainError("invalid_state", "Project not available.")
   }
 
   const [restoredNote] = await database
@@ -577,7 +593,7 @@ export async function deleteOperationalNote(input: DeleteOperationalNoteInput) {
   const existingNote = await getOperationalNoteRecord(input.id)
 
   if (!existingNote || !existingNote.archivedAt) {
-    throw new Error("Archived operational note not found.")
+    throw new DomainError("invalid_state", "Archived operational note not found.")
   }
 
   const [deletedNote] = await database
