@@ -8,6 +8,10 @@ import {
 import { SectionHeading } from "@/components/shared/content-patterns"
 import { PageShell } from "@/components/shared/page-shell"
 import { EmptyState } from "@/components/ui/empty-state"
+import { TaskPlanningControls } from "@/features/areas/components/task-planning-controls"
+import { InboxProcessDialog } from "@/features/inbox/components/inbox-process-dialog"
+import { OperationalNoteLifecycleActions } from "@/features/operational-notes/components/operational-note-lifecycle-actions"
+import { ReviewProjectActions } from "@/features/review/components/review-project-actions"
 import type { ReviewSummary } from "@/features/review/repository"
 import { priorityLabels } from "@/types/domain"
 
@@ -79,7 +83,26 @@ function ReviewSection({
   )
 }
 
-export function ReviewView({ summary }: { summary: ReviewSummary }) {
+export function ReviewView({
+  summary,
+  areasWithContainers,
+  projectOptions,
+  databaseReady,
+}: {
+  summary: ReviewSummary
+  areasWithContainers: {
+    id: string
+    name: string
+    containers: { id: string; name: string }[]
+  }[]
+  projectOptions: {
+    id: string
+    title: string
+    containerName: string
+    areaName: string
+  }[]
+  databaseReady: boolean
+}) {
   const fullyHealthy =
     summary.pendingInboxItems.length === 0 &&
     summary.unplannedTasks.length === 0 &&
@@ -135,9 +158,8 @@ export function ReviewView({ summary }: { summary: ReviewSummary }) {
             {summary.pendingInboxItems.length ? (
               <div className="divide-y divide-white/[0.08]">
                 {summary.pendingInboxItems.slice(0, 6).map((item) => (
-                  <Link
+                  <article
                     key={item.id}
-                    href={item.href}
                     className="flex items-start gap-3 py-4 first:pt-0 last:pb-0"
                   >
                     <Inbox className="mt-1 size-4 shrink-0 text-primary/90" />
@@ -146,8 +168,19 @@ export function ReviewView({ summary }: { summary: ReviewSummary }) {
                       <div className="meta-row">
                         <span className="meta-item">Capturada {formatShortDate(item.capturedAt)}</span>
                       </div>
+                      <div className="flex flex-wrap items-center gap-3 pt-1">
+                        <InboxProcessDialog
+                          item={{ id: item.id, content: item.content }}
+                          areasWithContainers={areasWithContainers}
+                          projectOptions={projectOptions}
+                          databaseReady={databaseReady}
+                        />
+                        <Link href={item.href} className="text-sm text-muted-foreground transition hover:text-white">
+                          Abrir Inbox
+                        </Link>
+                      </div>
                     </div>
-                  </Link>
+                  </article>
                 ))}
               </div>
             ) : (
@@ -163,10 +196,9 @@ export function ReviewView({ summary }: { summary: ReviewSummary }) {
             {summary.unplannedTasks.length ? (
               <div className="space-y-3">
                 {summary.unplannedTasks.slice(0, 8).map((task) => (
-                  <Link
+                  <article
                     key={task.id}
-                    href={task.href}
-                    className="block rounded-[22px] border border-white/[0.06] bg-white/[0.02] p-4 transition hover:border-white/[0.08] hover:bg-white/[0.035]"
+                    className="rounded-[22px] border border-white/[0.06] bg-white/[0.02] p-4"
                   >
                     <div className="space-y-1.5">
                       <p className="content-title">{task.title}</p>
@@ -177,8 +209,12 @@ export function ReviewView({ summary }: { summary: ReviewSummary }) {
                         <span className="meta-item">{priorityLabels[task.priority]}</span>
                         <span className="meta-item">Creada {formatShortDate(task.createdAt)}</span>
                       </div>
+                      <TaskPlanningControls taskId={task.id} path="/review" plannedDate={null} />
+                      <Link href={task.href} className="inline-flex text-sm text-muted-foreground transition hover:text-white">
+                        Ir al proyecto
+                      </Link>
                     </div>
-                  </Link>
+                  </article>
                 ))}
               </div>
             ) : (
@@ -194,10 +230,9 @@ export function ReviewView({ summary }: { summary: ReviewSummary }) {
             {summary.backlogProjects.length ? (
               <div className="space-y-3">
                 {summary.backlogProjects.map((project) => (
-                  <Link
+                  <article
                     key={project.id}
-                    href={project.href}
-                    className="block rounded-[22px] border border-white/[0.06] bg-white/[0.02] p-4 transition hover:border-white/[0.08] hover:bg-white/[0.035]"
+                    className="rounded-[22px] border border-white/[0.06] bg-white/[0.02] p-4"
                   >
                     <div className="space-y-1.5">
                       <p className="content-title">{project.title}</p>
@@ -208,8 +243,14 @@ export function ReviewView({ summary }: { summary: ReviewSummary }) {
                         <span className="meta-item">{priorityLabels[project.priority]}</span>
                         <span className="meta-item">{project.taskCount} tareas</span>
                       </div>
+                      <div className="flex flex-wrap items-center gap-3 pt-1">
+                        <ReviewProjectActions projectId={project.id} path="/review" />
+                        <Link href={project.href} className="text-sm text-muted-foreground transition hover:text-white">
+                          Ir al proyecto
+                        </Link>
+                      </div>
                     </div>
-                  </Link>
+                  </article>
                 ))}
               </div>
             ) : (
@@ -225,10 +266,9 @@ export function ReviewView({ summary }: { summary: ReviewSummary }) {
             {summary.staleOperationalNotes.length ? (
               <div className="space-y-3">
                 {summary.staleOperationalNotes.map((note) => (
-                  <Link
+                  <article
                     key={note.id}
-                    href={note.href}
-                    className="block rounded-[22px] border border-white/[0.06] bg-white/[0.02] p-4 transition hover:border-white/[0.08] hover:bg-white/[0.035]"
+                    className="rounded-[22px] border border-white/[0.06] bg-white/[0.02] p-4"
                   >
                     <div className="space-y-1.5">
                       <p className="content-title">{note.title}</p>
@@ -237,8 +277,14 @@ export function ReviewView({ summary }: { summary: ReviewSummary }) {
                         <span className="meta-item">{getNoteContext(note)}</span>
                         <span className="meta-item">Último cambio {formatShortDate(note.updatedAt)}</span>
                       </div>
+                      <div className="flex flex-wrap items-center gap-3 pt-1">
+                        <OperationalNoteLifecycleActions noteId={note.id} path="/review" mode="active" />
+                        <Link href={note.href} className="text-sm text-muted-foreground transition hover:text-white">
+                          Ir al contexto
+                        </Link>
+                      </div>
                     </div>
-                  </Link>
+                  </article>
                 ))}
               </div>
             ) : (
@@ -254,10 +300,9 @@ export function ReviewView({ summary }: { summary: ReviewSummary }) {
             {summary.archivedOperationalNotes.length ? (
               <div className="space-y-3">
                 {summary.archivedOperationalNotes.map((note) => (
-                  <Link
+                  <article
                     key={note.id}
-                    href={note.href}
-                    className="block rounded-[22px] border border-white/[0.06] bg-white/[0.02] p-4 transition hover:border-white/[0.08] hover:bg-white/[0.035]"
+                    className="rounded-[22px] border border-white/[0.06] bg-white/[0.02] p-4"
                   >
                     <div className="space-y-1.5">
                       <p className="content-title">{note.title}</p>
@@ -268,8 +313,14 @@ export function ReviewView({ summary }: { summary: ReviewSummary }) {
                           Archivada {note.archivedAt ? formatShortDate(note.archivedAt) : ""}
                         </span>
                       </div>
+                      <div className="flex flex-wrap items-center gap-3 pt-1">
+                        <OperationalNoteLifecycleActions noteId={note.id} path="/review" mode="archived" />
+                        <Link href={note.href} className="text-sm text-muted-foreground transition hover:text-white">
+                          Ir al contexto
+                        </Link>
+                      </div>
                     </div>
-                  </Link>
+                  </article>
                 ))}
               </div>
             ) : (

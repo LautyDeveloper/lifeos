@@ -137,4 +137,76 @@ test.describe("flujos con base de datos", () => {
     await expect(page.getByText(projectTitle)).toHaveCount(0)
     await expect(page.getByText(taskTitle)).toHaveCount(0)
   })
+
+  test("review permite activar backlog y planificar una tarea sin fecha", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-chromium", "Solo escritorio")
+
+    const uniqueId = Date.now().toString()
+    const projectTitle = `Review backlog ${uniqueId}`
+    const taskTitle = `Review task ${uniqueId}`
+
+    await page.goto("/dev")
+
+    const containerSection = page.locator("section").filter({
+      has: page.getByRole("heading", { name: "Life OS" }),
+    }).first()
+
+    await containerSection.getByRole("button", { name: "Nuevo proyecto" }).click()
+    await containerSection.getByPlaceholder("Nombre del nuevo proyecto...").fill(projectTitle)
+    await containerSection.getByRole("button", { name: "Crear proyecto" }).click()
+
+    const projectDetails = page.locator("details").filter({ hasText: projectTitle }).first()
+    await projectDetails.getByRole("button", { name: "Agregar tarea" }).click()
+    await projectDetails
+      .getByPlaceholder("Nueva tarea dentro de este proyecto...")
+      .fill(taskTitle)
+    await projectDetails.getByRole("button", { name: "Agregar tarea" }).click()
+
+    await page.goto("/review")
+
+    const backlogArticle = page.locator("article").filter({ hasText: projectTitle }).first()
+    await backlogArticle.getByRole("button", { name: "Activar" }).click()
+    await expect(page.getByText("Proyecto devuelto al foco activo.")).toBeVisible()
+
+    const taskArticle = page.locator("article").filter({ hasText: taskTitle }).first()
+    await taskArticle.getByRole("button", { name: "Hoy" }).click()
+    await expect(page.getByText("Tarea sumada a Hoy.")).toBeVisible()
+
+    await page.goto("/today")
+    await expect(page.getByText(taskTitle)).toBeVisible()
+  })
+
+  test("la command surface puede mandar un proyecto visible a parking", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-chromium", "Solo escritorio")
+
+    const uniqueId = Date.now().toString()
+    const projectTitle = `Command parking ${uniqueId}`
+
+    await page.goto("/dev")
+
+    const containerSection = page.locator("section").filter({
+      has: page.getByRole("heading", { name: "Life OS" }),
+    }).first()
+
+    await containerSection.getByRole("button", { name: "Nuevo proyecto" }).click()
+    await containerSection.getByPlaceholder("Nombre del nuevo proyecto...").fill(projectTitle)
+    await containerSection.getByRole("button", { name: "Crear proyecto" }).click()
+
+    await page.keyboard.press("Control+K")
+    await expect(page.getByRole("dialog", { name: "Command surface de Life OS" })).toBeVisible()
+
+    const commandInput = page.getByLabel("Buscar en Life OS")
+    await commandInput.fill(projectTitle)
+
+    const resultArticle = page.locator("article").filter({ hasText: projectTitle }).first()
+    await expect(resultArticle).toBeVisible()
+    await resultArticle.getByRole("button", { name: "Parking" }).click()
+
+    await page.goto("/parking")
+    await expect(page.getByText(projectTitle)).toBeVisible()
+  })
 })

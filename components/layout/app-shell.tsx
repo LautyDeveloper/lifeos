@@ -52,14 +52,31 @@ export function AppShell({
   children,
   databaseReady,
   navigationGroups,
+  areasWithContainers,
+  projectOptions,
 }: {
   children: React.ReactNode
   databaseReady: boolean
   navigationGroups: NavigationGroupData[]
+  areasWithContainers: {
+    id: string
+    name: string
+    containers: { id: string; name: string }[]
+  }[]
+  projectOptions: {
+    id: string
+    title: string
+    containerName: string
+    areaName: string
+  }[]
 }) {
   return (
     <SidebarStateProvider>
-      <CommandSurfaceProvider databaseReady={databaseReady}>
+      <CommandSurfaceProvider
+        databaseReady={databaseReady}
+        areasWithContainers={areasWithContainers}
+        projectOptions={projectOptions}
+      >
         <AppShellFrame navigationGroups={navigationGroups}>
           {children}
         </AppShellFrame>
