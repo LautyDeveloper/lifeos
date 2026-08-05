@@ -71,7 +71,7 @@ function TodayTaskSection({
                     </span>
                   ) : null}
                 </div>
-                <TaskDetailsEditor taskId={task.id} path={path} title={task.title} />
+                <TaskDetailsEditor taskId={task.id} path={path} title={task.title} completed={false} />
                 <TaskPlanningControls
                   key={`${task.id}-${task.plannedDate?.toISOString() ?? "none"}-${path}`}
                   taskId={task.id}

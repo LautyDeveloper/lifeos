@@ -51,6 +51,8 @@ Para conectar PostgreSQL:
 
 ```dotenv
 DATABASE_URL=""
+OPENAI_API_KEY="" # opcional: habilita sugerencias para procesar el inbox
+OPENAI_MODEL="gpt-5.5" # opcional
 ```
 
 Luego se puede preparar una base de desarrollo con:
@@ -76,3 +78,5 @@ pnpm test:e2e           # smoke tests responsive y axe, sin DATABASE_URL
 ```
 
 Los smoke tests arrancan la aplicación con `DATABASE_URL` vacío deliberadamente. Validan el shell, la navegación responsive, el sheet móvil, la persistencia del sidebar y la ausencia de problemas críticos o serios detectados por axe. Los flujos con datos se revisan con el seed local.
+
+Las sugerencias del inbox tienen timeout y reintento acotado. Si OpenAI no está configurado o no responde, el procesamiento manual sigue disponible y la captura no se modifica.

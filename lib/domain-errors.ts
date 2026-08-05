@@ -5,6 +5,8 @@ export type DomainErrorCode =
   | "constraint_violation"
   | "database_unavailable"
   | "service_unavailable"
+  | "service_timeout"
+  | "invalid_service_response"
 
 export class DomainError extends Error {
   constructor(
@@ -18,4 +20,12 @@ export class DomainError extends Error {
 
 export function isDomainError(error: unknown): error is DomainError {
   return error instanceof DomainError
+}
+
+export function getDomainErrorMessage(
+  error: unknown,
+  fallback: string,
+  messages: Partial<Record<DomainErrorCode, string>> = {}
+) {
+  return isDomainError(error) ? messages[error.code] ?? fallback : fallback
 }

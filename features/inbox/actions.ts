@@ -22,7 +22,7 @@ import {
   processInboxToTaskSchema,
   suggestInboxProcessingInputSchema,
 } from "@/features/inbox/schemas"
-import { isDomainError } from "@/lib/domain-errors"
+import { getDomainErrorMessage, isDomainError } from "@/lib/domain-errors"
 
 export async function createInboxItemAction(
   previousState: InboxActionState,
@@ -50,9 +50,9 @@ export async function createInboxItemAction(
   } catch (error) {
     return {
       status: "error",
-      message: isDomainError(error)
-        ? "Configurá DATABASE_URL para empezar a guardar capturas reales."
-        : "No pudimos guardar la captura.",
+      message: getDomainErrorMessage(error, "No pudimos guardar la captura.", {
+        database_unavailable: "Configurá DATABASE_URL para empezar a guardar capturas reales.",
+      }),
       resetKey: previousState.resetKey,
     }
   }
@@ -236,6 +236,20 @@ export async function suggestInboxProcessingAction(input: {
       return {
         status: "error",
         message: "Configurá OPENAI_API_KEY para habilitar sugerencias inteligentes.",
+      }
+    }
+
+    if (isDomainError(error) && error.code === "service_timeout") {
+      return {
+        status: "error",
+        message: "La sugerencia tardó demasiado. Podés reintentar o seguir en manual.",
+      }
+    }
+
+    if (isDomainError(error) && error.code === "invalid_service_response") {
+      return {
+        status: "error",
+        message: "La IA no devolvió una sugerencia válida. Podés reintentar o seguir en manual.",
       }
     }
 

@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull } from "drizzle-orm"
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm"
 
 import { db, getDbOrThrow } from "@/db"
 import {
@@ -6,9 +6,7 @@ import {
   containers,
   inboxItems,
   notes,
-  priorityEnum,
   projects,
-  projectStatusEnum,
   tasks,
 } from "@/db/schema"
 import type {
@@ -18,7 +16,6 @@ import type {
   ProcessInboxToTaskInput,
 } from "@/features/inbox/schemas"
 import { DomainError } from "@/lib/domain-errors"
-import { canCreateTasksInProject } from "@/types/domain"
 
 export async function listActiveInboxItems() {
   if (!db) {
@@ -157,166 +154,71 @@ export async function listProjectOptions() {
 
 export async function processInboxItemToProject(input: ProcessInboxToProjectInput) {
   const database = getDbOrThrow()
+  const result = await database.execute<{ id: string; title: string }>(sql`
+    with claimed as (
+      update ${inboxItems}
+      set processed_at = now()
+      where ${inboxItems.id} = ${input.inboxItemId}
+        and ${inboxItems.processedAt} is null
+        and exists (
+          select 1 from ${containers}
+          where ${containers.id} = ${input.containerId} and ${containers.archived} = false
+        )
+      returning ${inboxItems.id}
+    )
+    insert into ${projects} (container_id, title, description, priority, status)
+    select ${input.containerId}, ${input.title}, ${input.description ?? null}, 'medium', 'backlog' from claimed
+    returning id, title
+  `)
 
-  return database.transaction(async (tx) => {
-    const [item] = await tx
-      .select({
-        id: inboxItems.id,
-      })
-      .from(inboxItems)
-      .where(and(eq(inboxItems.id, input.inboxItemId), isNull(inboxItems.processedAt)))
-      .limit(1)
-
-    if (!item) {
-      throw new DomainError("not_found", "Inbox item not available.")
-    }
-
-    const [container] = await tx
-      .select({
-        id: containers.id,
-        archived: containers.archived,
-      })
-      .from(containers)
-      .where(eq(containers.id, input.containerId))
-      .limit(1)
-
-    if (!container) {
-      throw new DomainError("not_found", "Container not found.")
-    }
-
-    if (container.archived) {
-      throw new DomainError("archived_context", "Container archived.")
-    }
-
-    const [project] = await tx
-      .insert(projects)
-      .values({
-        containerId: input.containerId,
-        title: input.title,
-        description: input.description,
-        priority: "medium" satisfies (typeof priorityEnum.enumValues)[number],
-        status: "backlog" satisfies (typeof projectStatusEnum.enumValues)[number],
-      })
-      .returning({
-        id: projects.id,
-        title: projects.title,
-      })
-
-    await tx
-      .update(inboxItems)
-      .set({
-        processedAt: new Date(),
-      })
-      .where(eq(inboxItems.id, input.inboxItemId))
-
-    return project
-  })
+  const project = result.rows[0]
+  if (!project) throw new DomainError("not_found", "Inbox item or container not available.")
+  return project
 }
 
 export async function processInboxItemToTask(input: ProcessInboxToTaskInput) {
   const database = getDbOrThrow()
+  const result = await database.execute<{ id: string; title: string }>(sql`
+    with claimed as (
+      update ${inboxItems}
+      set processed_at = now()
+      where ${inboxItems.id} = ${input.inboxItemId}
+        and ${inboxItems.processedAt} is null
+        and exists (
+          select 1 from ${projects}
+          inner join ${containers} on ${containers.id} = ${projects.containerId}
+          where ${projects.id} = ${input.projectId}
+            and ${projects.archivedAt} is null
+            and ${projects.status} in ('active', 'backlog')
+            and ${containers.archived} = false
+        )
+      returning ${inboxItems.id}
+    )
+    insert into ${tasks} (project_id, title, priority)
+    select ${input.projectId}, ${input.title}, 'medium' from claimed
+    returning id, title
+  `)
 
-  return database.transaction(async (tx) => {
-    const [item] = await tx
-      .select({
-        id: inboxItems.id,
-      })
-      .from(inboxItems)
-      .where(and(eq(inboxItems.id, input.inboxItemId), isNull(inboxItems.processedAt)))
-      .limit(1)
-
-    if (!item) {
-      throw new DomainError("not_found", "Inbox item not available.")
-    }
-
-    const [project] = await tx
-      .select({
-        id: projects.id,
-        status: projects.status,
-        archivedAt: projects.archivedAt,
-        containerArchived: containers.archived,
-      })
-      .from(projects)
-      .innerJoin(containers, eq(containers.id, projects.containerId))
-      .where(eq(projects.id, input.projectId))
-      .limit(1)
-
-    if (!project) {
-      throw new DomainError("not_found", "Project not found.")
-    }
-
-    if (project.containerArchived) {
-      throw new DomainError("archived_context", "Container archived.")
-    }
-
-    if (project.archivedAt) {
-      throw new DomainError("archived_context", "Project archived.")
-    }
-
-    if (!canCreateTasksInProject(project.status)) {
-      throw new DomainError("invalid_state", "Project does not allow new tasks.")
-    }
-
-    const [task] = await tx
-      .insert(tasks)
-      .values({
-        projectId: input.projectId,
-        title: input.title,
-        priority: "medium" satisfies (typeof priorityEnum.enumValues)[number],
-      })
-      .returning({
-        id: tasks.id,
-        title: tasks.title,
-      })
-
-    await tx
-      .update(inboxItems)
-      .set({
-        processedAt: new Date(),
-      })
-      .where(eq(inboxItems.id, input.inboxItemId))
-
-    return task
-  })
+  const task = result.rows[0]
+  if (!task) throw new DomainError("not_found", "Inbox item or project not available.")
+  return task
 }
 
 export async function processInboxItemToNote(input: ProcessInboxToNoteInput) {
   const database = getDbOrThrow()
+  const result = await database.execute<{ id: string; title: string }>(sql`
+    with claimed as (
+      update ${inboxItems}
+      set processed_at = now()
+      where ${inboxItems.id} = ${input.inboxItemId} and ${inboxItems.processedAt} is null
+      returning ${inboxItems.id}
+    )
+    insert into ${notes} (title, content)
+    select ${input.title}, ${input.content} from claimed
+    returning id, title
+  `)
 
-  return database.transaction(async (tx) => {
-    const [item] = await tx
-      .select({
-        id: inboxItems.id,
-      })
-      .from(inboxItems)
-      .where(and(eq(inboxItems.id, input.inboxItemId), isNull(inboxItems.processedAt)))
-      .limit(1)
-
-    if (!item) {
-      throw new DomainError("not_found", "Inbox item not available.")
-    }
-
-    const [note] = await tx
-      .insert(notes)
-      .values({
-        title: input.title,
-        content: input.content,
-        containerId: null,
-        projectId: null,
-        taskId: null,
-      })
-      .returning({
-        id: notes.id,
-        title: notes.title,
-      })
-
-    await tx
-      .update(inboxItems)
-      .set({
-        processedAt: new Date(),
-      })
-      .where(eq(inboxItems.id, input.inboxItemId))
-
-    return note
-  })
+  const note = result.rows[0]
+  if (!note) throw new DomainError("not_found", "Inbox item not available.")
+  return note
 }
