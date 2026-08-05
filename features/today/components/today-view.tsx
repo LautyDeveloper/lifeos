@@ -14,6 +14,13 @@ const overdueDateFormatter = new Intl.DateTimeFormat("es-AR", {
   month: "short",
 })
 
+const todayDescriptionFormatter = new Intl.DateTimeFormat("es-AR", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+})
+
 function TodayTaskSection({
   title,
   description,
@@ -101,6 +108,7 @@ export function TodayView({
   const percent = board.progress.total
     ? Math.round((board.progress.completed / board.progress.total) * 100)
     : 0
+  const todayLabel = todayDescriptionFormatter.format(new Date())
 
   return (
     <PageShell eyebrow="Hoy" title="Hacé espacio para lo importante." description="Solo aparece lo que ya elegiste para esta jornada.">
@@ -108,7 +116,7 @@ export function TodayView({
         <div className="space-y-6">
           <TodayTaskSection
             title="Para hoy"
-            description="Lo que ya decidiste ejecutar este martes 4 de agosto de 2026."
+            description={`Lo que ya decidiste ejecutar este ${todayLabel}.`}
             tasks={board.todayTasks}
             path="/today"
             empty={

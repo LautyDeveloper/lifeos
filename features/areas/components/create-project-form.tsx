@@ -8,12 +8,16 @@ import { createProjectAction } from "@/features/areas/actions"
 import { InboxSubmitButton } from "@/features/inbox/components/inbox-submit-button"
 import { cn } from "@/lib/utils"
 
-export function CreateProjectForm({
+function CreateProjectFormSession({
   containerId,
   path,
+  onSuccess,
+  onCancel,
 }: {
   containerId: string
   path: string
+  onSuccess: (message?: string) => void
+  onCancel: () => void
 }) {
   const [state, formAction] = useActionState(
     createProjectAction,
@@ -21,7 +25,6 @@ export function CreateProjectForm({
   )
   const formRef = useRef<HTMLFormElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const [open, setOpen] = useState(false)
 
   useEffect(() => {
     if (state.status !== "success") {
@@ -29,31 +32,14 @@ export function CreateProjectForm({
     }
 
     formRef.current?.reset()
-    const timer = window.setTimeout(() => setOpen(false), 0)
+    const timer = window.setTimeout(() => onSuccess(state.message), 0)
     return () => window.clearTimeout(timer)
-  }, [state.resetKey, state.status])
+  }, [onSuccess, state.message, state.resetKey, state.status])
 
   useEffect(() => {
-    if (!open) {
-      return
-    }
-
     const timer = window.setTimeout(() => inputRef.current?.focus(), 40)
     return () => window.clearTimeout(timer)
-  }, [open])
-
-  if (!open && state.status !== "error") {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex min-h-11 items-center gap-2 rounded-[18px] border border-transparent px-3 text-sm font-medium text-primary transition hover:bg-white/[0.03]"
-      >
-        <FolderPlus className="size-4" />
-        Nuevo proyecto
-      </button>
-    )
-  }
+  }, [])
 
   return (
     <form
@@ -77,7 +63,7 @@ export function CreateProjectForm({
         <InboxSubmitButton label="Crear proyecto" pendingLabel="Guardando..." />
         <button
           type="button"
-          onClick={() => setOpen(false)}
+          onClick={onCancel}
           className="inline-flex size-11 items-center justify-center rounded-[18px] text-muted-foreground transition hover:bg-white/[0.03] hover:text-white"
           aria-label="Cancelar nuevo proyecto"
         >
@@ -104,5 +90,60 @@ export function CreateProjectForm({
         )}
       </div>
     </form>
+  )
+}
+
+export function CreateProjectForm({
+  containerId,
+  path,
+}: {
+  containerId: string
+  path: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [sessionKey, setSessionKey] = useState(0)
+  const [feedback, setFeedback] = useState<string>()
+  const triggerRef = useRef<HTMLButtonElement>(null)
+
+  const closeSession = () => {
+    setOpen(false)
+    setSessionKey((current) => current + 1)
+    window.requestAnimationFrame(() => triggerRef.current?.focus())
+  }
+
+  return (
+    <div className="space-y-3">
+      {!open ? (
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={() => {
+            setFeedback(undefined)
+            setOpen(true)
+          }}
+          className="inline-flex min-h-11 items-center gap-2 rounded-[18px] border border-transparent px-3 text-sm font-medium text-primary transition hover:bg-white/[0.03]"
+        >
+          <FolderPlus className="size-4" />
+          Nuevo proyecto
+        </button>
+      ) : (
+        <CreateProjectFormSession
+          key={sessionKey}
+          containerId={containerId}
+          path={path}
+          onCancel={closeSession}
+          onSuccess={(message) => {
+            setFeedback(message ?? "Proyecto creado en Backlog.")
+            closeSession()
+          }}
+        />
+      )}
+
+      {!open && feedback ? (
+        <p className="min-h-5 text-sm text-primary/90" aria-live="polite">
+          {feedback}
+        </p>
+      ) : null}
+    </div>
   )
 }
