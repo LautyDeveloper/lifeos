@@ -52,6 +52,18 @@ export function canPlanTasksInProject(status: ProjectStatus) {
   return status === "active"
 }
 
+export function canMutateTasksInProject(status: ProjectStatus) {
+  return status === "active" || status === "backlog"
+}
+
+export function canEditTask(status: ProjectStatus, completed: boolean) {
+  return canMutateTasksInProject(status) && !completed
+}
+
+export function canPlanTask(status: ProjectStatus, completed: boolean) {
+  return canPlanTasksInProject(status) && !completed
+}
+
 export function isProjectVisibleInArea(status: ProjectStatus) {
   return status !== "paused"
 }

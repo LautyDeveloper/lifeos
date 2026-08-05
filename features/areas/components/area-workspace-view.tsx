@@ -119,7 +119,7 @@ function ProjectSection({
           />
           <div className="flex flex-wrap items-center gap-2">
             <PauseProjectForm projectId={project.id} path={path} />
-            <ProjectArchiveActions projectId={project.id} path={path} />
+            {canCreateTasks ? <ProjectArchiveActions projectId={project.id} path={path} /> : null}
           </div>
         </div>
 
@@ -129,7 +129,7 @@ function ProjectSection({
           <div className="divide-y divide-white/[0.08]">
             {visibleTasks.map((task) => (
               <article key={task.id} className="flex items-start gap-3 py-4">
-                <TaskToggleForm taskId={task.id} completed={task.completed} path={path} />
+                <TaskToggleForm taskId={task.id} completed={task.completed} path={path} disabled={!canCreateTasks} />
                 <div className="min-w-0 flex-1 space-y-2 pt-0.5">
                   <p
                     className={cn(
@@ -152,13 +152,17 @@ function ProjectSection({
                       </span>
                     ) : null}
                   </div>
-                  <TaskDetailsEditor taskId={task.id} path={path} title={task.title} />
-                  <TaskPriorityForm
-                    key={`${task.id}-${task.priority}`}
-                    taskId={task.id}
-                    path={path}
-                    priority={task.priority}
-                  />
+                  {canCreateTasks ? (
+                    <TaskDetailsEditor taskId={task.id} path={path} title={task.title} completed={task.completed} />
+                  ) : null}
+                  {!task.completed && canCreateTasks ? (
+                    <TaskPriorityForm
+                      key={`${task.id}-${task.priority}`}
+                      taskId={task.id}
+                      path={path}
+                      priority={task.priority}
+                    />
+                  ) : null}
                   {!task.completed && canPlanTasks ? (
                     <TaskPlanningControls
                       key={`${task.id}-${task.plannedDate?.toISOString() ?? "none"}`}

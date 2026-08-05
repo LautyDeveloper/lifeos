@@ -25,7 +25,7 @@ import {
   restoreOperationalNoteSchema,
   updateOperationalNoteSchema,
 } from "@/features/operational-notes/schemas"
-import { isDomainError } from "@/lib/domain-errors"
+import { getDomainErrorMessage } from "@/lib/domain-errors"
 
 function getOperationalNoteErrorMessage(
   error: unknown,
@@ -36,23 +36,11 @@ function getOperationalNoteErrorMessage(
     archivedContext?: string
   }
 ) {
-  if (!isDomainError(error)) {
-    return fallback
-  }
-
-  if (error.code === "not_found") {
-    return options?.notFound ?? fallback
-  }
-
-  if (error.code === "archived_context") {
-    return options?.archivedContext ?? fallback
-  }
-
-  if (error.code === "invalid_state") {
-    return options?.invalidState ?? fallback
-  }
-
-  return fallback
+  return getDomainErrorMessage(error, fallback, {
+    not_found: options?.notFound ?? fallback,
+    archived_context: options?.archivedContext ?? fallback,
+    invalid_state: options?.invalidState ?? fallback,
+  })
 }
 
 function revalidateOperationalNotesPath(path: string) {

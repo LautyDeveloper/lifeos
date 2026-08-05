@@ -26,7 +26,7 @@ import {
   updateAreaDetailsSchema,
   updateContainerDetailsSchema,
 } from "@/features/settings/schemas"
-import { isDomainError } from "@/lib/domain-errors"
+import { getDomainErrorMessage } from "@/lib/domain-errors"
 
 function revalidateSetupPaths() {
   revalidatePath("/settings")
@@ -45,15 +45,9 @@ function getSettingsErrorMessage(
   fallback: string,
   options?: { notFound?: string }
 ) {
-  if (!isDomainError(error)) {
-    return fallback
-  }
-
-  if (error.code === "not_found") {
-    return options?.notFound ?? fallback
-  }
-
-  return fallback
+  return getDomainErrorMessage(error, fallback, {
+    not_found: options?.notFound ?? fallback,
+  })
 }
 
 export async function updateAreaDetailsAction(

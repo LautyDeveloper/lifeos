@@ -9,6 +9,7 @@ import { ProjectPriorityForm } from "@/features/areas/components/project-priorit
 import { ProjectStatusForm } from "@/features/areas/components/project-status-form"
 import type { Priority, VisibleAreaProjectStatus } from "@/types/domain"
 import { Button } from "@/components/ui/button"
+import { useToast } from "@/components/ui/toast-provider"
 import { cn } from "@/lib/utils"
 
 export function ProjectDetailsEditor({
@@ -26,12 +27,14 @@ export function ProjectDetailsEditor({
   status: VisibleAreaProjectStatus
   priority: Priority
 }) {
+  const projectLocked = status === "done"
   const [open, setOpen] = useState(false)
   const [state, formAction] = useActionState(
     updateProjectDetailsAction,
     initialUpdateProjectDetailsActionState
   )
   const titleRef = useRef<HTMLInputElement>(null)
+  const { notify } = useToast()
 
   useEffect(() => {
     if (!open) {
@@ -42,6 +45,13 @@ export function ProjectDetailsEditor({
     return () => window.clearTimeout(timer)
   }, [open])
 
+  useEffect(() => {
+    if (state.status !== "success") return
+    notify({ message: state.message ?? "Proyecto actualizado.", tone: "success" })
+    const frame = window.requestAnimationFrame(() => setOpen(false))
+    return () => window.cancelAnimationFrame(frame)
+  }, [notify, state.message, state.status])
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -51,7 +61,7 @@ export function ProjectDetailsEditor({
           className="inline-flex min-h-9 items-center gap-2 rounded-[16px] border border-white/[0.07] bg-white/[0.02] px-3 text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition hover:bg-white/[0.03] hover:text-white"
         >
           <PencilLine className="size-3.5" />
-          {open ? "Cerrar edición" : "Editar"}
+          {open ? "Cerrar" : projectLocked ? "Cambiar estado" : "Editar"}
         </button>
 
         {open ? (
@@ -62,17 +72,19 @@ export function ProjectDetailsEditor({
               path={path}
               status={status}
             />
-            <ProjectPriorityForm
-              key={`${projectId}-${priority}`}
-              projectId={projectId}
-              path={path}
-              priority={priority}
-            />
+            {!projectLocked ? (
+              <ProjectPriorityForm
+                key={`${projectId}-${priority}`}
+                projectId={projectId}
+                path={path}
+                priority={priority}
+              />
+            ) : null}
           </>
         ) : null}
       </div>
 
-      {open ? (
+      {open && !projectLocked ? (
         <form
           action={formAction}
           className="surface-2 space-y-4 rounded-[22px] border p-4"

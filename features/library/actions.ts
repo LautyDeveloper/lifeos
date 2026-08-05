@@ -20,7 +20,7 @@ import {
   restoreLibraryNoteSchema,
   updateLibraryNoteSchema,
 } from "@/features/library/schemas"
-import { isDomainError } from "@/lib/domain-errors"
+import { getDomainErrorMessage } from "@/lib/domain-errors"
 import type { ActionResult } from "@/types/action-result"
 
 function getLibraryErrorMessage(
@@ -31,19 +31,10 @@ function getLibraryErrorMessage(
     invalidState?: string
   }
 ) {
-  if (!isDomainError(error)) {
-    return fallback
-  }
-
-  if (error.code === "not_found") {
-    return options?.notFound ?? fallback
-  }
-
-  if (error.code === "invalid_state") {
-    return options?.invalidState ?? fallback
-  }
-
-  return fallback
+  return getDomainErrorMessage(error, fallback, {
+    not_found: options?.notFound ?? fallback,
+    invalid_state: options?.invalidState ?? fallback,
+  })
 }
 
 export async function createLibraryNoteAction(

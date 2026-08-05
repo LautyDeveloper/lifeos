@@ -495,13 +495,16 @@ export function InboxProcessDialog({
   } | null>(null)
   const [pendingSuggestion, startSuggestion] = useTransition()
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const suggestionRequestIdRef = useRef(0)
 
   const closeDialog = () => {
+    suggestionRequestIdRef.current += 1
     setSession(null)
     window.requestAnimationFrame(() => triggerRef.current?.focus())
   }
 
   const openManual = () => {
+    suggestionRequestIdRef.current += 1
     setSuggestionMessage(null)
     setSession({ id: Date.now() })
   }
@@ -512,9 +515,15 @@ export function InboxProcessDialog({
     }
 
     setSuggestionMessage(null)
+    const requestId = suggestionRequestIdRef.current + 1
+    suggestionRequestIdRef.current = requestId
 
     startSuggestion(async () => {
       const result = await suggestInboxProcessingAction({ content: item.content })
+
+      if (suggestionRequestIdRef.current !== requestId) {
+        return
+      }
 
       if (result.status === "error" || !result.suggestion) {
         setSuggestionMessage({

@@ -45,7 +45,7 @@ import {
   updateProjectStatusSchema,
   updateTaskPrioritySchema,
 } from "@/features/areas/schemas"
-import { isDomainError } from "@/lib/domain-errors"
+import { getDomainErrorMessage } from "@/lib/domain-errors"
 
 function revalidateOperationalPaths(path: string, options?: { parking?: boolean }) {
   if (path) {
@@ -71,27 +71,12 @@ function getAreaActionErrorMessage(
     constraintViolation?: string
   }
 ) {
-  if (!isDomainError(error)) {
-    return fallback
-  }
-
-  if (error.code === "not_found") {
-    return options?.notFound ?? fallback
-  }
-
-  if (error.code === "archived_context") {
-    return options?.archivedContext ?? fallback
-  }
-
-  if (error.code === "constraint_violation") {
-    return options?.constraintViolation ?? fallback
-  }
-
-  if (error.code === "invalid_state") {
-    return options?.invalidState ?? fallback
-  }
-
-  return fallback
+  return getDomainErrorMessage(error, fallback, {
+    not_found: options?.notFound ?? fallback,
+    archived_context: options?.archivedContext ?? fallback,
+    constraint_violation: options?.constraintViolation ?? fallback,
+    invalid_state: options?.invalidState ?? fallback,
+  })
 }
 
 export async function createTaskAction(
