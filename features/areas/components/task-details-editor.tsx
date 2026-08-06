@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/toast-provider"
 import { initialUpdateTaskDetailsActionState } from "@/features/areas/action-state"
 import { deleteTaskAction, updateTaskDetailsAction } from "@/features/areas/actions"
 import { cn } from "@/lib/utils"
+import { useDemoMode } from "@/components/demo/demo-mode-provider"
 
 export function TaskDetailsEditor({
   taskId,
@@ -28,6 +29,7 @@ export function TaskDetailsEditor({
   )
   const titleRef = useRef<HTMLInputElement>(null)
   const { notify } = useToast()
+  const { readOnly } = useDemoMode()
 
   useEffect(() => {
     if (!open) {
@@ -44,6 +46,10 @@ export function TaskDetailsEditor({
     const frame = window.requestAnimationFrame(() => setOpen(false))
     return () => window.cancelAnimationFrame(frame)
   }, [notify, state.message, state.status])
+
+  if (readOnly) {
+    return null
+  }
 
   return (
     <div className="space-y-3">

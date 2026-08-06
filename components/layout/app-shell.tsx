@@ -10,6 +10,7 @@ import {
 } from "@/components/layout/sidebar-state-provider"
 import { CommandSurfaceProvider } from "@/features/command/components/command-surface-provider"
 import type { NavigationGroupData } from "@/types/navigation"
+import { useDemoMode } from "@/components/demo/demo-mode-provider"
 
 function AppShellFrame({
   children,
@@ -18,6 +19,7 @@ function AppShellFrame({
   children: React.ReactNode
   navigationGroups: NavigationGroupData[]
 }) {
+  const { readOnly } = useDemoMode()
   const {
     collapsed,
     mobileOpen,
@@ -37,6 +39,11 @@ function AppShellFrame({
         </div>
 
         <div className="relative flex min-w-0 flex-1 flex-col">
+          {readOnly ? (
+            <div className="border-b border-primary/15 bg-primary/[0.07] px-4 py-2 text-center text-xs font-medium text-primary/90">
+              Demo pública · solo lectura
+            </div>
+          ) : null}
           <AppTopbar navigationGroups={navigationGroups} />
           <main className="flex-1 px-3 py-6 pb-28 sm:px-4 md:pb-8 xl:px-7 xl:py-10">{children}</main>
         </div>

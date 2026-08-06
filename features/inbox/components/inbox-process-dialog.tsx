@@ -14,6 +14,7 @@ import { InboxSubmitButton } from "@/features/inbox/components/inbox-submit-butt
 import type { SuggestInboxProcessingResult } from "@/features/inbox-ai/schemas"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/toast-provider"
+import { useDemoMode } from "@/components/demo/demo-mode-provider"
 
 type AreaWithContainers = {
   id: string
@@ -488,6 +489,7 @@ export function InboxProcessDialog({
   databaseReady,
   aiEnabled,
 }: InboxProcessDialogProps) {
+  const { readOnly } = useDemoMode()
   const [session, setSession] = useState<DialogSessionState | null>(null)
   const [suggestionMessage, setSuggestionMessage] = useState<{
     tone: "error" | "success" | "muted"
@@ -510,7 +512,7 @@ export function InboxProcessDialog({
   }
 
   const requestSuggestion = () => {
-    if (!aiEnabled || !databaseReady) {
+    if (!aiEnabled || !databaseReady || readOnly) {
       return
     }
 
@@ -550,7 +552,7 @@ export function InboxProcessDialog({
         <div className="flex flex-wrap justify-end gap-2">
           <button
             type="button"
-            disabled={!databaseReady || !aiEnabled || pendingSuggestion}
+            disabled={!databaseReady || !aiEnabled || pendingSuggestion || readOnly}
             onClick={requestSuggestion}
             className="inline-flex min-h-11 items-center gap-2 rounded-[18px] border border-primary/14 bg-primary/[0.06] px-3 text-xs font-medium text-primary/90 transition hover:bg-primary/[0.1] disabled:cursor-not-allowed disabled:opacity-50"
             title={
@@ -566,7 +568,7 @@ export function InboxProcessDialog({
           <button
             ref={triggerRef}
             type="button"
-            disabled={!databaseReady}
+            disabled={!databaseReady || readOnly}
             onClick={openManual}
             className="inline-flex min-h-11 items-center gap-2 rounded-[18px] border border-white/[0.07] bg-white/[0.03] px-3 text-xs font-medium text-white transition hover:bg-white/[0.05] disabled:cursor-not-allowed disabled:opacity-60"
           >
@@ -591,9 +593,11 @@ export function InboxProcessDialog({
           {pendingSuggestion
             ? "Analizando captura..."
             : suggestionMessage?.message ??
-              (!aiEnabled
-                ? "Configurá OPENAI_API_KEY para habilitar sugerencias inteligentes."
-                : "")}
+              (readOnly
+                ? "Las acciones están deshabilitadas en la demo pública."
+                : !aiEnabled
+                  ? "Configurá OPENAI_API_KEY para habilitar sugerencias inteligentes."
+                  : "")}
         </p>
       </div>
 

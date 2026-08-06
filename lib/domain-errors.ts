@@ -7,6 +7,7 @@ export type DomainErrorCode =
   | "service_unavailable"
   | "service_timeout"
   | "invalid_service_response"
+  | "read_only"
 
 export class DomainError extends Error {
   constructor(
@@ -27,5 +28,9 @@ export function getDomainErrorMessage(
   fallback: string,
   messages: Partial<Record<DomainErrorCode, string>> = {}
 ) {
+  if (isDomainError(error) && error.code === "read_only") {
+    return "Esta demo pública es de solo lectura. Probá el recorrido completo en la demo local."
+  }
+
   return isDomainError(error) ? messages[error.code] ?? fallback : fallback
 }

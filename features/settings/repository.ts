@@ -12,6 +12,7 @@ import type {
   UpdateContainerDetailsInput,
 } from "@/features/settings/schemas"
 import { DomainError } from "@/lib/domain-errors"
+import { assertDemoWritable } from "@/lib/demo-mode"
 
 export type SystemSetup = {
   areas: Array<{
@@ -157,6 +158,7 @@ export async function getSystemSetup(): Promise<SystemSetup | null> {
 }
 
 export async function updateAreaDetails(input: UpdateAreaDetailsInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const area = await getAreaRecord(input.areaId)
 
@@ -181,6 +183,7 @@ export async function updateAreaDetails(input: UpdateAreaDetailsInput) {
 }
 
 export async function moveArea(input: MoveAreaInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const siblings = await database
     .select({
@@ -221,6 +224,7 @@ export async function moveArea(input: MoveAreaInput) {
 }
 
 export async function createContainer(input: CreateContainerInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const area = await getAreaRecord(input.areaId)
 
@@ -253,6 +257,7 @@ export async function createContainer(input: CreateContainerInput) {
 }
 
 export async function updateContainerDetails(input: UpdateContainerDetailsInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const container = await getContainerRecord(input.containerId)
 
@@ -276,6 +281,7 @@ export async function updateContainerDetails(input: UpdateContainerDetailsInput)
 }
 
 export async function archiveContainer(input: ArchiveContainerInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const container = await getContainerRecord(input.containerId)
 
@@ -298,6 +304,7 @@ export async function archiveContainer(input: ArchiveContainerInput) {
 }
 
 export async function restoreContainer(input: RestoreContainerInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const container = await getContainerRecord(input.containerId)
 
@@ -320,6 +327,7 @@ export async function restoreContainer(input: RestoreContainerInput) {
 }
 
 export async function moveContainer(input: MoveContainerInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const container = await getContainerRecord(input.containerId)
 

@@ -8,6 +8,7 @@ import { TaskToggleForm } from "@/features/areas/components/task-toggle-form"
 import type { TodayTask } from "@/features/today/repository"
 import { EmptyState } from "@/components/ui/empty-state"
 import { priorityLabels } from "@/types/domain"
+import { formatTodayExecutionDescription } from "@/lib/dates"
 
 const overdueDateFormatter = new Intl.DateTimeFormat("es-AR", {
   day: "2-digit",
@@ -108,7 +109,7 @@ export function TodayView({
         <div className="space-y-6">
           <TodayTaskSection
             title="Para hoy"
-            description="Lo que ya decidiste ejecutar este martes 4 de agosto de 2026."
+            description={formatTodayExecutionDescription()}
             tasks={board.todayTasks}
             path="/today"
             empty={

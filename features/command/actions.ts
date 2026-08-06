@@ -7,7 +7,8 @@ import { createInboxItemSchema } from "@/features/inbox/schemas"
 import { createLibraryNote } from "@/features/library/repository"
 import { createLibraryNoteSchema } from "@/features/library/schemas"
 import { searchCommandSurface } from "@/features/command/repository"
-import { isDomainError } from "@/lib/domain-errors"
+import { getDomainErrorMessage } from "@/lib/domain-errors"
+import { assertDemoWritable } from "@/lib/demo-mode"
 import type {
   QuickCaptureActionState,
   QuickLibraryNoteActionState,
@@ -39,6 +40,7 @@ export async function quickCaptureAction(
   }
 
   try {
+    assertDemoWritable()
     await createInboxItem(parsed.data)
     revalidatePath("/")
     revalidatePath("/inbox")
@@ -54,9 +56,9 @@ export async function quickCaptureAction(
 
     return {
       status: "error",
-      message: isDomainError(error)
-        ? "Configurá DATABASE_URL para usar la captura global."
-        : "No pudimos guardar la captura.",
+      message: getDomainErrorMessage(error, "No pudimos guardar la captura.", {
+        database_unavailable: "Configurá DATABASE_URL para usar la captura global.",
+      }),
       resetKey: previousState.resetKey,
     }
   }
@@ -86,6 +88,7 @@ export async function quickCreateLibraryNoteAction(
   }
 
   try {
+    assertDemoWritable()
     const note = await createLibraryNote(parsed.data)
     revalidatePath("/")
     revalidatePath("/library")
@@ -101,9 +104,9 @@ export async function quickCreateLibraryNoteAction(
 
     return {
       status: "error",
-      message: isDomainError(error)
-        ? "Configurá DATABASE_URL para guardar notas desde la command surface."
-        : "No pudimos guardar la nota.",
+      message: getDomainErrorMessage(error, "No pudimos guardar la nota.", {
+        database_unavailable: "Configurá DATABASE_URL para guardar notas desde la command surface.",
+      }),
       resetKey: previousState.resetKey,
     }
   }

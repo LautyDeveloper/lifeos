@@ -8,6 +8,7 @@ import {
 } from "@/features/inbox/actions"
 import { InboxSubmitButton } from "@/features/inbox/components/inbox-submit-button"
 import { cn } from "@/lib/utils"
+import { useDemoMode } from "@/components/demo/demo-mode-provider"
 
 export function InboxForm({
   databaseReady,
@@ -18,6 +19,7 @@ export function InboxForm({
   compact?: boolean
   onSuccess?: () => void
 }) {
+  const { readOnly } = useDemoMode()
   const [state, formAction] = useActionState(
     createInboxItemAction,
     initialInboxActionState
@@ -63,10 +65,11 @@ export function InboxForm({
             ref={textareaRef}
             name="content"
             rows={compact ? 3 : 4}
-            disabled={!databaseReady}
+            disabled={!databaseReady || readOnly}
             placeholder="Ej: pensar el flujo para procesar ideas del inbox..."
             className={cn(
-              "field-base min-h-36 w-full resize-none rounded-[24px] px-4 py-4 text-sm leading-7",
+              "field-base w-full resize-none rounded-[24px] px-4 py-4 text-sm leading-7",
+              compact ? "min-h-28" : "min-h-36",
               "disabled:cursor-not-allowed disabled:opacity-60",
               state.fieldErrors?.content ? "border-destructive/50" : "border-white/8"
             )}
@@ -91,14 +94,16 @@ export function InboxForm({
                   {state.message}
                 </p>
               ) : null}
-              {!databaseReady ? (
+              {readOnly ? (
+                <p className="text-sm text-muted-foreground">La captura está deshabilitada en la demo pública.</p>
+              ) : !databaseReady ? (
                 <p className="text-sm text-muted-foreground">
                   Configurá <code>DATABASE_URL</code> para persistir capturas reales.
                 </p>
               ) : null}
             </div>
 
-            <InboxSubmitButton />
+            <InboxSubmitButton disabled={readOnly} />
           </div>
         </div>
       </div>
