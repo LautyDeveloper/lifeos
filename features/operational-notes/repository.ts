@@ -12,6 +12,7 @@ import type {
   UpdateOperationalNoteInput,
 } from "@/features/operational-notes/schemas"
 import { DomainError } from "@/lib/domain-errors"
+import { assertDemoWritable } from "@/lib/demo-mode"
 import type { ProjectStatus } from "@/types/domain"
 
 export type OperationalNote = {
@@ -394,6 +395,7 @@ export async function getOperationalNoteById(id: string): Promise<OperationalNot
 }
 
 export async function createContainerNote(input: CreateContainerNoteInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const container = await getContainerRecord(input.containerId)
 
@@ -428,6 +430,7 @@ export async function createContainerNote(input: CreateContainerNoteInput) {
 }
 
 export async function createProjectNote(input: CreateProjectNoteInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const project = await getProjectRecord(input.projectId)
 
@@ -466,6 +469,7 @@ export async function createProjectNote(input: CreateProjectNoteInput) {
 }
 
 export async function createTaskNote(input: CreateTaskNoteInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const task = await getTaskRecord(input.taskId)
 
@@ -504,6 +508,7 @@ export async function createTaskNote(input: CreateTaskNoteInput) {
 }
 
 export async function updateOperationalNote(input: UpdateOperationalNoteInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const existingNote = await getOperationalNoteRecord(input.id)
 
@@ -553,6 +558,7 @@ export async function updateOperationalNote(input: UpdateOperationalNoteInput) {
 }
 
 export async function archiveOperationalNote(input: ArchiveOperationalNoteInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const existingNote = await getOperationalNoteRecord(input.id)
 
@@ -576,6 +582,7 @@ export async function archiveOperationalNote(input: ArchiveOperationalNoteInput)
 }
 
 export async function restoreOperationalNote(input: RestoreOperationalNoteInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const existingNote = await getOperationalNoteRecord(input.id)
 
@@ -618,6 +625,7 @@ export async function restoreOperationalNote(input: RestoreOperationalNoteInput)
 }
 
 export async function deleteOperationalNote(input: DeleteOperationalNoteInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const existingNote = await getOperationalNoteRecord(input.id)
 

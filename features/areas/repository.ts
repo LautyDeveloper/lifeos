@@ -28,11 +28,14 @@ import type {
 import { getDateDaysFromNow, parseDateInput } from "@/lib/dates"
 import {
   canCreateTasksInProject,
-  canPlanTasksInProject,
+  canEditTask,
+  canMutateTasksInProject,
+  canPlanTask,
   type Priority,
   type ProjectStatus,
 } from "@/types/domain"
 import { DomainError } from "@/lib/domain-errors"
+import { assertDemoWritable } from "@/lib/demo-mode"
 
 export type AreaWorkspace = {
   area: {
@@ -99,6 +102,7 @@ type ProjectRecord = {
   id: string
   status: ProjectStatus
   archivedAt: Date | null
+  containerArchived: boolean
   containerId?: string
 }
 
@@ -112,6 +116,16 @@ type TaskRecord = {
   projectId: string
   projectStatus: ProjectStatus
   projectArchivedAt: Date | null
+  containerArchived: boolean
+  completed: boolean
+}
+
+function requireMutationResult<T>(value: T | undefined, message: string): T {
+  if (!value) {
+    throw new DomainError("invalid_state", message)
+  }
+
+  return value
 }
 
 async function getContainerRecord(containerId: string): Promise<ContainerRecord | null> {
@@ -137,8 +151,10 @@ async function getProjectRecord(projectId: string): Promise<ProjectRecord | null
       id: projects.id,
       status: projects.status,
       archivedAt: projects.archivedAt,
+      containerArchived: containers.archived,
     })
     .from(projects)
+    .innerJoin(containers, eq(containers.id, projects.containerId))
     .where(eq(projects.id, projectId))
     .limit(1)
 
@@ -154,9 +170,12 @@ async function getTaskRecord(taskId: string): Promise<TaskRecord | null> {
       projectId: tasks.projectId,
       projectStatus: projects.status,
       projectArchivedAt: projects.archivedAt,
+      containerArchived: containers.archived,
+      completed: tasks.completed,
     })
     .from(tasks)
     .innerJoin(projects, eq(projects.id, tasks.projectId))
+    .innerJoin(containers, eq(containers.id, projects.containerId))
     .where(eq(tasks.id, taskId))
     .limit(1)
 
@@ -417,6 +436,7 @@ export async function getAreaWorkspace(areaSlug: string): Promise<AreaWorkspace 
 }
 
 export async function createTask(input: CreateTaskInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const project = await getProjectRecord(input.projectId)
 
@@ -424,7 +444,7 @@ export async function createTask(input: CreateTaskInput) {
     throw new DomainError("not_found", "Project not found.")
   }
 
-  if (project.archivedAt) {
+  if (project.archivedAt || project.containerArchived) {
     throw new DomainError("archived_context", "Project archived.")
   }
 
@@ -445,10 +465,11 @@ export async function createTask(input: CreateTaskInput) {
       title: tasks.title,
     })
 
-  return task
+  return requireMutationResult(task, "Project changed before the task could be created.")
 }
 
 export async function createProject(input: CreateProjectInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const container = await getContainerRecord(input.containerId)
 
@@ -474,10 +495,11 @@ export async function createProject(input: CreateProjectInput) {
       status: projects.status,
     })
 
-  return project
+  return requireMutationResult(project, "Container changed before the project could be created.")
 }
 
 export async function updateProjectDetails(input: UpdateProjectDetailsInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const project = await getProjectRecord(input.projectId)
 
@@ -485,8 +507,12 @@ export async function updateProjectDetails(input: UpdateProjectDetailsInput) {
     throw new DomainError("not_found", "Project not found.")
   }
 
-  if (project.archivedAt) {
+  if (project.archivedAt || project.containerArchived) {
     throw new DomainError("archived_context", "Project archived.")
+  }
+
+  if (!canMutateTasksInProject(project.status)) {
+    throw new DomainError("invalid_state", "Project cannot be edited in this state.")
   }
 
   const description = input.description?.trim() ? input.description.trim() : null
@@ -497,17 +523,18 @@ export async function updateProjectDetails(input: UpdateProjectDetailsInput) {
       title: input.title,
       description,
     })
-    .where(eq(projects.id, input.projectId))
+    .where(and(eq(projects.id, input.projectId), eq(projects.status, project.status), isNull(projects.archivedAt)))
     .returning({
       id: projects.id,
       title: projects.title,
       description: projects.description,
     })
 
-  return updatedProject
+  return requireMutationResult(updatedProject, "Project changed before it could be updated.")
 }
 
 export async function toggleTaskCompletion(input: ToggleTaskCompletionInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const task = await getTaskRecord(input.taskId)
 
@@ -515,12 +542,12 @@ export async function toggleTaskCompletion(input: ToggleTaskCompletionInput) {
     throw new DomainError("not_found", "Task not found.")
   }
 
-  if (task.projectArchivedAt) {
+  if (task.projectArchivedAt || task.containerArchived) {
     throw new DomainError("archived_context", "Project archived.")
   }
 
-  if (task.projectStatus === "paused") {
-    throw new DomainError("invalid_state", "Paused project task cannot be toggled here.")
+  if (!canMutateTasksInProject(task.projectStatus)) {
+    throw new DomainError("invalid_state", "Project task cannot be toggled in this state.")
   }
 
   const [updatedTask] = await database
@@ -528,16 +555,17 @@ export async function toggleTaskCompletion(input: ToggleTaskCompletionInput) {
     .set({
       completed: input.completed,
     })
-    .where(eq(tasks.id, input.taskId))
+    .where(and(eq(tasks.id, input.taskId), eq(tasks.completed, task.completed)))
     .returning({
       id: tasks.id,
       completed: tasks.completed,
     })
 
-  return updatedTask
+  return requireMutationResult(updatedTask, "Task changed before it could be updated.")
 }
 
 export async function planTaskForToday(input: PlanTaskForTodayInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const task = await getTaskRecord(input.taskId)
 
@@ -545,11 +573,11 @@ export async function planTaskForToday(input: PlanTaskForTodayInput) {
     throw new DomainError("not_found", "Task not found.")
   }
 
-  if (task.projectArchivedAt) {
+  if (task.projectArchivedAt || task.containerArchived) {
     throw new DomainError("archived_context", "Project archived.")
   }
 
-  if (!canPlanTasksInProject(task.projectStatus)) {
+  if (!canPlanTask(task.projectStatus, task.completed)) {
     throw new DomainError("invalid_state", "Project does not allow planning.")
   }
 
@@ -558,16 +586,17 @@ export async function planTaskForToday(input: PlanTaskForTodayInput) {
     .set({
       plannedDate: getDateDaysFromNow(0),
     })
-    .where(eq(tasks.id, input.taskId))
+    .where(and(eq(tasks.id, input.taskId), eq(tasks.completed, false)))
     .returning({
       id: tasks.id,
       plannedDate: tasks.plannedDate,
     })
 
-  return updatedTask
+  return requireMutationResult(updatedTask, "Task changed before it could be planned.")
 }
 
 export async function planTaskForTomorrow(input: PlanTaskForTomorrowInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const task = await getTaskRecord(input.taskId)
 
@@ -575,11 +604,11 @@ export async function planTaskForTomorrow(input: PlanTaskForTomorrowInput) {
     throw new DomainError("not_found", "Task not found.")
   }
 
-  if (task.projectArchivedAt) {
+  if (task.projectArchivedAt || task.containerArchived) {
     throw new DomainError("archived_context", "Project archived.")
   }
 
-  if (!canPlanTasksInProject(task.projectStatus)) {
+  if (!canPlanTask(task.projectStatus, task.completed)) {
     throw new DomainError("invalid_state", "Project does not allow planning.")
   }
 
@@ -588,16 +617,17 @@ export async function planTaskForTomorrow(input: PlanTaskForTomorrowInput) {
     .set({
       plannedDate: getDateDaysFromNow(1),
     })
-    .where(eq(tasks.id, input.taskId))
+    .where(and(eq(tasks.id, input.taskId), eq(tasks.completed, false)))
     .returning({
       id: tasks.id,
       plannedDate: tasks.plannedDate,
     })
 
-  return updatedTask
+  return requireMutationResult(updatedTask, "Task changed before it could be planned.")
 }
 
 export async function setTaskPlannedDate(input: SetTaskPlannedDateInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const task = await getTaskRecord(input.taskId)
 
@@ -605,11 +635,11 @@ export async function setTaskPlannedDate(input: SetTaskPlannedDateInput) {
     throw new DomainError("not_found", "Task not found.")
   }
 
-  if (task.projectArchivedAt) {
+  if (task.projectArchivedAt || task.containerArchived) {
     throw new DomainError("archived_context", "Project archived.")
   }
 
-  if (!canPlanTasksInProject(task.projectStatus)) {
+  if (!canPlanTask(task.projectStatus, task.completed)) {
     throw new DomainError("invalid_state", "Project does not allow planning.")
   }
 
@@ -624,16 +654,17 @@ export async function setTaskPlannedDate(input: SetTaskPlannedDateInput) {
     .set({
       plannedDate,
     })
-    .where(eq(tasks.id, input.taskId))
+    .where(and(eq(tasks.id, input.taskId), eq(tasks.completed, false)))
     .returning({
       id: tasks.id,
       plannedDate: tasks.plannedDate,
     })
 
-  return updatedTask
+  return requireMutationResult(updatedTask, "Task changed before it could be planned.")
 }
 
 export async function clearTaskPlannedDate(input: ClearTaskPlannedDateInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const task = await getTaskRecord(input.taskId)
 
@@ -641,11 +672,11 @@ export async function clearTaskPlannedDate(input: ClearTaskPlannedDateInput) {
     throw new DomainError("not_found", "Task not found.")
   }
 
-  if (task.projectArchivedAt) {
+  if (task.projectArchivedAt || task.containerArchived) {
     throw new DomainError("archived_context", "Project archived.")
   }
 
-  if (!canPlanTasksInProject(task.projectStatus)) {
+  if (!canPlanTask(task.projectStatus, task.completed)) {
     throw new DomainError("invalid_state", "Project does not allow planning.")
   }
 
@@ -654,16 +685,17 @@ export async function clearTaskPlannedDate(input: ClearTaskPlannedDateInput) {
     .set({
       plannedDate: null,
     })
-    .where(eq(tasks.id, input.taskId))
+    .where(and(eq(tasks.id, input.taskId), eq(tasks.completed, false)))
     .returning({
       id: tasks.id,
       plannedDate: tasks.plannedDate,
     })
 
-  return updatedTask
+  return requireMutationResult(updatedTask, "Task changed before its date could be cleared.")
 }
 
 export async function updateProjectStatus(input: UpdateProjectStatusInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const project = await getProjectRecord(input.projectId)
 
@@ -671,7 +703,7 @@ export async function updateProjectStatus(input: UpdateProjectStatusInput) {
     throw new DomainError("not_found", "Project not found.")
   }
 
-  if (project.archivedAt) {
+  if (project.archivedAt || project.containerArchived) {
     throw new DomainError("archived_context", "Project archived.")
   }
 
@@ -680,16 +712,17 @@ export async function updateProjectStatus(input: UpdateProjectStatusInput) {
     .set({
       status: input.status,
     })
-    .where(eq(projects.id, input.projectId))
+    .where(and(eq(projects.id, input.projectId), eq(projects.status, project.status), isNull(projects.archivedAt)))
     .returning({
       id: projects.id,
       status: projects.status,
     })
 
-  return updatedProject
+  return requireMutationResult(updatedProject, "Project changed before its status could be updated.")
 }
 
 export async function updateProjectPriority(input: UpdateProjectPriorityInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const project = await getProjectRecord(input.projectId)
 
@@ -697,8 +730,12 @@ export async function updateProjectPriority(input: UpdateProjectPriorityInput) {
     throw new DomainError("not_found", "Project not found.")
   }
 
-  if (project.archivedAt) {
+  if (project.archivedAt || project.containerArchived) {
     throw new DomainError("archived_context", "Project archived.")
+  }
+
+  if (!canMutateTasksInProject(project.status)) {
+    throw new DomainError("invalid_state", "Project cannot be edited in this state.")
   }
 
   const [updatedProject] = await database
@@ -706,16 +743,17 @@ export async function updateProjectPriority(input: UpdateProjectPriorityInput) {
     .set({
       priority: input.priority,
     })
-    .where(eq(projects.id, input.projectId))
+    .where(and(eq(projects.id, input.projectId), eq(projects.status, project.status), isNull(projects.archivedAt)))
     .returning({
       id: projects.id,
       priority: projects.priority,
     })
 
-  return updatedProject
+  return requireMutationResult(updatedProject, "Project changed before its priority could be updated.")
 }
 
 export async function updateTaskPriority(input: UpdateTaskPriorityInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const task = await getTaskRecord(input.taskId)
 
@@ -723,12 +761,12 @@ export async function updateTaskPriority(input: UpdateTaskPriorityInput) {
     throw new DomainError("not_found", "Task not found.")
   }
 
-  if (task.projectArchivedAt) {
+  if (task.projectArchivedAt || task.containerArchived) {
     throw new DomainError("archived_context", "Project archived.")
   }
 
-  if (task.projectStatus === "paused") {
-    throw new DomainError("invalid_state", "Paused project task cannot be updated here.")
+  if (!canEditTask(task.projectStatus, task.completed)) {
+    throw new DomainError("invalid_state", "Task cannot be updated in this state.")
   }
 
   const [updatedTask] = await database
@@ -736,16 +774,17 @@ export async function updateTaskPriority(input: UpdateTaskPriorityInput) {
     .set({
       priority: input.priority,
     })
-    .where(eq(tasks.id, input.taskId))
+    .where(and(eq(tasks.id, input.taskId), eq(tasks.completed, false)))
     .returning({
       id: tasks.id,
       priority: tasks.priority,
     })
 
-  return updatedTask
+  return requireMutationResult(updatedTask, "Task changed before its priority could be updated.")
 }
 
 export async function updateTaskDetails(input: UpdateTaskDetailsInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const task = await getTaskRecord(input.taskId)
 
@@ -753,12 +792,12 @@ export async function updateTaskDetails(input: UpdateTaskDetailsInput) {
     throw new DomainError("not_found", "Task not found.")
   }
 
-  if (task.projectArchivedAt) {
+  if (task.projectArchivedAt || task.containerArchived) {
     throw new DomainError("archived_context", "Project archived.")
   }
 
-  if (task.projectStatus === "paused") {
-    throw new DomainError("invalid_state", "Paused project task cannot be updated here.")
+  if (!canEditTask(task.projectStatus, task.completed)) {
+    throw new DomainError("invalid_state", "Task cannot be updated in this state.")
   }
 
   const [updatedTask] = await database
@@ -766,16 +805,17 @@ export async function updateTaskDetails(input: UpdateTaskDetailsInput) {
     .set({
       title: input.title,
     })
-    .where(eq(tasks.id, input.taskId))
+    .where(and(eq(tasks.id, input.taskId), eq(tasks.completed, false)))
     .returning({
       id: tasks.id,
       title: tasks.title,
     })
 
-  return updatedTask
+  return requireMutationResult(updatedTask, "Task changed before it could be updated.")
 }
 
 export async function deleteTask(input: DeleteTaskInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const task = await getTaskRecord(input.taskId)
 
@@ -783,12 +823,12 @@ export async function deleteTask(input: DeleteTaskInput) {
     throw new DomainError("not_found", "Task not found.")
   }
 
-  if (task.projectArchivedAt) {
+  if (task.projectArchivedAt || task.containerArchived) {
     throw new DomainError("archived_context", "Project archived.")
   }
 
-  if (task.projectStatus === "paused") {
-    throw new DomainError("invalid_state", "Paused project task cannot be deleted here.")
+  if (!canMutateTasksInProject(task.projectStatus)) {
+    throw new DomainError("invalid_state", "Task cannot be deleted in this project state.")
   }
 
   const [deletedTask] = await database
@@ -798,10 +838,11 @@ export async function deleteTask(input: DeleteTaskInput) {
       id: tasks.id,
     })
 
-  return deletedTask
+  return requireMutationResult(deletedTask, "Task changed before it could be deleted.")
 }
 
 export async function archiveProject(input: ArchiveProjectInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const project = await getProjectRecord(input.projectId)
 
@@ -811,6 +852,14 @@ export async function archiveProject(input: ArchiveProjectInput) {
 
   if (project.archivedAt) {
     throw new DomainError("invalid_state", "Project already archived.")
+  }
+
+  if (project.containerArchived) {
+    throw new DomainError("archived_context", "Container archived.")
+  }
+
+  if (!canMutateTasksInProject(project.status)) {
+    throw new DomainError("invalid_state", "Project cannot be archived in this state.")
   }
 
   const [archivedProject] = await database
@@ -825,10 +874,11 @@ export async function archiveProject(input: ArchiveProjectInput) {
       status: projects.status,
     })
 
-  return archivedProject
+  return requireMutationResult(archivedProject, "Project changed before it could be archived.")
 }
 
 export async function restoreProject(input: RestoreProjectInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const project = await getProjectRecord(input.projectId)
 
@@ -845,17 +895,18 @@ export async function restoreProject(input: RestoreProjectInput) {
     .set({
       archivedAt: null,
     })
-    .where(eq(projects.id, input.projectId))
+    .where(and(eq(projects.id, input.projectId), isNotNull(projects.archivedAt)))
     .returning({
       id: projects.id,
       archivedAt: projects.archivedAt,
       status: projects.status,
     })
 
-  return restoredProject
+  return requireMutationResult(restoredProject, "Project changed before it could be restored.")
 }
 
 export async function deleteProject(input: DeleteProjectInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const project = await getProjectRecord(input.projectId)
 
@@ -874,5 +925,5 @@ export async function deleteProject(input: DeleteProjectInput) {
       id: projects.id,
     })
 
-  return deletedProject
+  return requireMutationResult(deletedProject, "Project changed before it could be deleted.")
 }

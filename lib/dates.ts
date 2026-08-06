@@ -124,3 +124,14 @@ export function formatPlanningDateLabel(value: Date | null, now: Date = new Date
     month: "short",
   }).format(value)
 }
+
+const fullLocalDateFormatter = new Intl.DateTimeFormat("es-AR", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+})
+
+export function formatTodayExecutionDescription(now: Date = new Date()) {
+  return `Lo que ya decidiste ejecutar este ${fullLocalDateFormatter.format(now).replace(",", "")}.`
+}

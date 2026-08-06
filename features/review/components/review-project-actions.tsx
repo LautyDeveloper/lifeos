@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { PauseCircle, PlayCircle } from "lucide-react"
 
 import { updateProjectStatusAction } from "@/features/areas/actions"
+import { useDemoMode } from "@/components/demo/demo-mode-provider"
 import { cn } from "@/lib/utils"
 
 export function ReviewProjectActions({
@@ -16,6 +17,9 @@ export function ReviewProjectActions({
   const [pending, startTransition] = useTransition()
   const [message, setMessage] = useState<string>()
   const [messageTone, setMessageTone] = useState<"success" | "error">("success")
+  const { readOnly } = useDemoMode()
+
+  if (readOnly) return null
 
   function runStatusAction(status: "active" | "paused") {
     startTransition(async () => {

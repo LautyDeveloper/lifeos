@@ -26,6 +26,7 @@ export function ProjectDetailsEditor({
   status: VisibleAreaProjectStatus
   priority: Priority
 }) {
+  const projectLocked = status === "done"
   const [open, setOpen] = useState(false)
   const [feedback, setFeedback] = useState<string>()
   const [state, formAction] = useActionState(
@@ -71,7 +72,7 @@ export function ProjectDetailsEditor({
           className="inline-flex min-h-9 items-center gap-2 rounded-[16px] border border-white/[0.07] bg-white/[0.02] px-3 text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition hover:bg-white/[0.03] hover:text-white"
         >
           <PencilLine className="size-3.5" />
-          {open ? "Cerrar edición" : "Editar"}
+          {open ? "Cerrar" : projectLocked ? "Cambiar estado" : "Editar"}
         </button>
 
         {open ? (
@@ -82,12 +83,14 @@ export function ProjectDetailsEditor({
               path={path}
               status={status}
             />
-            <ProjectPriorityForm
-              key={`${projectId}-${priority}`}
-              projectId={projectId}
-              path={path}
-              priority={priority}
-            />
+            {!projectLocked ? (
+              <ProjectPriorityForm
+                key={`${projectId}-${priority}`}
+                projectId={projectId}
+                path={path}
+                priority={priority}
+              />
+            ) : null}
           </>
         ) : null}
       </div>
@@ -98,7 +101,7 @@ export function ProjectDetailsEditor({
         </p>
       ) : null}
 
-      {open ? (
+      {open && !projectLocked ? (
         <form
           action={formAction}
           className="surface-2 space-y-4 rounded-[22px] border p-4"

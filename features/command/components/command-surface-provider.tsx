@@ -49,6 +49,7 @@ import { deriveInboxTitle } from "@/features/inbox/utils"
 import { InboxSubmitButton } from "@/features/inbox/components/inbox-submit-button"
 import { formatDateInputValue, parseDateInput } from "@/lib/dates"
 import { cn } from "@/lib/utils"
+import { useDemoMode } from "@/components/demo/demo-mode-provider"
 
 type CommandMode = "search" | "capture" | "library-note" | "process-inbox"
 type AreaWithContainers = {
@@ -755,12 +756,14 @@ function CommandSurface({
   databaseReady,
   areasWithContainers,
   projectOptions,
+  readOnly,
 }: {
   open: boolean
   onClose: () => void
   databaseReady: boolean
   areasWithContainers: AreaWithContainers[]
   projectOptions: ProjectOption[]
+  readOnly: boolean
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -777,7 +780,12 @@ function CommandSurface({
   const inputRef = useRef<HTMLInputElement>(null)
   const searchRequestId = useRef(0)
 
-  const actionResults = useMemo(() => getFilteredQuickActions(query), [query])
+  const actionResults = useMemo(
+    () => getFilteredQuickActions(query).filter((action) =>
+      !readOnly || (action.actionKey !== "new-capture" && action.actionKey !== "new-library-note")
+    ),
+    [query, readOnly]
+  )
   const displayResults = useMemo(
     () => (mode === "search" ? [...actionResults, ...results] : []),
     [actionResults, mode, results]
@@ -851,6 +859,7 @@ function CommandSurface({
       }
 
       if (
+        !readOnly &&
         result.type === "inbox-item" &&
         result.entityId &&
         result.rawContent &&
@@ -871,7 +880,7 @@ function CommandSurface({
         onClose()
       }
     },
-    [areasWithContainers.length, onClose, projectOptions.length, router]
+    [areasWithContainers.length, onClose, projectOptions.length, readOnly, router]
   )
 
   useEffect(() => {
@@ -1126,7 +1135,7 @@ function CommandSurface({
                               ) : null}
                             </div>
                           </button>
-                          {result.type === "inbox-item" &&
+                          {!readOnly && result.type === "inbox-item" &&
                           result.entityId &&
                           result.rawContent &&
                           areasWithContainers.length > 0 &&
@@ -1141,7 +1150,7 @@ function CommandSurface({
                               </button>
                             </div>
                           ) : null}
-                          {result.type !== "inbox-item" ? (
+                          {!readOnly && result.type !== "inbox-item" ? (
                             <CommandResultActions
                               result={result}
                               path={pathname}
@@ -1227,6 +1236,7 @@ function CommandTopbarTrigger() {
       aria-label="Abrir command surface"
     >
       <Search className="size-4" />
+      <span className="sm:hidden">Comandos</span>
       <span className="hidden sm:inline">Buscar o crear</span>
       <kbd className="hidden rounded border border-white/[0.08] bg-white/[0.03] px-1.5 py-0.5 font-mono text-[10px] md:inline">
         ⌘K
@@ -1247,7 +1257,7 @@ function CommandFloatingTrigger() {
     <Button
       type="button"
       onClick={context.open}
-      className="fixed bottom-24 right-4 z-30 h-12 rounded-full px-4 shadow-xl md:bottom-6 md:right-7"
+      className="fixed bottom-24 right-4 z-30 hidden h-12 rounded-full px-4 shadow-xl md:bottom-6 md:right-7 md:inline-flex"
       aria-label="Abrir command surface"
     >
       <Search className="size-4" />
@@ -1270,6 +1280,7 @@ export function CommandSurfaceProvider({
   areasWithContainers: AreaWithContainers[]
   projectOptions: ProjectOption[]
 }) {
+  const { readOnly } = useDemoMode()
   const [open, setOpen] = useState(false)
   const restoreFocusRef = useRef<HTMLElement | null>(null)
 
@@ -1320,6 +1331,7 @@ export function CommandSurfaceProvider({
           databaseReady={databaseReady}
           areasWithContainers={areasWithContainers}
           projectOptions={projectOptions}
+          readOnly={readOnly}
         />
       ) : null}
       <CommandFloatingTrigger />

@@ -9,15 +9,18 @@ import { useToast } from "@/components/ui/toast-provider"
 import { initialUpdateTaskDetailsActionState } from "@/features/areas/action-state"
 import { deleteTaskAction, updateTaskDetailsAction } from "@/features/areas/actions"
 import { cn } from "@/lib/utils"
+import { useDemoMode } from "@/components/demo/demo-mode-provider"
 
 export function TaskDetailsEditor({
   taskId,
   path,
   title,
+  completed,
 }: {
   taskId: string
   path: string
   title: string
+  completed: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [feedback, setFeedback] = useState<string>()
@@ -28,6 +31,7 @@ export function TaskDetailsEditor({
   const titleRef = useRef<HTMLInputElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const { notify } = useToast()
+  const { readOnly } = useDemoMode()
 
   useEffect(() => {
     if (!open) {
@@ -52,21 +56,27 @@ export function TaskDetailsEditor({
     return () => window.clearTimeout(timer)
   }, [state.message, state.resetKey, state.status])
 
+  if (readOnly) {
+    return null
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          ref={triggerRef}
-          type="button"
-          onClick={() => {
-            setFeedback(undefined)
-            setOpen((current) => !current)
-          }}
-          className="inline-flex min-h-8 items-center gap-2 rounded-[16px] border border-white/[0.07] bg-white/[0.02] px-3 text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition hover:bg-white/[0.03] hover:text-white"
-        >
-          <PencilLine className="size-3.5" />
-          {open ? "Cerrar edición" : "Editar"}
-        </button>
+        {!completed ? (
+          <button
+            ref={triggerRef}
+            type="button"
+            onClick={() => {
+              setFeedback(undefined)
+              setOpen((current) => !current)
+            }}
+            className="inline-flex min-h-8 items-center gap-2 rounded-[16px] border border-white/[0.07] bg-white/[0.02] px-3 text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition hover:bg-white/[0.03] hover:text-white"
+          >
+            <PencilLine className="size-3.5" />
+            {open ? "Cerrar edición" : "Editar"}
+          </button>
+        ) : null}
 
         <InlineConfirmAction
           triggerLabel="Eliminar"
@@ -96,7 +106,7 @@ export function TaskDetailsEditor({
         </p>
       ) : null}
 
-      {open ? (
+      {open && !completed ? (
         <form action={formAction} className="surface-2 space-y-3 rounded-[20px] border p-4">
           <input type="hidden" name="taskId" value={taskId} />
           <input type="hidden" name="path" value={path} />
