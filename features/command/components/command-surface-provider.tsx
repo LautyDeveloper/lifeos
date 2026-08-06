@@ -1282,24 +1282,42 @@ export function CommandSurfaceProvider({
 }) {
   const { readOnly } = useDemoMode()
   const [open, setOpen] = useState(false)
+  const restoreFocusRef = useRef<HTMLElement | null>(null)
+
+  const openSurface = useCallback(() => {
+    restoreFocusRef.current =
+      typeof document !== "undefined" && document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null
+    setOpen(true)
+  }, [])
+
+  const closeSurface = useCallback(() => {
+    setOpen(false)
+    window.requestAnimationFrame(() => restoreFocusRef.current?.focus())
+  }, [])
 
   useEffect(() => {
     const onShortcut = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault()
-        setOpen((current) => !current)
+        if (open) {
+          closeSurface()
+        } else {
+          openSurface()
+        }
       }
     }
 
     window.addEventListener("keydown", onShortcut)
     return () => window.removeEventListener("keydown", onShortcut)
-  }, [])
+  }, [closeSurface, open, openSurface])
 
   const value = useMemo(
     () => ({
-      open: () => setOpen(true),
+      open: openSurface,
     }),
-    []
+    [openSurface]
   )
 
   return (
@@ -1309,7 +1327,7 @@ export function CommandSurfaceProvider({
         <CommandSurface
           key="command-surface-open"
           open={open}
-          onClose={() => setOpen(false)}
+          onClose={closeSurface}
           databaseReady={databaseReady}
           areasWithContainers={areasWithContainers}
           projectOptions={projectOptions}

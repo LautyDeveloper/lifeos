@@ -33,8 +33,8 @@ export function InlineConfirmAction({
   const [open, setOpen] = useState(false)
   const [result, setResult] = useState<ActionResult | null>(null)
   const [pending, startTransition] = useTransition()
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const confirmButtonRef = useRef<HTMLButtonElement>(null)
-  const cancelButtonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (!open) {
@@ -57,6 +57,7 @@ export function InlineConfirmAction({
 
       event.preventDefault()
       setOpen(false)
+      window.requestAnimationFrame(() => triggerRef.current?.focus())
     }
 
     window.addEventListener("keydown", handleKeyDown)
@@ -66,6 +67,7 @@ export function InlineConfirmAction({
   return (
     <div className="space-y-2">
       <button
+        ref={triggerRef}
         type="button"
         disabled={disabled || pending}
         onClick={() =>
@@ -105,6 +107,7 @@ export function InlineConfirmAction({
 
                   if (actionResult.status === "success") {
                     setOpen(false)
+                    window.requestAnimationFrame(() => triggerRef.current?.focus())
                   }
                 })
               }}
@@ -113,12 +116,12 @@ export function InlineConfirmAction({
               {pending ? pendingLabel : confirmLabel}
             </button>
             <button
-              ref={cancelButtonRef}
               type="button"
               disabled={pending}
               onClick={() => {
                 setResult(null)
                 setOpen(false)
+                window.requestAnimationFrame(() => triggerRef.current?.focus())
               }}
               className="inline-flex min-h-9 items-center rounded-[14px] px-3 text-sm font-medium text-muted-foreground transition hover:bg-white/[0.03] hover:text-white disabled:opacity-60"
             >

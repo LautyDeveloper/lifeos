@@ -23,11 +23,13 @@ export function TaskDetailsEditor({
   completed: boolean
 }) {
   const [open, setOpen] = useState(false)
+  const [feedback, setFeedback] = useState<string>()
   const [state, formAction] = useActionState(
     updateTaskDetailsAction,
     initialUpdateTaskDetailsActionState
   )
   const titleRef = useRef<HTMLInputElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const { notify } = useToast()
   const { readOnly } = useDemoMode()
 
@@ -41,11 +43,18 @@ export function TaskDetailsEditor({
   }, [open])
 
   useEffect(() => {
-    if (state.status !== "success") return
-    notify({ message: state.message ?? "Tarea actualizada.", tone: "success" })
-    const frame = window.requestAnimationFrame(() => setOpen(false))
-    return () => window.cancelAnimationFrame(frame)
-  }, [notify, state.message, state.status])
+    if (state.status !== "success") {
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      setFeedback(state.message ?? "Tarea actualizada.")
+      setOpen(false)
+      triggerRef.current?.focus()
+    }, 0)
+
+    return () => window.clearTimeout(timer)
+  }, [state.message, state.resetKey, state.status])
 
   if (readOnly) {
     return null
@@ -56,8 +65,12 @@ export function TaskDetailsEditor({
       <div className="flex flex-wrap items-center gap-2">
         {!completed ? (
           <button
+            ref={triggerRef}
             type="button"
-            onClick={() => setOpen((current) => !current)}
+            onClick={() => {
+              setFeedback(undefined)
+              setOpen((current) => !current)
+            }}
             className="inline-flex min-h-8 items-center gap-2 rounded-[16px] border border-white/[0.07] bg-white/[0.02] px-3 text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition hover:bg-white/[0.03] hover:text-white"
           >
             <PencilLine className="size-3.5" />
@@ -86,6 +99,12 @@ export function TaskDetailsEditor({
           }}
         />
       </div>
+
+      {!open && feedback ? (
+        <p className="min-h-5 text-sm text-primary/90" aria-live="polite">
+          {feedback}
+        </p>
+      ) : null}
 
       {open && !completed ? (
         <form action={formAction} className="surface-2 space-y-3 rounded-[20px] border p-4">
@@ -128,7 +147,14 @@ export function TaskDetailsEditor({
               )}
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setOpen(false)
+                  window.requestAnimationFrame(() => triggerRef.current?.focus())
+                }}
+              >
                 Cancelar
               </Button>
               <Button type="submit">Guardar</Button>

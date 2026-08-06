@@ -44,6 +44,22 @@ test.describe("shell sin base de datos", () => {
     await expect(trigger).toHaveAttribute("aria-expanded", "false")
   })
 
+  test("la command surface restaura el foco al cerrarse", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-chromium", "Solo escritorio")
+    await page.goto("/")
+
+    const trigger = page.getByRole("button", { name: "Abrir command surface" }).first()
+    await trigger.click()
+
+    const dialog = page.getByRole("dialog", { name: "Command surface de Life OS" })
+    await expect(dialog).toBeVisible()
+    await expect(page.getByLabel("Buscar en Life OS")).toBeFocused()
+
+    await page.keyboard.press("Escape")
+    await expect(dialog).toBeHidden()
+    await expect(trigger).toBeFocused()
+  })
+
   test("no presenta violaciones críticas o serias", async ({ page }) => {
     await page.goto("/")
     const results = await new AxeBuilder({ page }).analyze()
