@@ -35,6 +35,7 @@ import {
   type ProjectStatus,
 } from "@/types/domain"
 import { DomainError } from "@/lib/domain-errors"
+import { assertDemoWritable } from "@/lib/demo-mode"
 
 export type AreaWorkspace = {
   area: {
@@ -435,6 +436,7 @@ export async function getAreaWorkspace(areaSlug: string): Promise<AreaWorkspace 
 }
 
 export async function createTask(input: CreateTaskInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const project = await getProjectRecord(input.projectId)
 
@@ -467,6 +469,7 @@ export async function createTask(input: CreateTaskInput) {
 }
 
 export async function createProject(input: CreateProjectInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const container = await getContainerRecord(input.containerId)
 
@@ -496,6 +499,7 @@ export async function createProject(input: CreateProjectInput) {
 }
 
 export async function updateProjectDetails(input: UpdateProjectDetailsInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const project = await getProjectRecord(input.projectId)
 
@@ -530,6 +534,7 @@ export async function updateProjectDetails(input: UpdateProjectDetailsInput) {
 }
 
 export async function toggleTaskCompletion(input: ToggleTaskCompletionInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const task = await getTaskRecord(input.taskId)
 
@@ -560,6 +565,7 @@ export async function toggleTaskCompletion(input: ToggleTaskCompletionInput) {
 }
 
 export async function planTaskForToday(input: PlanTaskForTodayInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const task = await getTaskRecord(input.taskId)
 
@@ -590,6 +596,7 @@ export async function planTaskForToday(input: PlanTaskForTodayInput) {
 }
 
 export async function planTaskForTomorrow(input: PlanTaskForTomorrowInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const task = await getTaskRecord(input.taskId)
 
@@ -620,6 +627,7 @@ export async function planTaskForTomorrow(input: PlanTaskForTomorrowInput) {
 }
 
 export async function setTaskPlannedDate(input: SetTaskPlannedDateInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const task = await getTaskRecord(input.taskId)
 
@@ -656,6 +664,7 @@ export async function setTaskPlannedDate(input: SetTaskPlannedDateInput) {
 }
 
 export async function clearTaskPlannedDate(input: ClearTaskPlannedDateInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const task = await getTaskRecord(input.taskId)
 
@@ -686,6 +695,7 @@ export async function clearTaskPlannedDate(input: ClearTaskPlannedDateInput) {
 }
 
 export async function updateProjectStatus(input: UpdateProjectStatusInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const project = await getProjectRecord(input.projectId)
 
@@ -712,6 +722,7 @@ export async function updateProjectStatus(input: UpdateProjectStatusInput) {
 }
 
 export async function updateProjectPriority(input: UpdateProjectPriorityInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const project = await getProjectRecord(input.projectId)
 
@@ -742,6 +753,7 @@ export async function updateProjectPriority(input: UpdateProjectPriorityInput) {
 }
 
 export async function updateTaskPriority(input: UpdateTaskPriorityInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const task = await getTaskRecord(input.taskId)
 
@@ -772,6 +784,7 @@ export async function updateTaskPriority(input: UpdateTaskPriorityInput) {
 }
 
 export async function updateTaskDetails(input: UpdateTaskDetailsInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const task = await getTaskRecord(input.taskId)
 
@@ -802,6 +815,7 @@ export async function updateTaskDetails(input: UpdateTaskDetailsInput) {
 }
 
 export async function deleteTask(input: DeleteTaskInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const task = await getTaskRecord(input.taskId)
 
@@ -828,6 +842,7 @@ export async function deleteTask(input: DeleteTaskInput) {
 }
 
 export async function archiveProject(input: ArchiveProjectInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const project = await getProjectRecord(input.projectId)
 
@@ -863,6 +878,7 @@ export async function archiveProject(input: ArchiveProjectInput) {
 }
 
 export async function restoreProject(input: RestoreProjectInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const project = await getProjectRecord(input.projectId)
 
@@ -890,6 +906,7 @@ export async function restoreProject(input: RestoreProjectInput) {
 }
 
 export async function deleteProject(input: DeleteProjectInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const project = await getProjectRecord(input.projectId)
 

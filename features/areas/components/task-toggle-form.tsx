@@ -6,11 +6,13 @@ import { Circle, CircleCheckBig, LoaderCircle } from "lucide-react"
 import { toggleTaskCompletionAction } from "@/features/areas/actions"
 import { useToast } from "@/components/ui/toast-provider"
 import { cn } from "@/lib/utils"
+import { useDemoMode } from "@/components/demo/demo-mode-provider"
 
 export function TaskToggleForm({ taskId, completed, path, disabled = false }: { taskId: string; completed: boolean; path: string; disabled?: boolean }) {
   const [optimisticCompleted, setOptimisticCompleted] = useState(completed)
   const [pending, startTransition] = useTransition()
   const { notify } = useToast()
+  const { readOnly } = useDemoMode()
 
   const update = (nextCompleted: boolean, announce = true) => {
     setOptimisticCompleted(nextCompleted)
@@ -41,7 +43,7 @@ export function TaskToggleForm({ taskId, completed, path, disabled = false }: { 
   return (
     <button
       type="button"
-      disabled={pending || disabled}
+      disabled={pending || disabled || readOnly}
       onClick={() => update(!optimisticCompleted)}
       className={cn(
         "inline-flex size-11 shrink-0 items-center justify-center rounded-xl border transition-all duration-200 motion-reduce:transition-none",

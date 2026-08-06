@@ -20,6 +20,7 @@ import {
   parseDateInput,
 } from "@/lib/dates"
 import { cn } from "@/lib/utils"
+import { useDemoMode } from "@/components/demo/demo-mode-provider"
 
 export function TaskPlanningControls({
   taskId,
@@ -35,6 +36,7 @@ export function TaskPlanningControls({
   const [feedback, setFeedback] = useState("")
   const [pending, startTransition] = useTransition()
   const { notify } = useToast()
+  const { readOnly } = useDemoMode()
 
   const syncPlanning = (
     updater: () => Promise<{ status: "success" | "error"; message: string }>,
@@ -79,7 +81,7 @@ export function TaskPlanningControls({
         {!plannedForToday ? (
           <button
             type="button"
-            disabled={pending}
+            disabled={pending || readOnly}
             onClick={() =>
               syncPlanning(async () => {
                 const data = new FormData()
@@ -98,7 +100,7 @@ export function TaskPlanningControls({
         {!plannedForTomorrow ? (
           <button
             type="button"
-            disabled={pending}
+            disabled={pending || readOnly}
             onClick={() =>
               syncPlanning(async () => {
                 const data = new FormData()
@@ -120,7 +122,7 @@ export function TaskPlanningControls({
           <input
             type="date"
             value={dateInputValue}
-            disabled={pending}
+            disabled={pending || readOnly}
             onChange={(event) => {
               const nextValue = event.target.value
               setDateInputValue(nextValue)
@@ -153,7 +155,7 @@ export function TaskPlanningControls({
             type="button"
             variant="ghost"
             size="xs"
-            disabled={pending}
+            disabled={pending || readOnly}
             className={cn("min-h-8 rounded-full px-3 text-[11px] text-muted-foreground hover:bg-white/[0.03] hover:text-white")}
             onClick={() =>
               syncPlanning(async () => {

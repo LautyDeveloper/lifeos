@@ -23,6 +23,7 @@ import {
   suggestInboxProcessingInputSchema,
 } from "@/features/inbox/schemas"
 import { getDomainErrorMessage, isDomainError } from "@/lib/domain-errors"
+import { assertDemoWritable } from "@/lib/demo-mode"
 
 export async function createInboxItemAction(
   previousState: InboxActionState,
@@ -46,6 +47,7 @@ export async function createInboxItemAction(
   }
 
   try {
+    assertDemoWritable()
     await createInboxItem(parsed.data)
   } catch (error) {
     return {
@@ -80,6 +82,10 @@ function mapProcessFieldErrors(
 }
 
 function getInboxProcessingErrorMessage(error: unknown, target: "project" | "task" | "note") {
+  if (isDomainError(error) && error.code === "read_only") {
+    return getDomainErrorMessage(error, "No pudimos procesar la captura.")
+  }
+
   if (!isDomainError(error)) {
     return "No pudimos procesar la captura."
   }
@@ -126,6 +132,7 @@ export async function processInboxItemAction(
   const target = targetResult.data
 
   try {
+    assertDemoWritable()
     if (target === "project") {
       const parsed = processInboxToProjectSchema.safeParse({
         inboxItemId: formData.get("inboxItemId"),
@@ -222,6 +229,7 @@ export async function suggestInboxProcessingAction(input: {
   }
 
   try {
+    assertDemoWritable()
     const suggestion = await suggestInboxProcessing(parsed.data)
 
     return {
@@ -255,7 +263,10 @@ export async function suggestInboxProcessingAction(input: {
 
     return {
       status: "error",
-      message: "No pudimos sugerir un destino ahora. Probá de nuevo o seguí en manual.",
+      message: getDomainErrorMessage(
+        error,
+        "No pudimos sugerir un destino ahora. Probá de nuevo o seguí en manual."
+      ),
     }
   }
 }

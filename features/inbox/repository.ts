@@ -16,6 +16,7 @@ import type {
   ProcessInboxToTaskInput,
 } from "@/features/inbox/schemas"
 import { DomainError } from "@/lib/domain-errors"
+import { assertDemoWritable } from "@/lib/demo-mode"
 
 export async function listActiveInboxItems() {
   if (!db) {
@@ -35,6 +36,7 @@ export async function listActiveInboxItems() {
 }
 
 export async function createInboxItem(input: CreateInboxItemInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
 
   const [item] = await database
@@ -153,6 +155,7 @@ export async function listProjectOptions() {
 }
 
 export async function processInboxItemToProject(input: ProcessInboxToProjectInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const result = await database.execute<{ id: string; title: string }>(sql`
     with claimed as (
@@ -177,6 +180,7 @@ export async function processInboxItemToProject(input: ProcessInboxToProjectInpu
 }
 
 export async function processInboxItemToTask(input: ProcessInboxToTaskInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const result = await database.execute<{ id: string; title: string }>(sql`
     with claimed as (
@@ -205,6 +209,7 @@ export async function processInboxItemToTask(input: ProcessInboxToTaskInput) {
 }
 
 export async function processInboxItemToNote(input: ProcessInboxToNoteInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
   const result = await database.execute<{ id: string; title: string }>(sql`
     with claimed as (

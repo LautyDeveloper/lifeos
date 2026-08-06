@@ -10,6 +10,7 @@ import type {
   UpdateLibraryNoteInput,
 } from "@/features/library/schemas"
 import { DomainError } from "@/lib/domain-errors"
+import { assertDemoWritable } from "@/lib/demo-mode"
 
 export type LibraryNoteListItem = {
   id: string
@@ -107,6 +108,7 @@ export async function getLibraryNoteById(id: string): Promise<LibraryNote | null
 }
 
 export async function createLibraryNote(input: CreateLibraryNoteInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
 
   const [note] = await database
@@ -131,6 +133,7 @@ export async function createLibraryNote(input: CreateLibraryNoteInput) {
 }
 
 export async function updateLibraryNote(input: UpdateLibraryNoteInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
 
   const [existingNote] = await database
@@ -164,6 +167,7 @@ export async function updateLibraryNote(input: UpdateLibraryNoteInput) {
 }
 
 export async function archiveLibraryNote(input: ArchiveLibraryNoteInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
 
   const [existingNote] = await database
@@ -192,6 +196,7 @@ export async function archiveLibraryNote(input: ArchiveLibraryNoteInput) {
 }
 
 export async function restoreLibraryNote(input: RestoreLibraryNoteInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
 
   const [existingNote] = await database
@@ -220,6 +225,7 @@ export async function restoreLibraryNote(input: RestoreLibraryNoteInput) {
 }
 
 export async function deleteLibraryNote(input: DeleteLibraryNoteInput) {
+  assertDemoWritable()
   const database = getDbOrThrow()
 
   const [existingNote] = await database

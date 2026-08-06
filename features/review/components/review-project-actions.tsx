@@ -5,6 +5,7 @@ import { PauseCircle, PlayCircle } from "lucide-react"
 
 import { updateProjectStatusAction } from "@/features/areas/actions"
 import { useToast } from "@/components/ui/toast-provider"
+import { useDemoMode } from "@/components/demo/demo-mode-provider"
 
 export function ReviewProjectActions({
   projectId,
@@ -15,6 +16,9 @@ export function ReviewProjectActions({
 }) {
   const [pending, startTransition] = useTransition()
   const { notify } = useToast()
+  const { readOnly } = useDemoMode()
+
+  if (readOnly) return null
 
   function runStatusAction(status: "active" | "paused") {
     startTransition(async () => {

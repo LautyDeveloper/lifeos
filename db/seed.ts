@@ -1,4 +1,5 @@
 import "dotenv/config"
+import { pathToFileURL } from "node:url"
 
 import { and, eq, inArray, isNull } from "drizzle-orm"
 
@@ -56,10 +57,11 @@ const taskSeeds: ReadonlyArray<{
   { projectTitle: "Operación semanal", title: "Preparar prioridades del cliente.", priority: "high", completed: false, plannedDateOffset: 0 },
   { projectTitle: "Operación semanal", title: "Revisar entregables pendientes.", priority: "medium", completed: false },
   { projectTitle: "MVP", title: "Definir el siguiente PR del producto.", priority: "urgent", completed: false, plannedDateOffset: 0 },
+  { projectTitle: "MVP", title: "Revisar el cierre del último incremento.", priority: "medium", completed: true, plannedDateOffset: 0 },
   { projectTitle: "MVP", title: "Validar el flujo completo de inbox.", priority: "high", completed: false, plannedDateOffset: 1 },
   { projectTitle: "Roadmap", title: "Agrupar próximas iniciativas técnicas.", priority: "low", completed: true },
   { projectTitle: "Parcial 1", title: "Resolver ejercicios clave de dinámica.", priority: "medium", completed: false, plannedDateOffset: 0 },
-  { projectTitle: "Rutina base", title: "Planificar la próxima sesión de entrenamiento.", priority: "medium", completed: false },
+  { projectTitle: "Rutina base", title: "Planificar la próxima sesión de entrenamiento.", priority: "medium", completed: false, plannedDateOffset: -1 },
   { projectTitle: "Exploración futura", title: "Guardar ideas para una versión futura del onboarding.", priority: "low", completed: false, plannedDateOffset: 0 },
 ] as const
 
@@ -500,7 +502,7 @@ async function seedTaskNotes() {
   }
 }
 
-async function main() {
+export async function seedDatabase() {
   await seedAreas()
   await seedContainers()
   await seedProjects()
@@ -514,8 +516,14 @@ async function main() {
   console.log("Life OS seeds completed.")
 }
 
-main().catch((error) => {
-  console.error("Life OS seed failed.")
-  console.error(error)
-  process.exit(1)
-})
+const isDirectRun = process.argv[1]
+  ? import.meta.url === pathToFileURL(process.argv[1]).href
+  : false
+
+if (isDirectRun) {
+  seedDatabase().catch((error) => {
+    console.error("Life OS seed failed.")
+    console.error(error)
+    process.exit(1)
+  })
+}

@@ -8,6 +8,7 @@ import type { DashboardSummary } from "@/features/dashboard/repository"
 import { InboxForm } from "@/features/inbox/components/inbox-form"
 import { LibraryCreateNoteFormInner } from "@/features/library/components/library-create-note-form"
 import { priorityLabels } from "@/types/domain"
+import { pluralize } from "@/lib/format"
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -73,7 +74,7 @@ export function DashboardView({ summary }: { summary: DashboardSummary }) {
               <div className="surface-2 rounded-[24px] border p-1.5">
                 <InboxForm databaseReady={summary.databaseReady} compact />
               </div>
-              <div className="surface-2 rounded-[24px] border p-5">
+              <div className="surface-2 hidden rounded-[24px] border p-5 lg:block">
                 <div className="space-y-2">
                   <p className="content-title">Nueva nota rápida</p>
                   <p className="context-line">
@@ -84,6 +85,10 @@ export function DashboardView({ summary }: { summary: DashboardSummary }) {
                   <LibraryCreateNoteFormInner compact redirectToNote={false} />
                 </div>
               </div>
+              <Link href="/library" className="surface-2 rounded-[24px] border p-5 lg:hidden">
+                <p className="content-title">Nueva nota rápida</p>
+                <p className="context-line mt-2">Abrí Biblioteca para guardar una referencia.</p>
+              </Link>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
                 <Link href="/inbox" className="surface-2 group rounded-[24px] border p-5 transition hover:border-white/[0.07] hover:bg-white/[0.03]">
                   <div className="space-y-2">
@@ -188,7 +193,7 @@ export function DashboardView({ summary }: { summary: DashboardSummary }) {
                     <ArrowUpRight className="size-4 text-muted-foreground transition group-hover:text-primary" aria-hidden="true" />
                   </div>
                   <div className="meta-row mt-2">
-                    <span className="meta-item"><b className="text-white">{area.projects}</b> proyectos</span>
+                    <span className="meta-item"><b className="text-white">{area.projects}</b> {pluralize(area.projects, "proyecto", "proyectos")}</span>
                   </div>
                 </Link>
               ))}

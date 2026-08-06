@@ -7,6 +7,7 @@ import {
   type SuggestInboxProcessingInput,
 } from "@/features/inbox-ai/schemas"
 import { normalizeInboxSuggestion } from "@/features/inbox-ai/utils"
+import { isDemoReadOnly } from "@/lib/demo-mode"
 
 const INBOX_SUGGESTION_SCHEMA = {
   type: "object",
@@ -62,7 +63,7 @@ function getOpenAiClient() {
 }
 
 export function isInboxAiAvailable() {
-  return Boolean(process.env.OPENAI_API_KEY?.trim())
+  return !isDemoReadOnly() && Boolean(process.env.OPENAI_API_KEY?.trim())
 }
 
 function getErrorStatus(error: unknown) {
